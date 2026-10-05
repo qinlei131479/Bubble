@@ -7,7 +7,7 @@ import com.bubblecloud.codegen.service.GenTemplateGroupService;
 import org.springframework.stereotype.Service;
 
 /**
- * 模板分组关联表服务实现类
+ * 模板分组关联表
  *
  * @author qinlei
  * @date 2025/05/31

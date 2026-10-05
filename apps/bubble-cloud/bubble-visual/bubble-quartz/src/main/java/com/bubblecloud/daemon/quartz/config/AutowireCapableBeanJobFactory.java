@@ -11,7 +11,6 @@ import org.springframework.util.Assert;
  *
  * @author qinlei
  * @author 郑健楠
- * @date 2025/05/31
  */
 class AutowireCapableBeanJobFactory extends SpringBeanJobFactory {
 
@@ -22,12 +21,6 @@ class AutowireCapableBeanJobFactory extends SpringBeanJobFactory {
 		this.beanFactory = beanFactory;
 	}
 
-	/**
-	 * 创建并初始化Job实例
-	 * @param bundle 触发器触发包，包含Job相关信息
-	 * @return 初始化后的Job实例
-	 * @throws Exception 创建或初始化过程中可能抛出的异常
-	 */
 	@Override
 	protected Object createJobInstance(TriggerFiredBundle bundle) throws Exception {
 		Object jobInstance = super.createJobInstance(bundle);

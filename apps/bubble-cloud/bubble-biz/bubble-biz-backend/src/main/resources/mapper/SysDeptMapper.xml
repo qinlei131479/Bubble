@@ -1,4 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.bubblecloud.biz.backend.mapper.SysDeptMapper">
+    <select id="listDeptsByUserId" resultType="com.bubblecloud.backend.api.entity.SysDept">
+        SELECT sys_dept.dept_id,
+        sys_dept.name,
+        sys_dept.sort_order
+        FROM sys_dept,
+        sys_user_dept
+        WHERE sys_dept.dept_id = sys_user_dept.dept_id
+        AND sys_dept.del_flag = '0'
+        and sys_user_dept.user_id = #{userId}
+    </select>
 </mapper>

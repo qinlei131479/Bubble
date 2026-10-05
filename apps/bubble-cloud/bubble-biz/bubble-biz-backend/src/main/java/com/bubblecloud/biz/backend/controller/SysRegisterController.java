@@ -2,45 +2,65 @@ package com.bubblecloud.biz.backend.controller;
 
 import com.bubblecloud.backend.api.dto.RegisterUserDTO;
 import com.bubblecloud.biz.backend.service.SysUserService;
+import com.bubblecloud.common.core.constant.enums.YesNoEnum;
 import com.bubblecloud.common.core.util.R;
+import com.bubblecloud.common.data.resolver.ParamResolver;
 import com.bubblecloud.common.log.annotation.SysLog;
 import com.bubblecloud.common.security.annotation.Inner;
-
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
- * 用户注册控制器：提供用户注册功能
- *
  * @author lengleng
- * @date 2025/05/30
+ * @date 2022/3/30
+ * <p>
+ * 客户端注册功能 register.user = false
  */
+@Inner(value = false)
 @RestController
 @RequestMapping("/register")
 @RequiredArgsConstructor
-@Tag(description = "register", name = "注册用户管理模块")
-@ConditionalOnProperty(name = "register.user", matchIfMissing = true)
 public class SysRegisterController {
 
 	private final SysUserService userService;
 
 	/**
 	 * 注册用户
-	 * @param registerUserDTO 注册用户信息DTO
-	 * @return 注册结果封装对象
+	 * @param userDto 用户信息
+	 * @return success/false
 	 */
-	@Inner(value = false)
 	@SysLog("注册用户")
 	@PostMapping("/user")
-	@Operation(summary = "注册用户", description = "注册用户")
-	public R<Boolean> registerUser(@RequestBody RegisterUserDTO registerUserDTO) {
-		return userService.registerUser(registerUserDTO);
+	@ConditionalOnProperty(name = "register.user", matchIfMissing = true)
+	public R<Boolean> registerUser(@RequestBody RegisterUserDTO userDto) {
+		if (!YesNoEnum.YES.getCode().equals(ParamResolver.getStr("SITE_REGISTER_ENABLE", YesNoEnum.NO.getCode()))) {
+			return R.failed("系统已关闭注册功能");
+		}
+		return userService.registerUser(userDto);
+	}
+
+	/**
+	 * 重置用户密码
+	 * @param userDto 用户信息
+	 * @return success/false
+	 */
+	@SysLog("重置用户密码")
+	@PostMapping("/password")
+	public R<Boolean> resetUserPassword(@RequestBody RegisterUserDTO userDto) {
+		return userService.resetUserPassword(userDto);
+	}
+
+	/**
+	 * 找回密码
+	 * @param userDto 用户信息
+	 * @param code 验证码
+	 * @return success/false
+	 */
+	@SysLog("找回用户密码")
+	@PostMapping("/forget/{code}")
+	public R<Boolean> forgetUserPassword(@RequestBody RegisterUserDTO userDto, @PathVariable String code) {
+		return userService.forgetUserPassword(userDto, code);
 	}
 
 }

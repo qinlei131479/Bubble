@@ -27,11 +27,37 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.text.NamingCase;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
+import com.bubblecloud.backend.api.entity.SysMenu;
+import com.bubblecloud.backend.api.feign.RemoteMenuService;
+import com.bubblecloud.codegen.config.CodeGenDefaultProperties;
+import com.bubblecloud.codegen.entity.GenTable;
+import com.bubblecloud.codegen.entity.GenTableColumnEntity;
+import com.bubblecloud.codegen.entity.GenTemplateEntity;
+import com.bubblecloud.codegen.service.*;
+import com.bubblecloud.codegen.util.DataModelConstants;
+import com.bubblecloud.codegen.util.VelocityKit;
+import com.bubblecloud.codegen.util.vo.GroupVO;
+import com.bubblecloud.common.core.constant.enums.MenuTypeEnum;
+import com.bubblecloud.common.core.constant.enums.YesNoEnum;
+import com.bubblecloud.common.core.exception.CheckedException;
+import com.bubblecloud.common.core.util.R;
+import com.bubblecloud.common.core.util.RetOps;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.SpringBootVersion;
+import org.springframework.stereotype.Service;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 /**
  * 代码生成器服务实现类
@@ -39,11 +65,12 @@ import lombok.SneakyThrows;
  * @author qinlei
  * @date 2025/05/31
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GeneratorServiceImpl implements GeneratorService {
 
-	private final CodeGenDefaultProperties configurationProperties;
+	private final CodeGenDefaultProperties defaultProperties;
 
 	private final GenTableColumnService columnService;
 
@@ -52,6 +79,10 @@ public class GeneratorServiceImpl implements GeneratorService {
 	private final GenTableService tableService;
 
 	private final GenGroupService genGroupService;
+
+	private final GenTemplateService genTemplateService;
+
+	private final RemoteMenuService menuService;
 
 	/**
 	 * 生成代码zip写出
@@ -65,20 +96,23 @@ public class GeneratorServiceImpl implements GeneratorService {
 		// 数据模型
 		Map<String, Object> dataModel = getDataModel(tableId);
 
-		Long style = (Long) dataModel.get("style");
+		Long style = (Long) dataModel.get(GenTable.Fields.style);
 
 		GroupVO groupVo = genGroupService.getGroupVoById(style);
 		List<GenTemplateEntity> templateList = groupVo.getTemplateList();
 
-		String frontendPath = configurationProperties.getFrontendPath();
-		String backendPath = configurationProperties.getBackendPath();
+		String frontendPath = defaultProperties.getFrontendPath();
+		String backendPath = defaultProperties.getBackendPath();
+
+		// 同步数据
+		this.syncRouteAndMenu(tableId);
 
 		for (GenTemplateEntity template : templateList) {
 			String templateCode = template.getTemplateCode();
 			String generatorPath = template.getGeneratorPath();
 
-			dataModel.put("frontendPath", frontendPath);
-			dataModel.put("backendPath", backendPath);
+			dataModel.put(GenTable.Fields.frontendPath, frontendPath);
+			dataModel.put(GenTable.Fields.backendPath, backendPath);
 			String content = VelocityKit.renderStr(templateCode, dataModel);
 			String path = VelocityKit.renderStr(generatorPath, dataModel);
 
@@ -103,34 +137,42 @@ public class GeneratorServiceImpl implements GeneratorService {
 		// 数据模型
 		Map<String, Object> dataModel = getDataModel(tableId);
 
-		Long style = (Long) dataModel.get("style");
+		Long style = (Long) dataModel.get(GenTable.Fields.style);
 
 		// 获取模板列表，Lambda 表达式简化代码
 		List<GenTemplateEntity> templateList = genGroupService.getGroupVoById(style).getTemplateList();
 
-		String frontendPath = configurationProperties.getFrontendPath();
-		String backendPath = configurationProperties.getBackendPath();
+		String frontendPath = defaultProperties.getFrontendPath();
+		String backendPath = defaultProperties.getBackendPath();
 
-		return templateList.stream().map(template -> {
+		// 如果是同步菜单的模式则不生成SQL
+		List<Map<String, String>> result = new ArrayList<>();
+		Long syncMenuId = MapUtil.getLong(dataModel, GenTable.Fields.syncMenuId);
+		for (GenTemplateEntity template : templateList) {
+			// 跳过菜单文件生成
+			if (Objects.nonNull(syncMenuId) && template.getGeneratorPath().contains("menu.sql")) {
+				continue;
+			}
+
 			String templateCode = template.getTemplateCode();
 			String generatorPath = template.getGeneratorPath();
 
 			// 预览模式下, 使用相对路径展示
-			dataModel.put("frontendPath", frontendPath);
-			dataModel.put("backendPath", backendPath);
+			dataModel.put(GenTable.Fields.frontendPath, frontendPath);
+			dataModel.put(GenTable.Fields.backendPath, backendPath);
 			String content = VelocityKit.renderStr(templateCode, dataModel);
 			String path = VelocityKit.renderStr(generatorPath, dataModel);
 
 			// 使用 map 简化代码
-			return new HashMap<String, String>(4) {
-				private static final long serialVersionUID = 1L;
-
+			result.add(new HashMap<>(4) {
 				{
 					put("code", content);
 					put("codePath", path);
 				}
-			};
-		}).collect(Collectors.toList());
+			});
+		}
+
+		return result;
 	}
 
 	/**
@@ -142,18 +184,136 @@ public class GeneratorServiceImpl implements GeneratorService {
 	public void generatorCode(Long tableId) {
 		// 数据模型
 		Map<String, Object> dataModel = getDataModel(tableId);
-		Long style = (Long) dataModel.get("style");
+		Long style = (Long) dataModel.get(GenTable.Fields.style);
 
 		// 获取模板列表，Lambda 表达式简化代码
 		List<GenTemplateEntity> templateList = genGroupService.getGroupVoById(style).getTemplateList();
+		Long syncMenuId = MapUtil.getLong(dataModel, GenTable.Fields.syncMenuId);
+		this.syncRouteAndMenu(tableId);
+		for (GenTemplateEntity template : templateList) {
+			// 跳过菜单文件生成
+			if (Objects.nonNull(syncMenuId) && template.getGeneratorPath().contains("menu.sql")) {
+				continue;
+			}
 
-		templateList.forEach(template -> {
 			String templateCode = template.getTemplateCode();
 			String generatorPath = template.getGeneratorPath();
 			String content = VelocityKit.renderStr(templateCode, dataModel);
 			String path = VelocityKit.renderStr(generatorPath, dataModel);
 			FileUtil.writeUtf8String(content, path);
-		});
+		}
+	}
+
+	/**
+	 * 同步路由和菜单
+	 * @param tableId 表ID
+	 */
+	@Override
+	public void syncRouteAndMenu(Long tableId) {
+		GenTable table = tableService.getById(tableId);
+		syncMenu(table);
+		syncRoute(table);
+	}
+
+	/**
+	 * 检测生成路径是否为已存在目录
+	 * @param path 待检测路径
+	 * @return true 表示路径存在且为目录
+	 */
+	@Override
+	public boolean checkPath(String path) {
+		if (StrUtil.isBlank(path)) {
+			throw new CheckedException("路径无效");
+		}
+
+		String normalizedPath = FileUtil.normalize(path);
+		if (StrUtil.isBlank(normalizedPath)) {
+			throw new CheckedException("路径无效");
+		}
+
+		return FileUtil.isDirectory(normalizedPath);
+	}
+
+	/**
+	 * 同步菜单，同步按钮
+	 * @param table 表配置
+	 */
+	private void syncMenu(GenTable table) {
+		if (Objects.isNull(table.getSyncMenuId())) {
+			return;
+		}
+
+		String menuName = String.format("%s管理", table.getTableComment());
+		SysMenu query = new SysMenu();
+		query.setName(menuName);
+		query.setMenuType(MenuTypeEnum.LEFT_MENU.getType());
+
+		List<SysMenu> existingMenus = RetOps.of(menuService.getMenuDetails(query))
+			.getData()
+			.orElse(Collections.emptyList());
+
+		if (!CollUtil.isEmpty(existingMenus)) {
+			return;
+		}
+
+		SysMenu sysMenu = createMenu(table, menuName);
+		R<SysMenu> sysMenuR = menuService.saveMenu(sysMenu);
+
+		if (sysMenuR.getData() != null) {
+			createButtons(table, sysMenuR.getData().getMenuId());
+		}
+	}
+
+	/**
+	 * 创建菜单
+	 * @param table 表配置
+	 * @param menuName 菜单名称
+	 * @return {@link SysMenu }
+	 */
+	private SysMenu createMenu(GenTable table, String menuName) {
+		SysMenu sysMenu = new SysMenu();
+		sysMenu.setParentId(table.getSyncMenuId());
+		sysMenu.setName(menuName);
+		sysMenu.setMenuType(MenuTypeEnum.LEFT_MENU.getType());
+		sysMenu.setVisible(YesNoEnum.YES.getCode());
+		sysMenu.setKeepAlive(YesNoEnum.NO.getCode());
+		sysMenu.setEmbedded(YesNoEnum.NO.getCode());
+		sysMenu.setSortOrder(0);
+		sysMenu.setPath(String.format("/%s/%s/index", normalizedModuleName(table), table.getFunctionName()));
+		return sysMenu;
+	}
+
+	/**
+	 * 创建按钮
+	 * @param table 表配置
+	 * @param parentId 父 ID
+	 */
+	private void createButtons(GenTable table, Long parentId) {
+		String[] buttonNames = { "查看", "新增", "编辑", "删除", "导入导出" };
+		String[] permissions = { "view", "add", "edit", "del", "export" };
+		String moduleName = normalizedModuleName(table);
+
+		for (int i = 0; i < buttonNames.length; i++) {
+			String permission = String.format("%s_%s_%s", moduleName, table.getFunctionName(), permissions[i]);
+			SysMenu button = new SysMenu();
+			button.setParentId(parentId);
+			button.setMenuType(MenuTypeEnum.BUTTON.getType());
+			button.setName(buttonNames[i]);
+			button.setVisible(YesNoEnum.YES.getCode());
+			button.setKeepAlive(YesNoEnum.NO.getCode());
+			button.setEmbedded(YesNoEnum.NO.getCode());
+			button.setSortOrder(0);
+			button.setPermission(StrUtil.toLowerCase(permission));
+			menuService.saveMenu(button);
+		}
+	}
+
+	/**
+	 * 同步路由
+	 * @param table 表配置
+	 */
+	private void syncRoute(GenTable table) {
+		// 开源版网关路由由配置文件维护，代码生成不再写入动态路由。
 	}
 
 	/**
@@ -181,63 +341,58 @@ public class GeneratorServiceImpl implements GeneratorService {
 		String packageEntity = StrUtil.blankToDefault(table.getPackageEntityName(), table.getPackageName());
 
 		// 填充数据模型
-		dataModel.put("opensource", true);
-		dataModel.put("isSpringBoot3", isSpringBoot3());
-		dataModel.put("dbType", table.getDbType());
-		dataModel.put("package", table.getPackageName());
-		dataModel.put("packageCore", packageCore);
-		dataModel.put("packageEntity", packageEntity);
-		dataModel.put("packagePath", table.getPackageName().replace(".", "/"));
-		dataModel.put("version", table.getVersion());
-		dataModel.put("moduleName", table.getModuleName());
-		dataModel.put("ModuleName", StrUtil.upperFirst(table.getModuleName()));
-		dataModel.put("functionName", table.getFunctionName());
-		dataModel.put("FunctionName", StrUtil.upperFirst(table.getFunctionName()));
-		dataModel.put("formLayout", table.getFormLayout());
-		dataModel.put("style", table.getStyle());
-		dataModel.put("author", table.getAuthor());
-		dataModel.put("datetime", DateUtil.now());
-		dataModel.put("date", DateUtil.today());
+		dataModel.put(DataModelConstants.IS_SPRING_BOOT_3, isSpringBoot3());
+		dataModel.put(DataModelConstants.SYNC_MENU_ID, Objects.nonNull(table.getSyncMenuId()));
+		dataModel.put(DataModelConstants.DB_TYPE, table.getDbType());
+		dataModel.put(DataModelConstants.PACKAGE, table.getPackageName());
+		dataModel.put(DataModelConstants.PACKAGE_PATH, table.getPackageName().replace(".", "/"));
+		dataModel.put(DataModelConstants.VERSION, table.getVersion());
+		String moduleName = normalizedModuleName(table);
+		dataModel.put(DataModelConstants.MODULE_NAME, moduleName);
+		dataModel.put(DataModelConstants.MODULE_NAME_UPPER_FIRST, StrUtil.upperFirst(moduleName));
+		dataModel.put(DataModelConstants.FUNCTION_NAME, table.getFunctionName());
+		dataModel.put(DataModelConstants.FUNCTION_NAME_UPPER_FIRST, StrUtil.upperFirst(table.getFunctionName()));
+		dataModel.put(DataModelConstants.FORM_LAYOUT, table.getFormLayout());
+		dataModel.put(DataModelConstants.STYLE, table.getStyle());
+		dataModel.put(DataModelConstants.AUTHOR, table.getAuthor());
+		dataModel.put(DataModelConstants.DATETIME, DateUtil.now());
+		dataModel.put(DataModelConstants.DATE, DateUtil.today());
 		setFieldTypeList(dataModel, table);
 
 		// 获取导入的包列表
 		Set<String> importList = fieldTypeService.getPackageByTableId(table.getDsName(), table.getTableName());
-		dataModel.put("importList", importList);
-		dataModel.put("tableName", table.getTableName());
-		dataModel.put("tableComment", table.getTableComment());
-		dataModel.put("className", StrUtil.lowerFirst(table.getClassName()));
-		dataModel.put("ClassName", table.getClassName());
-		dataModel.put("fieldList", table.getFieldList());
+		dataModel.put(DataModelConstants.IMPORT_LIST, importList);
+		dataModel.put(DataModelConstants.TABLE_NAME, table.getTableName());
+		dataModel.put(DataModelConstants.TABLE_COMMENT, table.getTableComment());
+		dataModel.put(DataModelConstants.CLASS_NAME, StrUtil.lowerFirst(table.getClassName()));
+		dataModel.put(DataModelConstants.CLASS_NAME_UPPER_FIRST, table.getClassName());
+		dataModel.put(DataModelConstants.FIELD_LIST, table.getFieldList());
 
-		dataModel.put("backendPath", table.getBackendPath());
-		dataModel.put("frontendPath", table.getFrontendPath());
+		dataModel.put(DataModelConstants.BACKEND_PATH, table.getBackendPath());
+		dataModel.put(DataModelConstants.FRONTEND_PATH, table.getFrontendPath());
+		setEntityModel(dataModel, table);
 
 		// 设置子表
 		String childTableName = table.getChildTableName();
 		if (StrUtil.isNotBlank(childTableName)) {
 			List<GenTableColumnEntity> childFieldList = columnService.lambdaQuery()
-					.eq(GenTableColumnEntity::getDsName, table.getDsName())
-					.eq(GenTableColumnEntity::getTableName, table.getChildTableName())
-					.list();
-			dataModel.put("childFieldList", childFieldList);
-			dataModel.put("childTableName", childTableName);
-			dataModel.put("mainField", NamingCase.toCamelCase(table.getMainField()));
-			dataModel.put("childField", NamingCase.toCamelCase(table.getChildField()));
-			dataModel.put("ChildClassName", NamingCase.toPascalCase(childTableName));
-			dataModel.put("childClassName", StrUtil.lowerFirst(NamingCase.toPascalCase(childTableName)));
-			// 设置是否是多租户模式 (判断字段列表中是否包含 tenant_id 字段)
-			childFieldList.stream()
-					.filter(genTableColumnEntity -> genTableColumnEntity.getFieldName().equals("tenant_id"))
-					.findFirst()
-					.ifPresent(columnEntity -> dataModel.put("isChildTenant", true));
+				.eq(GenTableColumnEntity::getDsName, table.getDsName())
+				.eq(GenTableColumnEntity::getTableName, table.getChildTableName())
+				.list();
+			dataModel.put(DataModelConstants.CHILD_FIELD_LIST, childFieldList);
+			dataModel.put(DataModelConstants.CHILD_TABLE_NAME, childTableName);
+			dataModel.put(DataModelConstants.MAIN_FIELD, NamingCase.toCamelCase(table.getMainField()));
+			dataModel.put(DataModelConstants.CHILD_FIELD, NamingCase.toCamelCase(table.getChildField()));
+			dataModel.put(DataModelConstants.CHILD_CLASS_NAME_UPPER_FIRST, NamingCase.toPascalCase(childTableName));
+			dataModel.put(DataModelConstants.CHILD_CLASS_NAME,
+					StrUtil.lowerFirst(NamingCase.toPascalCase(childTableName)));
 		}
 
-		// 设置是否是多租户模式 (判断字段列表中是否包含 tenant_id 字段)
-		table.getFieldList()
-				.stream()
-				.filter(genTableColumnEntity -> genTableColumnEntity.getFieldName().equals("tenant_id"))
-				.findFirst()
-				.ifPresent(columnEntity -> dataModel.put("isTenant", true));
+		// 设置树表
+		if (StrUtil.isNotBlank(table.getParentField())) {
+			dataModel.put(DataModelConstants.TREE_PARENT_FIELD, NamingCase.toCamelCase(table.getParentField()));
+			dataModel.put(DataModelConstants.TREE_NAME_FIELD, NamingCase.toCamelCase(table.getNameField()));
+		}
 
 		return dataModel;
 	}
@@ -248,7 +403,103 @@ public class GeneratorServiceImpl implements GeneratorService {
 	 * @return true/fasle
 	 */
 	private boolean isSpringBoot3() {
-		return StrUtil.startWith(SpringBootVersion.getVersion(), "3");
+		return StrUtil.startWithAny(SpringBootVersion.getVersion(), "3", "4");
+	}
+
+	/**
+	 * 获取去掉中划线的模块名称
+	 * @param table 表配置
+	 * @return 去掉中划线后的模块名称
+	 */
+	private String normalizedModuleName(GenTable table) {
+		return StrUtil.removeAll(table.getModuleName(), StrUtil.DASHED);
+	}
+
+	/**
+	 * 设置实体生成路径和实体包名。
+	 * <p>
+	 * 默认与业务模块同包，实体落到 {@code backendPath} 自身（即 biz 模块）。当 {@code backendPath} 末尾形如
+	 * {@code xxx-biz} 且同级目录存在 {@code xxx-api} 模块时，只将实体写入路径切换到 {@code xxx-api}，Java
+	 * 包名仍保持业务模块包名， 例如 {@code com.pig4cloud.pig.aigc.entity}。
+	 * @param dataModel 数据模型，写入 entityPath、entityPackage、entityPackagePath、
+	 * entityClassName、apiPath、hasApiModule
+	 * @param table 表配置
+	 */
+	private void setEntityModel(Map<String, Object> dataModel, GenTable table) {
+		String modulePackage = StrUtil.format("{}.{}", table.getPackageName(), normalizedModuleName(table));
+		String entityPackage = StrUtil.format("{}.entity", modulePackage);
+		String entityPath = normalizePathSeparator(table.getBackendPath());
+		String apiPath = StrUtil.EMPTY;
+		boolean hasApiModule = false;
+
+		Optional<String> resolvedApiPath = resolveApiPath(table.getBackendPath());
+		if (resolvedApiPath.isPresent()) {
+			apiPath = resolvedApiPath.get();
+			entityPath = apiPath;
+			hasApiModule = true;
+		}
+
+		dataModel.put(DataModelConstants.HAS_API_MODULE, hasApiModule);
+		dataModel.put(DataModelConstants.API_PATH, apiPath);
+		dataModel.put(DataModelConstants.ENTITY_PATH, entityPath);
+		dataModel.put(DataModelConstants.ENTITY_PACKAGE, entityPackage);
+		dataModel.put(DataModelConstants.ENTITY_PACKAGE_PATH, entityPackage.replace(StrUtil.DOT, StrUtil.SLASH));
+		dataModel.put(DataModelConstants.ENTITY_CLASS_NAME,
+				StrUtil.format("{}.{}Entity", entityPackage, table.getClassName()));
+	}
+
+	/**
+	 * 通过 biz 模块路径推断同级 api 模块路径。
+	 * <p>
+	 * 仅当末尾目录形如 {@code xxx-biz} 且同级 {@code xxx-api} 目录真实存在时 才返回 api 模块路径，否则返回空
+	 * {@link Optional}，调用方继续沿用 biz 同包实体生成策略。返回值已统一为 {@code /} 分隔符，避免 Windows 下与
+	 * 模板拼接产生混合分隔符。
+	 * @param backendPath 后端生成路径（biz 模块的绝对或相对路径）
+	 * @return 同级 api 模块路径；推断失败时返回 {@link Optional#empty()}
+	 */
+	private Optional<String> resolveApiPath(String backendPath) {
+		if (StrUtil.isBlank(backendPath)) {
+			return Optional.empty();
+		}
+
+		Path bizPath = Path.of(normalizePathSeparator(backendPath)).normalize();
+		Path bizFileName = bizPath.getFileName();
+		if (Objects.isNull(bizFileName)) {
+			return Optional.empty();
+		}
+
+		String bizDirectory = bizFileName.toString();
+		if (!StrUtil.endWith(bizDirectory, "-biz")) {
+			return Optional.empty();
+		}
+
+		Path parent = bizPath.getParent();
+		if (Objects.isNull(parent)) {
+			return Optional.empty();
+		}
+
+		Path apiPath = parent.resolve(StrUtil.removeSuffix(bizDirectory, "-biz") + "-api").normalize();
+		if (!Files.isDirectory(apiPath)) {
+			return Optional.empty();
+		}
+
+		return Optional.of(normalizePathSeparator(apiPath.toString()));
+	}
+
+	/**
+	 * 归一化路径分隔符。
+	 * <p>
+	 * 借助 {@link FileUtil#normalize(String)} 将反斜杠统一替换为 {@code /} 并清理 冗余 {@code ..}
+	 * 与重复分隔符，确保后续 {@code Path.of} 解析以及模板字符串 拼接（如
+	 * {@code ${entityPath}/src/main/java/...}）在 Windows 与类 Unix 平台 上得到一致的路径形态。
+	 * @param path 原始路径
+	 * @return 归一化后的路径；空入参返回空字符串
+	 */
+	private String normalizePathSeparator(String path) {
+		if (StrUtil.isBlank(path)) {
+			return StrUtil.EMPTY;
+		}
+		return FileUtil.normalize(path);
 	}
 
 	/**

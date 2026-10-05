@@ -6,24 +6,20 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 用户信息实体类，继承自UserVO并实现Serializable接口 , spring security
+ * Spring Security 用户信息实体类，继承自UserVO并实现Serializable接口
  *
  * @author lengleng
- * @date 2025/06/28
+ * @date 2025/06/30
  */
 @Data
-@Schema(description = "spring security 用户信息")
+@Schema(description = "用户信息")
 @EqualsAndHashCode(callSuper = true)
 public class UserInfo extends UserVO implements Serializable {
-
-	@Serial
-	private static final long serialVersionUID = 1L;
 
 	/**
 	 * 密码

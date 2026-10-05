@@ -1,14 +1,19 @@
 package com.bubblecloud.codegen.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.ClassUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
 import com.baomidou.dynamic.datasource.creator.DataSourceCreator;
 import com.baomidou.dynamic.datasource.creator.DataSourceProperty;
+import com.baomidou.dynamic.datasource.creator.druid.DruidConfig;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.bubblecloud.codegen.service.GenDatasourceConfService;
 import com.bubblecloud.codegen.entity.GenDatasourceConf;
 import com.bubblecloud.codegen.mapper.GenDatasourceConfMapper;
+import com.bubblecloud.codegen.service.GenDatasourceConfService;
+import com.bubblecloud.codegen.util.JdbcUrlSecurityValidator;
 import com.bubblecloud.common.core.util.SpringContextHolder;
 import com.bubblecloud.common.datasource.util.DsConfTypeEnum;
 import com.bubblecloud.common.datasource.util.DsJdbcUrlEnum;
@@ -21,13 +26,11 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
- * 数据源配置服务实现类
- *
- * <p>
- * 提供数据源的增删改查及校验功能，支持数据源密码加密存储
- * </p>
+ * 数据源表
  *
  * @author qinlei
  * @date 2025/05/31
@@ -40,12 +43,12 @@ public class GenDatasourceConfServiceImpl extends ServiceImpl<GenDatasourceConfM
 
 	private final StringEncryptor stringEncryptor;
 
-	private final DataSourceCreator hikariDataSourceCreator;
+	private final DataSourceCreator druidDataSourceCreator;
 
 	/**
-	 * 保存数据源配置并进行加密处理
-	 * @param conf 数据源配置信息
-	 * @return 保存成功返回true，失败返回false
+	 * 保存数据源并且加密
+	 * @param conf
+	 * @return
 	 */
 	@Override
 	public Boolean saveDsByEnc(GenDatasourceConf conf) {
@@ -64,12 +67,18 @@ public class GenDatasourceConfServiceImpl extends ServiceImpl<GenDatasourceConfM
 	}
 
 	/**
-	 * 更新加密数据源
-	 * @param conf 数据源配置信息
-	 * @return 更新成功返回true，失败返回false
+	 * 更新数据源
+	 * @param conf 数据源信息
+	 * @return
 	 */
 	@Override
 	public Boolean updateDsByEnc(GenDatasourceConf conf) {
+		// 密码为空时，从数据库查询原始密码并解密，用于连接校验
+		if (StrUtil.isBlank(conf.getPassword())) {
+			GenDatasourceConf dbConf = this.baseMapper.selectById(conf.getId());
+			conf.setPassword(stringEncryptor.decrypt(dbConf.getPassword()));
+		}
+
 		if (!checkDataSource(conf)) {
 			return Boolean.FALSE;
 		}
@@ -81,17 +90,15 @@ public class GenDatasourceConfServiceImpl extends ServiceImpl<GenDatasourceConfM
 		addDynamicDataSource(conf);
 
 		// 更新数据库配置
-		if (StrUtil.isNotBlank(conf.getPassword())) {
-			conf.setPassword(stringEncryptor.encrypt(conf.getPassword()));
-		}
+		conf.setPassword(stringEncryptor.encrypt(conf.getPassword()));
 		this.baseMapper.updateById(conf);
 		return Boolean.TRUE;
 	}
 
 	/**
-	 * 通过数据源ID删除数据源
-	 * @param dsIds 数据源ID数组
-	 * @return 删除是否成功
+	 * 通过数据源名称删除
+	 * @param dsIds 数据源ID
+	 * @return
 	 */
 	@Override
 	public Boolean removeByDsId(Long[] dsIds) {
@@ -104,26 +111,54 @@ public class GenDatasourceConfServiceImpl extends ServiceImpl<GenDatasourceConfM
 
 	/**
 	 * 添加动态数据源
-	 * @param conf 数据源配置信息
+	 * @param conf 数据源信息
 	 */
 	@Override
 	public void addDynamicDataSource(GenDatasourceConf conf) {
+		JdbcUrlSecurityValidator.validate(conf.getUrl());
 		DataSourceProperty dataSourceProperty = new DataSourceProperty();
 		dataSourceProperty.setPoolName(conf.getName());
 		dataSourceProperty.setUrl(conf.getUrl());
 		dataSourceProperty.setUsername(conf.getUsername());
 		dataSourceProperty.setPassword(conf.getPassword());
-		DataSource dataSource = hikariDataSourceCreator.createDataSource(dataSourceProperty);
+
+		// 增加 ValidationQuery 参数
+		DruidConfig druidConfig = new DruidConfig();
+		DsJdbcUrlEnum urlEnum = DsJdbcUrlEnum.get(conf.getDsType());
+		druidConfig.setValidationQuery(urlEnum.getValidationQuery());
+		dataSourceProperty.setDruid(druidConfig);
+		DataSource dataSource = druidDataSourceCreator.createDataSource(dataSourceProperty);
 
 		DynamicRoutingDataSource dynamicRoutingDataSource = SpringContextHolder.getBean(DynamicRoutingDataSource.class);
 		dynamicRoutingDataSource.addDataSource(dataSourceProperty.getPoolName(), dataSource);
 	}
 
 	/**
+	 * 按名称把配置表中的数据源挂到动态路由上。
+	 * @param dsName 数据源名称
+	 */
+	@Override
+	public void ensureDynamicDataSource(String dsName) {
+		DynamicRoutingDataSource routingDataSource = SpringContextHolder.getBean(DynamicRoutingDataSource.class);
+		if (routingDataSource.getDataSources().containsKey(dsName)) {
+			return;
+		}
+
+		GenDatasourceConf conf = this.getOne(
+				Wrappers.<GenDatasourceConf>lambdaQuery().eq(GenDatasourceConf::getName, dsName), false);
+		if (conf == null) {
+			throw new IllegalArgumentException("DataSource not found: " + dsName);
+		}
+
+		conf.setPassword(stringEncryptor.decrypt(conf.getPassword()));
+		this.checkDataSource(conf);
+		this.addDynamicDataSource(conf);
+	}
+
+	/**
 	 * 校验数据源配置是否有效
-	 * @param conf 数据源配置信息
-	 * @return 数据源配置是否有效，true表示有效
-	 * @throws RuntimeException 数据库连接失败时抛出异常
+	 * @param conf 数据源信息
+	 * @return 有效/无效
 	 */
 	@Override
 	public Boolean checkDataSource(GenDatasourceConf conf) {
@@ -143,6 +178,7 @@ public class GenDatasourceConfServiceImpl extends ServiceImpl<GenDatasourceConfM
 		}
 
 		conf.setUrl(url);
+		JdbcUrlSecurityValidator.validate(url);
 
 		try (Connection connection = DriverManager.getConnection(url, conf.getUsername(), conf.getPassword())) {
 		}
@@ -151,6 +187,29 @@ public class GenDatasourceConfServiceImpl extends ServiceImpl<GenDatasourceConfM
 			throw new RuntimeException("数据库配置错误，链接失败");
 		}
 		return Boolean.TRUE;
+	}
+
+	/**
+	 * 查询数据库解析插件加载状态
+	 * @return 数据源类型与解析插件状态
+	 */
+	@Override
+	public Map<String, Boolean> listParserPlugins() {
+		Map<String, Boolean> result = new LinkedHashMap<>();
+		for (DsJdbcUrlEnum dsEnum : DsJdbcUrlEnum.values()) {
+			result.put(dsEnum.getDbName(), isClassPresent(dsEnum.getAnylineAdapter()));
+		}
+		return result;
+	}
+
+	private boolean isClassPresent(String className) {
+		try {
+			ClassUtil.loadClass(className, false);
+			return true;
+		}
+		catch (Exception e) {
+			return false;
+		}
 	}
 
 }

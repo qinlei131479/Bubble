@@ -6,7 +6,7 @@ import com.bubblecloud.codegen.entity.GenFieldType;
 import java.util.Set;
 
 /**
- * 列属性服务接口
+ * 列属性
  *
  * @author qinlei
  * @date 2025/05/31

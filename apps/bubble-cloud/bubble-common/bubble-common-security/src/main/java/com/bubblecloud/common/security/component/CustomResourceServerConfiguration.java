@@ -1,5 +1,6 @@
 package com.bubblecloud.common.security.component;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -8,15 +9,13 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
- * 资源服务器认证授权配置
- *
  * @author lengleng
  * @date 2025/05/31
  */
@@ -26,7 +25,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class CustomResourceServerConfiguration {
 
 	/**
-	 * 资源认证异常处理入口点
+	 * 资源认证异常入口
 	 */
 	protected final ResourceAuthExceptionEntryPoint resourceAuthExceptionEntryPoint;
 
@@ -54,22 +53,12 @@ public class CustomResourceServerConfiguration {
 	 * 资源服务器安全配置
 	 * @param http http
 	 * @return {@link SecurityFilterChain }
-	 * @throws Exception 异常
 	 */
 	@Bean
 	SecurityFilterChain resourceServer(HttpSecurity http) throws Exception {
-		/**
-		 * AntPathRequestMatcher[] permitMatchers = permitAllUrl.getUrls() .stream()
-		 * .map(AntPathRequestMatcher::new) .toList() .toArray(new AntPathRequestMatcher[]
-		 * {});
-		 **/
-		PathPatternRequestMatcher[] permitMatchers = permitAllUrl.getUrls()
-			.stream()
-			.map(url -> PathPatternRequestMatcher.withDefaults().matcher(url))
-			.toList()
-			.toArray(new PathPatternRequestMatcher[] {});
+		RequestMatcher permitAllMatcher = permitAllUrl::isPermitAll;
 
-		http.authorizeHttpRequests(authorizeRequests -> authorizeRequests.requestMatchers(permitMatchers)
+		http.authorizeHttpRequests(authorizeRequests -> authorizeRequests.requestMatchers(permitAllMatcher)
 			.permitAll()
 			.anyRequest()
 			.authenticated())
@@ -80,7 +69,7 @@ public class CustomResourceServerConfiguration {
 			.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
 			.csrf(AbstractHttpConfigurer::disable);
 
-		// 配置 CORS 跨域资源共享
+		// 配置 CORS 跨域支持
 		if (Boolean.TRUE.equals(bootCorsProperties.getEnabled())) {
 			http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
 		}
@@ -105,7 +94,7 @@ public class CustomResourceServerConfiguration {
 		// 从配置文件读取是否允许携带凭证
 		corsConfiguration.setAllowCredentials(bootCorsProperties.getAllowCredentials());
 
-		// 注册CORS配置到指定路径
+		// 注册 CORS 配置到指定路径
 		source.registerCorsConfiguration(bootCorsProperties.getPathPattern(), corsConfiguration);
 
 		return source;

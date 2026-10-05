@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.extension.activerecord.Model;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.experimental.FieldNameConstants;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,6 +21,7 @@ import java.util.List;
  */
 @Data
 @TableName("gen_table")
+@FieldNameConstants
 @EqualsAndHashCode(callSuper = true)
 @Schema(description = "列属性")
 public class GenTable extends Model<GenTable> {
@@ -136,6 +138,18 @@ public class GenTable extends Model<GenTable> {
 	private Integer formLayout;
 
 	/**
+	 * 所属菜单ID
+	 */
+	@Schema(description = "所属菜单ID")
+	private Long syncMenuId;
+
+	/**
+	 * 是否同步路由
+	 */
+	@Schema
+	private String syncRoute;
+
+	/**
 	 * 基类ID
 	 */
 	@Schema(description = "基类ID")
@@ -166,6 +180,12 @@ public class GenTable extends Model<GenTable> {
 	 * 子表关联键
 	 */
 	private String childField;
+
+	/** 父字段 */
+	private String parentField;
+
+	/** 名称字段 */
+	private String nameField;
 
 	/**
 	 * 字段列表

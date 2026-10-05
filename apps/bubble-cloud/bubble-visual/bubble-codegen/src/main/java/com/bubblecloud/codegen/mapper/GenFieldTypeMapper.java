@@ -1,20 +1,20 @@
 package com.bubblecloud.codegen.mapper;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.bubblecloud.codegen.entity.GenFieldType;
+import com.github.yulichang.base.MPJBaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.Set;
 
 /**
- * 字段类型映射器接口：用于操作字段类型相关数据库操作
+ * 列属性
  *
  * @author qinlei
  * @date 2025/05/31
  */
 @Mapper
-public interface GenFieldTypeMapper extends BaseMapper<GenFieldType> {
+public interface GenFieldTypeMapper extends MPJBaseMapper<GenFieldType> {
 
 	/**
 	 * 根据tableId，获取包列表

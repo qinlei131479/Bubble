@@ -1,16 +1,16 @@
 package com.bubblecloud.codegen.util;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 /**
- * @author qinlei
+ * @author lengleng
  * @date 2023/3/12
  * <p>
  * 通用字段的填充策略和显示策略
  */
 @Getter
-@AllArgsConstructor
+@RequiredArgsConstructor
 public enum CommonColumnFiledEnum {
 
 	/**
@@ -33,30 +33,26 @@ public enum CommonColumnFiledEnum {
 	/**
 	 * del_flag 字段
 	 */
-	del_flag("0", "0", AutoFillEnum.DEFAULT.name(), 104),
-	/**
-	 * tenant_id 字段
-	 */
-	tenant_id("0", "0", AutoFillEnum.DEFAULT.name(), 105);
+	del_flag("0", "0", AutoFillEnum.DEFAULT.name(), 104);
 
 	/**
 	 * 表单是否默认显示 1/0
 	 */
-	private String formItem;
+	private final String formItem;
 
 	/**
 	 * 表格是否默认显示 1/0
 	 */
-	private String gridItem;
+	private final String gridItem;
 
 	/**
 	 * 自动填充策略
 	 */
-	private String autoFill;
+	private final String autoFill;
 
 	/**
 	 * 排序值
 	 */
-	private Integer sort;
+	private final Integer sort;
 
 }

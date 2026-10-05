@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.bubblecloud.daemon.quartz.entity.SysJobLog;
 
 /**
- * 定时任务执行日志服务接口
+ * 定时任务执行日志表
  *
  * @author qinlei
  * @date 2025/05/31

@@ -1,65 +1,86 @@
 package com.bubblecloud.biz.backend.controller;
 
+import com.bubblecloud.backend.api.dto.SiteConfigDTO;
+import com.bubblecloud.biz.backend.service.SysSiteConfigService;
+import com.bubblecloud.biz.backend.service.SysSystemInfoService;
 import com.bubblecloud.common.core.util.R;
-import com.bubblecloud.common.core.util.RedisUtils;
-import io.swagger.v3.oas.annotations.Operation;
+import com.bubblecloud.common.security.annotation.HasPermission;
+import com.bubblecloud.common.security.annotation.Inner;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.Strings;
-import org.springframework.data.redis.connection.RedisServerCommands;
-import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.http.HttpHeaders;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
+import java.util.Map;
 
-/**
- * 系统监控控制器：提供系统监控相关接口
- *
- * @author lengleng
- * @date 2025/05/30
- */
 @RestController
 @RequestMapping("/system")
 @RequiredArgsConstructor
-@Tag(description = "system", name = "系统监控管理模块")
+@Tag(description = "system", name = "系统监控")
 @SecurityRequirement(name = HttpHeaders.AUTHORIZATION)
 public class SysSystemInfoController {
 
+	private final SysSystemInfoService sysSystemInfoService;
+
+	private final SysSiteConfigService sysSiteConfigService;
+
 	/**
-	 * 获取Redis缓存监控信息
-	 * @return 包含Redis信息、数据库大小和命令统计的响应结果
+	 * 缓存监控
+	 * @return R<Object>
 	 */
+	@HasPermission("sys_cache_view")
 	@GetMapping("/cache")
-	@Operation(summary = "获取Redis缓存监控信息", description = "获取Redis缓存监控信息")
-	public R cache() {
-		Properties info = RedisUtils.execute(RedisServerCommands::info);
-		Properties commandStats = RedisUtils.execute(connection -> connection.serverCommands().info("commandstats"));
-		Object dbSize = RedisUtils.execute((RedisCallback<Object>) RedisServerCommands::dbSize);
+	public R<Map<String, Object>> cache() {
+		return sysSystemInfoService.getCacheInfo();
+	}
 
-		if (commandStats == null) {
-			return R.failed("获取异常");
-		}
+	/**
+	 * Clarity 站点监控数据
+	 * @return R<?>
+	 */
+	@HasPermission("sys_clarity_view")
+	@GetMapping("/clarity")
+	public R<?> clarity(@RequestParam(defaultValue = "1") Integer numOfDays) {
+		return sysSystemInfoService.getClarityData(numOfDays);
+	}
 
-		Map<String, Object> result = new HashMap<>(3);
-		result.put("info", info);
-		result.put("dbSize", dbSize);
+	/**
+	 * 聚合配置（i18n + site 配置）- 公开接口
+	 */
+	@Inner(false)
+	@GetMapping("/config")
+	public R<Map<String, Object>> config() {
+		return R.ok(sysSiteConfigService.getAggregatedConfig());
+	}
 
-		List<Map<String, String>> pieList = new ArrayList<>();
-		commandStats.stringPropertyNames().forEach(key -> {
-			Map<String, String> data = new HashMap<>(2);
-			String property = commandStats.getProperty(key);
-			data.put("name", Strings.CS.removeStart(key, "cmdstat_"));
-			data.put("value", StringUtils.substringBetween(property, "calls=", ",usec"));
-			pieList.add(data);
-		});
+	/**
+	 * 获取网站配置（管理端用）
+	 */
+	@HasPermission("sys_site_config_view")
+	@GetMapping("/site-config")
+	public R<SiteConfigDTO> getSiteConfig() {
+		return R.ok(sysSiteConfigService.getSiteConfig());
+	}
 
-		result.put("commandStats", pieList);
-		return R.ok(result);
+	/**
+	 * 更新网站配置
+	 */
+	@HasPermission("sys_site_config_edit")
+	@PutMapping("/site-config")
+	public R<Void> updateSiteConfig(@RequestBody SiteConfigDTO dto) {
+		sysSiteConfigService.updateSiteConfig(dto);
+		return R.ok();
+	}
+
+	/**
+	 * 刷新网站配置缓存（清空 Redis）
+	 */
+	@HasPermission("sys_site_config_edit")
+	@DeleteMapping("/site-config/refresh")
+	public R<Void> refreshSiteConfig() {
+		sysSiteConfigService.refreshCache();
+		return R.ok();
 	}
 
 }

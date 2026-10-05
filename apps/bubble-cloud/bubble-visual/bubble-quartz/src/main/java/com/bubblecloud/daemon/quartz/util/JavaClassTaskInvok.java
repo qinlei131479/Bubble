@@ -11,7 +11,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 /**
- * 基于Java反射实现的定时任务调用类
+ * 定时任务java class反射实现
  *
  * @author qinlei
  * @date 2025/05/31
@@ -20,22 +20,22 @@ import java.lang.reflect.Method;
 @Slf4j
 public class JavaClassTaskInvok implements ITaskInvok {
 
-	/**
-	 * 调用定时任务方法
-	 * @param sysJob 定时任务信息
-	 * @throws TaskException 执行任务过程中出现异常时抛出
-	 */
+	private final JobSecurityValidator jobSecurityValidator;
+
+	public JavaClassTaskInvok(JobSecurityValidator jobSecurityValidator) {
+		this.jobSecurityValidator = jobSecurityValidator;
+	}
+
 	@Override
 	public void invokMethod(SysJob sysJob) throws TaskException {
-		// 安全验证：检查类名和方法名是否合法
-		if (!ClassNameValidator.isValidClassName(sysJob.getClassName())) {
-			log.error("定时任务类名验证失败，类名包含危险特征或在黑名单中：{}", sysJob.getClassName());
-			throw new TaskException("定时任务类名验证失败，拒绝执行危险类：" + sysJob.getClassName());
-		}
+		// Security validation before reflection
+		// 在执行反射之前进行安全验证
+		String securityError = jobSecurityValidator.validateJobConfig(sysJob.getClassName(), sysJob.getMethodName(),
+				sysJob.getMethodParamsValue());
 
-		if (!ClassNameValidator.isValidMethodName(sysJob.getMethodName())) {
-			log.error("定时任务方法名验证失败，方法名包含危险特征：{}", sysJob.getMethodName());
-			throw new TaskException("定时任务方法名验证失败，拒绝执行危险方法：" + sysJob.getMethodName());
+		if (securityError != null) {
+			log.error("Security validation failed during job execution: {}", securityError);
+			throw new TaskException("安全验证失败: " + securityError);
 		}
 
 		Object obj;
@@ -45,13 +45,13 @@ public class JavaClassTaskInvok implements ITaskInvok {
 		try {
 			if (StrUtil.isNotEmpty(sysJob.getMethodParamsValue())) {
 				clazz = Class.forName(sysJob.getClassName());
-				obj = clazz.getDeclaredConstructor().newInstance();
+				obj = clazz.newInstance();
 				method = clazz.getDeclaredMethod(sysJob.getMethodName(), String.class);
 				returnValue = method.invoke(obj, sysJob.getMethodParamsValue());
 			}
 			else {
 				clazz = Class.forName(sysJob.getClassName());
-				obj = clazz.getDeclaredConstructor().newInstance();
+				obj = clazz.newInstance();
 				method = clazz.getDeclaredMethod(sysJob.getMethodName());
 				returnValue = method.invoke(obj);
 			}

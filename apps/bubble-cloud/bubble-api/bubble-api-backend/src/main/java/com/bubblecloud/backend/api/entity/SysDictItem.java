@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-
 import java.time.LocalDateTime;
 
 /**
@@ -59,6 +58,12 @@ public class SysDictItem extends Model<SysDictItem> {
 	 */
 	@Schema(description = "描述")
 	private String description;
+
+	/**
+	 * 标签类型（primary, success, info, warning, danger）
+	 */
+	@Schema(description = "标签类型")
+	private String listClass;
 
 	/**
 	 * 排序（升序）

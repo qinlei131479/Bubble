@@ -1,26 +1,27 @@
 package com.bubblecloud.auth.support.core;
 
 import com.bubblecloud.auth.support.handler.FormAuthenticationFailureHandler;
-import com.bubblecloud.auth.support.handler.SsoLogoutSuccessHandler;
+import com.bubblecloud.common.security.handler.SsoLogoutSuccessHandler;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 
 /**
- * 基于授权码模式的统一认证登录配置类，适用于Spring Security和SAS
- *
  * @author lengleng
- * @date 2025/05/30
+ * @data 2022-06-04
+ * <p>
+ * 基于授权码模式 统一认证登录 spring security & sas 都可以使用 所以抽取成 HttpConfigurer
  */
 public final class FormIdentityLoginConfigurer
 		extends AbstractHttpConfigurer<FormIdentityLoginConfigurer, HttpSecurity> {
 
 	@Override
-	public void init(HttpSecurity http) throws Exception {
+	public void init(HttpSecurity http) {
 		http.formLogin(formLogin -> {
 			formLogin.loginPage("/token/login");
 			formLogin.loginProcessingUrl("/oauth2/form");
 			formLogin.failureHandler(new FormAuthenticationFailureHandler());
-
+			formLogin.successHandler(new SavedRequestAwareAuthenticationSuccessHandler());
 		})
 			.logout(logout -> logout.logoutUrl("/oauth2/logout")
 				.logoutSuccessHandler(new SsoLogoutSuccessHandler())

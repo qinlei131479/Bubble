@@ -1,12 +1,12 @@
 package com.bubblecloud.backend.api.entity;
 
-import cn.idev.excel.annotation.ExcelIgnore;
-import cn.idev.excel.annotation.ExcelProperty;
+import org.apache.fesod.sheet.annotation.ExcelIgnore;
+import org.apache.fesod.sheet.annotation.ExcelProperty;
 import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
-
+import lombok.experimental.FieldNameConstants;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
  * @since 2017-11-20
  */
 @Data
+@FieldNameConstants
 @Schema(description = "日志")
 public class SysLog implements Serializable {
 

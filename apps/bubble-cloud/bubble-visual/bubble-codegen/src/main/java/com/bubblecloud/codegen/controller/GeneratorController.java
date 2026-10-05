@@ -4,8 +4,6 @@ import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.StrUtil;
 import com.bubblecloud.codegen.service.GeneratorService;
 import com.bubblecloud.common.core.util.R;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -21,7 +19,7 @@ import java.util.Map;
 import java.util.zip.ZipOutputStream;
 
 /**
- * 代码生成器控制器
+ * 代码生成器
  *
  * @author qinlei
  * @date 2025/05/31
@@ -29,7 +27,6 @@ import java.util.zip.ZipOutputStream;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/generator")
-@Tag(description = "generator", name = "代码生成器控制器管理模块")
 public class GeneratorController {
 
 	private final GeneratorService generatorService;
@@ -41,7 +38,6 @@ public class GeneratorController {
 	 */
 	@SneakyThrows
 	@GetMapping("/download")
-	@Operation(summary = "ZIP下载生成代码", description = "ZIP下载生成代码")
 	public void download(String tableIds, HttpServletResponse response) {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		ZipOutputStream zip = new ZipOutputStream(outputStream);
@@ -57,21 +53,17 @@ public class GeneratorController {
 		byte[] data = outputStream.toByteArray();
 
 		response.reset();
-		response.setHeader(HttpHeaders.CONTENT_DISPOSITION, String.format("attachment; filename=%s.zip", tableIds));
-		response.addHeader(HttpHeaders.CONTENT_LENGTH, String.valueOf(data.length));
+		response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=code.zip");
+		response.setContentLength(data.length);
 		response.setContentType("application/octet-stream; charset=UTF-8");
 		IoUtil.write(response.getOutputStream(), false, data);
 	}
 
 	/**
-	 * 生成代码
-	 * @param tableIds 表ID列表，多个ID用逗号分隔
-	 * @return 操作结果
-	 * @throws Exception 生成代码过程中可能抛出的异常
+	 * 目标目录生成代码
 	 */
 	@ResponseBody
 	@GetMapping("/code")
-	@Operation(summary = "生成代码", description = "生成代码")
 	public R<String> code(String tableIds) throws Exception {
 		// 生成代码
 		for (String tableId : tableIds.split(StrUtil.COMMA)) {
@@ -82,13 +74,22 @@ public class GeneratorController {
 	}
 
 	/**
+	 * 检测生成路径是否存在
+	 * @param path 待检测路径
+	 * @return true 表示路径存在且为目录
+	 */
+	@GetMapping("/check-path")
+	public R<Boolean> checkPath(String path) {
+		return R.ok(generatorService.checkPath(path));
+	}
+
+	/**
 	 * 预览代码
 	 * @param tableId 表ID
-	 * @return 代码预览结果列表
+	 * @return
 	 */
 	@SneakyThrows
 	@GetMapping("/preview")
-	@Operation(summary = "预览代码", description = "预览代码")
 	public List<Map<String, String>> preview(Long tableId) {
 		return generatorService.preview(tableId);
 	}

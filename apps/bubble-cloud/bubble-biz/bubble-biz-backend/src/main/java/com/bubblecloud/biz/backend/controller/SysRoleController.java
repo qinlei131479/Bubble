@@ -5,16 +5,17 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.bubblecloud.backend.api.entity.SysRole;
+import com.bubblecloud.backend.api.entity.SysRoleWidget;
 import com.bubblecloud.backend.api.vo.RoleExcelVO;
-import com.bubblecloud.backend.api.vo.RoleVO;
+import com.bubblecloud.backend.api.vo.RoleMenuVO;
 import com.bubblecloud.biz.backend.service.SysRoleService;
+import com.bubblecloud.biz.backend.service.SysRoleWidgetService;
 import com.bubblecloud.common.core.constant.CacheConstants;
 import com.bubblecloud.common.core.util.R;
+import com.bubblecloud.common.excel.annotation.RequestExcel;
+import com.bubblecloud.common.excel.annotation.ResponseExcel;
 import com.bubblecloud.common.log.annotation.SysLog;
 import com.bubblecloud.common.security.annotation.HasPermission;
-import com.pig4cloud.plugin.excel.annotation.RequestExcel;
-import com.pig4cloud.plugin.excel.annotation.ResponseExcel;
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -28,10 +29,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 角色管理控制器：提供角色相关的增删改查及权限管理功能
- *
  * @author lengleng
- * @date 2025/05/30
+ * @date 2020-02-10
  */
 @RestController
 @AllArgsConstructor
@@ -42,24 +41,24 @@ public class SysRoleController {
 
 	private final SysRoleService sysRoleService;
 
+	private final SysRoleWidgetService sysRoleWidgetService;
+
 	/**
 	 * 通过ID查询角色信息
-	 * @param id 角色ID
-	 * @return 包含角色信息的响应对象
+	 * @param id ID
+	 * @return 角色信息
 	 */
 	@GetMapping("/details/{id}")
-	@Operation(summary = "通过ID查询角色信息", description = "通过ID查询角色信息")
 	public R getById(@PathVariable Long id) {
 		return R.ok(sysRoleService.getById(id));
 	}
 
 	/**
-	 * 查询角色详细信息
-	 * @param query 角色查询条件对象
-	 * @return 包含角色信息的响应结果
+	 * 查询角色信息
+	 * @param query 查询条件
+	 * @return 角色信息
 	 */
 	@GetMapping("/details")
-	@Operation(summary = "查询角色详细信息", description = "查询角色详细信息")
 	public R getDetails(@ParameterObject SysRole query) {
 		return R.ok(sysRoleService.getOne(Wrappers.query(query), false));
 	}
@@ -67,40 +66,37 @@ public class SysRoleController {
 	/**
 	 * 添加角色
 	 * @param sysRole 角色信息
-	 * @return 操作结果，成功返回success，失败返回false
+	 * @return success、false
 	 */
 	@SysLog("添加角色")
 	@PostMapping
 	@HasPermission("sys_role_add")
-	@Operation(summary = "添加角色", description = "添加角色")
 	@CacheEvict(value = CacheConstants.ROLE_DETAILS, allEntries = true)
-	public R saveRole(@Valid @RequestBody SysRole sysRole) {
+	public R save(@Valid @RequestBody SysRole sysRole) {
 		return R.ok(sysRoleService.save(sysRole));
 	}
 
 	/**
-	 * 修改角色信息
+	 * 修改角色
 	 * @param sysRole 角色信息
-	 * @return 操作结果，成功返回success，失败返回false
+	 * @return success/false
 	 */
-	@SysLog("修改角色信息")
+	@SysLog("修改角色")
 	@PutMapping
 	@HasPermission("sys_role_edit")
-	@Operation(summary = "修改角色信息", description = "修改角色信息")
 	@CacheEvict(value = CacheConstants.ROLE_DETAILS, allEntries = true)
-	public R updateRole(@Valid @RequestBody SysRole sysRole) {
+	public R update(@Valid @RequestBody SysRole sysRole) {
 		return R.ok(sysRoleService.updateById(sysRole));
 	}
 
 	/**
-	 * 根据ID数组删除角色
-	 * @param ids 角色ID数组
-	 * @return 操作结果
+	 * 删除角色
+	 * @param ids
+	 * @return
 	 */
 	@SysLog("删除角色")
 	@DeleteMapping
 	@HasPermission("sys_role_del")
-	@Operation(summary = "根据ID数组删除角色", description = "根据ID数组删除角色")
 	@CacheEvict(value = CacheConstants.ROLE_DETAILS, allEntries = true)
 	public R removeById(@RequestBody Long[] ids) {
 		return R.ok(sysRoleService.removeRoleByIds(ids));
@@ -108,10 +104,9 @@ public class SysRoleController {
 
 	/**
 	 * 获取角色列表
-	 * @return 包含角色列表的响应结果
+	 * @return 角色列表
 	 */
 	@GetMapping("/list")
-	@Operation(summary = "获取角色列表", description = "获取角色列表")
 	public R listRoles() {
 		return R.ok(sysRoleService.list(Wrappers.emptyWrapper()));
 	}
@@ -119,11 +114,11 @@ public class SysRoleController {
 	/**
 	 * 分页查询角色信息
 	 * @param page 分页对象
-	 * @param role 查询条件对象
-	 * @return 包含分页结果的响应对象
+	 * @param role 查询条件
+	 * @return 分页对象
 	 */
 	@GetMapping("/page")
-	@Operation(summary = "分页查询角色信息", description = "分页查询角色信息")
+	@HasPermission("sys_role_view")
 	public R getRolePage(Page page, SysRole role) {
 		return R.ok(sysRoleService.page(page, Wrappers.<SysRole>lambdaQuery()
 			.like(StrUtil.isNotBlank(role.getRoleName()), SysRole::getRoleName, role.getRoleName())));
@@ -131,51 +126,81 @@ public class SysRoleController {
 
 	/**
 	 * 更新角色菜单
-	 * @param roleVo 角色VO对象
-	 * @return 操作结果，成功返回success，失败返回false
+	 * @param roleVo 角色对象
+	 * @return success、false
 	 */
 	@SysLog("更新角色菜单")
 	@PutMapping("/menu")
 	@HasPermission("sys_role_perm")
-	@Operation(summary = "更新角色菜单", description = "更新角色菜单")
-	public R saveRoleMenus(@RequestBody RoleVO roleVo) {
+	public R saveRoleMenus(@RequestBody RoleMenuVO roleVo) {
 		return R.ok(sysRoleService.updateRoleMenus(roleVo));
 	}
 
 	/**
-	 * 通过角色ID列表查询角色信息
-	 * @param roleIdList 角色ID列表
-	 * @return 包含查询结果的响应对象
+	 * 通过角色ID 查询角色列表
+	 * @param roleIdList 角色ID
+	 * @return
 	 */
 	@PostMapping("/getRoleList")
-	@Operation(summary = "通过角色ID列表查询角色信息", description = "通过角色ID列表查询角色信息")
 	public R getRoleList(@RequestBody List<Long> roleIdList) {
-		return R.ok(sysRoleService.listRolesByRoleIds(roleIdList, CollUtil.join(roleIdList, StrUtil.UNDERLINE)));
+		return R.ok(sysRoleService.findRolesByRoleIds(roleIdList, CollUtil.join(roleIdList, StrUtil.UNDERLINE)));
 	}
 
 	/**
-	 * 导出角色数据到Excel表格
-	 * @return 角色数据列表
+	 * 导出excel 表格
+	 * @param sysRole 查询条件
+	 * @param ids 导出ids
+	 * @return
 	 */
 	@ResponseExcel
 	@GetMapping("/export")
 	@HasPermission("sys_role_export")
-	@Operation(summary = "导出角色数据到Excel表格", description = "导出角色数据到Excel表格")
-	public List<RoleExcelVO> exportRoles() {
-		return sysRoleService.listRoles();
+	public List<RoleExcelVO> export(SysRole sysRole, Long[] ids) {
+		return sysRoleService.listRole(sysRole, ids);
 	}
 
 	/**
 	 * 导入角色
-	 * @param excelVOList 角色Excel数据列表
-	 * @param bindingResult 数据校验结果
-	 * @return 导入结果
+	 * @param excelVOList 角色列表
+	 * @param bindingResult 错误信息列表
+	 * @return ok fail
 	 */
 	@PostMapping("/import")
 	@HasPermission("sys_role_export")
-	@Operation(summary = "导入角色数据", description = "导入角色数据")
 	public R importRole(@RequestExcel List<RoleExcelVO> excelVOList, BindingResult bindingResult) {
 		return sysRoleService.importRole(excelVOList, bindingResult);
+	}
+
+	/**
+	 * 查询当前用户角色的首页widget配置（取 widgetKeys 最多的那条）
+	 * @return widget配置，无配置时返回 null
+	 */
+	@GetMapping("/widget/current")
+	public R getCurrentUserWidget() {
+		return R.ok(sysRoleWidgetService.getByCurrentUser());
+	}
+
+	/**
+	 * 查询角色的首页widget配置
+	 * @param roleId 角色ID
+	 * @return widget配置，无配置时返回 null
+	 */
+	@GetMapping("/widget/{roleId}")
+	@HasPermission("sys_role_view")
+	public R getRoleWidget(@PathVariable Long roleId) {
+		return R.ok(sysRoleWidgetService.getByRoleId(roleId));
+	}
+
+	/**
+	 * 保存角色的首页widget配置
+	 * @param sysRoleWidget widget配置对象
+	 * @return success/fail
+	 */
+	@SysLog("保存角色首页配置")
+	@PutMapping("/widget")
+	@HasPermission("sys_role_edit")
+	public R saveRoleWidget(@RequestBody SysRoleWidget sysRoleWidget) {
+		return R.ok(sysRoleWidgetService.saveOrUpdateByRoleId(sysRoleWidget));
 	}
 
 }

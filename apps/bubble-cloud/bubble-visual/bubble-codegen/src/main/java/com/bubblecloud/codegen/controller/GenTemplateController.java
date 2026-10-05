@@ -8,10 +8,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.bubblecloud.codegen.entity.GenTemplateEntity;
 import com.bubblecloud.codegen.service.GenTemplateService;
 import com.bubblecloud.common.core.util.R;
+import com.bubblecloud.common.excel.annotation.ResponseExcel;
 import com.bubblecloud.common.log.annotation.SysLog;
 import com.bubblecloud.common.security.annotation.HasPermission;
 import com.bubblecloud.common.xss.core.XssCleanIgnore;
-import com.pig4cloud.plugin.excel.annotation.ResponseExcel;
+import com.bubblecloud.common.excel.annotation.ResponseExcel;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,7 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 模板管理控制器
+ * 模板
  *
  * @author qinlei
  * @date 2025/05/31
@@ -30,22 +31,22 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/template")
-@Tag(description = "template", name = "模板管理模块")
+@Tag(description = "template", name = "模板管理")
 @SecurityRequirement(name = HttpHeaders.AUTHORIZATION)
 public class GenTemplateController {
 
 	private final GenTemplateService genTemplateService;
 
 	/**
-	 * 分页查询模板信息
-	 * @param page 分页参数对象
-	 * @param genTemplate 模板查询条件
-	 * @return 分页查询结果
+	 * 分页查询
+	 * @param page 分页对象
+	 * @param genTemplate 模板
+	 * @return
 	 */
 	@Operation(summary = "分页查询", description = "分页查询")
 	@GetMapping("/page")
 	@HasPermission("codegen_template_view")
-	public R getTemplatePage(Page page, GenTemplateEntity genTemplate) {
+	public R getGenTemplatePage(Page page, GenTemplateEntity genTemplate) {
 		LambdaQueryWrapper<GenTemplateEntity> wrapper = Wrappers.<GenTemplateEntity>lambdaQuery()
 			.like(genTemplate.getId() != null, GenTemplateEntity::getId, genTemplate.getId())
 			.like(StrUtil.isNotEmpty(genTemplate.getTemplateName()), GenTemplateEntity::getTemplateName,
@@ -60,7 +61,7 @@ public class GenTemplateController {
 	@Operation(summary = "查询全部", description = "查询全部")
 	@GetMapping("/list")
 	@HasPermission("codegen_template_view")
-	public R listTemplates() {
+	public R list() {
 		return R.ok(genTemplateService
 			.list(Wrappers.<GenTemplateEntity>lambdaQuery().orderByDesc(GenTemplateEntity::getCreateTime)));
 	}
@@ -73,7 +74,7 @@ public class GenTemplateController {
 	@Operation(summary = "通过id查询", description = "通过id查询")
 	@GetMapping("/{id}")
 	@HasPermission("codegen_template_view")
-	public R getTemplateById(@PathVariable("id") Long id) {
+	public R getById(@PathVariable("id") Long id) {
 		return R.ok(genTemplateService.getById(id));
 	}
 
@@ -87,7 +88,7 @@ public class GenTemplateController {
 	@SysLog("新增模板")
 	@PostMapping
 	@HasPermission("codegen_template_add")
-	public R saveTemplate(@RequestBody GenTemplateEntity genTemplate) {
+	public R save(@RequestBody GenTemplateEntity genTemplate) {
 		return R.ok(genTemplateService.save(genTemplate));
 	}
 
@@ -101,7 +102,7 @@ public class GenTemplateController {
 	@SysLog("修改模板")
 	@PutMapping
 	@HasPermission("codegen_template_edit")
-	public R updateTemplate(@RequestBody GenTemplateEntity genTemplate) {
+	public R updateById(@RequestBody GenTemplateEntity genTemplate) {
 		return R.ok(genTemplateService.updateById(genTemplate));
 	}
 
@@ -114,7 +115,7 @@ public class GenTemplateController {
 	@SysLog("通过id删除模板")
 	@DeleteMapping
 	@HasPermission("codegen_template_del")
-	public R removeTemplateByIds(@RequestBody Long[] ids) {
+	public R removeById(@RequestBody Long[] ids) {
 		return R.ok(genTemplateService.removeBatchByIds(CollUtil.toList(ids)));
 	}
 
@@ -126,8 +127,7 @@ public class GenTemplateController {
 	@ResponseExcel
 	@GetMapping("/export")
 	@HasPermission("codegen_template_export")
-	@Operation(summary = "导出模板", description = "导出模板")
-	public List<GenTemplateEntity> exportTemplates(GenTemplateEntity genTemplate) {
+	public List<GenTemplateEntity> export(GenTemplateEntity genTemplate) {
 		return genTemplateService.list(Wrappers.query(genTemplate));
 	}
 

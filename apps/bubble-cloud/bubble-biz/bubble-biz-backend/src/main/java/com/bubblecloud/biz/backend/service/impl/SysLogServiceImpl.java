@@ -1,5 +1,8 @@
 package com.bubblecloud.biz.backend.service.impl;
 
+import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TemporalAccessorUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -8,62 +11,58 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.bubblecloud.backend.api.dto.SysLogDTO;
 import com.bubblecloud.backend.api.entity.SysLog;
+import com.bubblecloud.backend.api.vo.PreLogVO;
 import com.bubblecloud.biz.backend.mapper.SysLogMapper;
 import com.bubblecloud.biz.backend.service.SysLogService;
+import com.bubblecloud.common.log.util.LogTypeEnum;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.temporal.TemporalAccessor;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
- * 系统日志服务实现类
+ * <p>
+ * 日志表 服务实现类
+ * </p>
  *
  * @author lengleng
- * @date 2025/05/30
  * @since 2017-11-20
  */
 @Service
 public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> implements SysLogService {
 
 	/**
-	 * 分页查询系统日志
-	 * @param page 分页参数
-	 * @param sysLog 日志查询条件
-	 * @return 分页结果
+	 * 批量插入前端错误日志
+	 * @param preLogVoList 日志信息
+	 * @return true/false
 	 */
 	@Override
-	public Page getLogPage(Page page, SysLogDTO sysLog) {
-		return baseMapper.selectPage(page, buildQuery(sysLog));
+	public Boolean saveBatchLogs(List<PreLogVO> preLogVoList) {
+		List<SysLog> sysLogs = preLogVoList.stream().map(pre -> {
+			SysLog log = new SysLog();
+			log.setLogType(LogTypeEnum.ERROR.getType());
+			log.setTitle(pre.getInfo());
+			log.setException(pre.getStack());
+			log.setParams(pre.getMessage());
+			log.setCreateTime(LocalDateTime.now());
+			log.setRequestUri(pre.getUrl());
+			log.setCreateBy(pre.getUser());
+			return log;
+		}).toList();
+		return this.saveBatch(sysLogs);
 	}
 
-	/**
-	 * 保存日志
-	 * @param sysLog 日志对象
-	 * @return 保存成功返回true
-	 */
 	@Override
-	@Transactional(rollbackFor = Exception.class)
-	public Boolean saveLog(SysLog sysLog) {
-		baseMapper.insert(sysLog);
-		return Boolean.TRUE;
-	}
+	public Page getLogByPage(Page page, SysLogDTO sysLog) {
 
-	/**
-	 * 查询日志列表
-	 * @param sysLog 查询条件DTO对象
-	 * @return 日志列表
-	 */
-	@Override
-	public List<SysLog> listLogs(SysLogDTO sysLog) {
-		return baseMapper.selectList(buildQuery(sysLog));
-	}
-
-	/**
-	 * 构建查询条件
-	 * @param sysLog 前端查询条件DTO
-	 * @return 构建好的LambdaQueryWrapper对象
-	 */
-	private LambdaQueryWrapper buildQuery(SysLogDTO sysLog) {
 		LambdaQueryWrapper<SysLog> wrapper = Wrappers.lambdaQuery();
 		if (StrUtil.isNotBlank(sysLog.getLogType())) {
 			wrapper.eq(SysLog::getLogType, sysLog.getLogType());
@@ -74,7 +73,61 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
 				.le(SysLog::getCreateTime, sysLog.getCreateTime()[1]);
 		}
 
-		return wrapper;
+		if (StrUtil.isNotBlank(sysLog.getTitle())) {
+			wrapper.like(SysLog::getTitle, sysLog.getTitle());
+		}
+
+		wrapper.eq(StrUtil.isNotBlank(sysLog.getServiceId()), SysLog::getServiceId, sysLog.getServiceId());
+		return baseMapper.selectPage(page, wrapper);
+	}
+
+	/**
+	 * 插入日志
+	 * @param sysLog 日志对象
+	 * @return true/false
+	 */
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public Boolean saveLog(SysLogDTO sysLog) {
+		SysLog log = new SysLog();
+		BeanUtils.copyProperties(sysLog, log, "createTime");
+		baseMapper.insert(log);
+		return Boolean.TRUE;
+	}
+
+	/**
+	 * sum 函数计算三十天内的数据
+	 * @return list map
+	 */
+	@Override
+	public List<Map<String, Object>> getLogSum() {
+		List<Map<String, Object>> logSumList = baseMapper.selectLogSum(LocalDateTime.now().minusDays(30));
+		Map<String, Map<String, Object>> resultMap = new TreeMap<>();
+
+		for (Map<String, Object> row : logSumList) {
+			String createTime = formatCreateTime(row.get(SysLog.Fields.createTime));
+			Map<String, Object> logSum = resultMap.computeIfAbsent(createTime, key -> {
+				Map<String, Object> item = new LinkedHashMap<>();
+				item.put(SysLog.Fields.createTime, key);
+				return item;
+			});
+			logSum.put(row.get(SysLog.Fields.logType).toString(), ((Number) row.get("logCount")).intValue());
+		}
+
+		return new ArrayList<>(resultMap.values());
+	}
+
+	private String formatCreateTime(Object createTime) {
+		if (createTime == null) {
+			return StrUtil.EMPTY;
+		}
+		if (createTime instanceof Date date) {
+			return DateUtil.format(date, DatePattern.NORM_DATE_PATTERN);
+		}
+		if (createTime instanceof TemporalAccessor temporalAccessor) {
+			return TemporalAccessorUtil.format(temporalAccessor, DatePattern.NORM_DATE_PATTERN);
+		}
+		return createTime.toString();
 	}
 
 }

@@ -1,35 +1,55 @@
+/*
+ *
+ *      Copyright (c) 2018-2026, lengleng All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *
+ * Redistributions of source code must retain the above copyright notice,
+ *  this list of conditions and the following disclaimer.
+ *  Redistributions in binary form must reproduce the above copyright
+ *  notice, this list of conditions and the following disclaimer in the
+ *  documentation and/or other materials provided with the distribution.
+ *  Neither the name of the pig4cloud.com developer nor the names of its
+ *  contributors may be used to endorse or promote products derived from
+ *  this software without specific prior written permission.
+ *  Author: lengleng (wangiegie@gmail.com)
+ *
+ */
+
 package com.bubblecloud.biz.backend.service.impl;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import com.bubblecloud.biz.backend.service.SysRoleMenuService;
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.ArrayUtil;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.bubblecloud.backend.api.constant.UpmsErrorCodes;
 import com.bubblecloud.backend.api.entity.SysRole;
 import com.bubblecloud.backend.api.entity.SysRoleMenu;
 import com.bubblecloud.backend.api.vo.RoleExcelVO;
-import com.bubblecloud.backend.api.vo.RoleVO;
+import com.bubblecloud.backend.api.vo.RoleMenuVO;
+import com.bubblecloud.biz.backend.mapper.SysRoleMapper;
+import com.bubblecloud.biz.backend.service.SysRoleMenuService;
+import com.bubblecloud.biz.backend.service.SysRoleService;
+import com.bubblecloud.common.core.constant.CacheConstants;
+import com.bubblecloud.common.core.util.MsgUtils;
+import com.bubblecloud.common.core.util.R;
+import com.bubblecloud.common.excel.vo.ErrorMessage;
+import lombok.AllArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
 
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.bubblecloud.biz.backend.mapper.SysRoleMapper;
-import com.bubblecloud.biz.backend.service.SysRoleService;
-import com.bubblecloud.common.core.constant.CacheConstants;
-import com.bubblecloud.common.core.exception.ErrorCodes;
-import com.bubblecloud.common.core.util.MsgUtils;
-import com.bubblecloud.common.core.util.R;
-import com.pig4cloud.plugin.excel.vo.ErrorMessage;
-
-import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.collection.CollUtil;
-import lombok.AllArgsConstructor;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
- * 系统角色服务实现类
+ * <p>
+ * 角色服务实现类
+ * </p>
  *
  * @author lengleng
  * @since 2017-10-29
@@ -43,29 +63,29 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
 	/**
 	 * 通过用户ID查询角色信息
 	 * @param userId 用户ID
-	 * @return 角色信息列表
+	 * @return 角色信息列表，无角色时返回空列表
 	 */
 	@Override
-	public List listRolesByUserId(Long userId) {
+	public List<SysRole> findRolesByUserId(Long userId) {
 		return baseMapper.listRolesByUserId(userId);
 	}
 
 	/**
-	 * 根据角色ID查询角色列表
+	 * 根据角色ID列表查询角色，结果按缓存key缓存，空结果不缓存
 	 * @param roleIdList 角色ID列表
 	 * @param key 缓存key
-	 * @return 角色列表
+	 * @return 匹配的角色列表，无匹配时返回空列表
 	 */
 	@Override
 	@Cacheable(value = CacheConstants.ROLE_DETAILS, key = "#key", unless = "#result.isEmpty()")
-	public List<SysRole> listRolesByRoleIds(List<Long> roleIdList, String key) {
+	public List<SysRole> findRolesByRoleIds(List<Long> roleIdList, String key) {
 		return baseMapper.selectByIds(roleIdList);
 	}
 
 	/**
-	 * 通过角色ID删除角色并清空角色菜单缓存
+	 * 通过角色ID批量删除角色，并先删除关联的角色菜单
 	 * @param ids 角色ID数组
-	 * @return 删除是否成功
+	 * @return 删除成功返回 true
 	 */
 	@Override
 	@Transactional(rollbackFor = Exception.class)
@@ -76,20 +96,20 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
 	}
 
 	/**
-	 * 更新角色菜单列表
-	 * @param roleVo 包含角色ID和菜单ID列表的角色对象
-	 * @return 更新是否成功
+	 * 更新角色的菜单授权
+	 * @param roleVo 角色及其菜单ID列表
+	 * @return 更新成功返回 true
 	 */
 	@Override
-	public Boolean updateRoleMenus(RoleVO roleVo) {
+	public Boolean updateRoleMenus(RoleMenuVO roleVo) {
 		return roleMenuService.saveRoleMenus(roleVo.getRoleId(), roleVo.getMenuIds());
 	}
 
 	/**
-	 * 导入角色
-	 * @param excelVOList 角色列表
-	 * @param bindingResult 错误信息列表
-	 * @return ok fail
+	 * 导入角色，按角色名称或角色编码去重，重复数据不入库并收集错误信息
+	 * @param excelVOList 待导入的角色列表
+	 * @param bindingResult 通用校验结果，其 target 持有错误信息列表
+	 * @return 全部导入成功返回 {@link R#ok()}；存在校验失败时返回携带错误信息列表的 {@link R#failed(Object)}
 	 */
 	@Override
 	public R importRole(List<RoleExcelVO> excelVOList, BindingResult bindingResult) {
@@ -108,7 +128,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
 						|| excel.getRoleCode().equals(sysRole.getRoleCode()));
 
 			if (existRole) {
-				errorMsg.add(MsgUtils.getMessage(ErrorCodes.SYS_ROLE_NAMEORCODE_EXISTING, excel.getRoleName(),
+				errorMsg.add(MsgUtils.getMessage(UpmsErrorCodes.SYS_ROLE_NAMEORCODE_EXISTING, excel.getRoleName(),
 						excel.getRoleCode()));
 			}
 
@@ -128,12 +148,15 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
 	}
 
 	/**
-	 * 查询全部角色列表并转换为Excel视图对象
-	 * @return 角色Excel视图对象列表
+	 * 查询角色并转换为导出对象
+	 * @param sysRole 查询条件
+	 * @param ids 指定导出的角色ID数组，为空时按查询条件导出全部
+	 * @return 角色导出对象列表
 	 */
 	@Override
-	public List<RoleExcelVO> listRoles() {
-		List<SysRole> roleList = this.list(Wrappers.emptyWrapper());
+	public List<RoleExcelVO> listRole(SysRole sysRole, Long[] ids) {
+		List<SysRole> roleList = this.list(
+				Wrappers.lambdaQuery(sysRole).in(ArrayUtil.isNotEmpty(ids), SysRole::getRoleId, CollUtil.toList(ids)));
 		// 转换成execl 对象输出
 		return roleList.stream().map(role -> {
 			RoleExcelVO roleExcelVO = new RoleExcelVO();
@@ -143,8 +166,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
 	}
 
 	/**
-	 * 插入Excel中的角色数据
-	 * @param excel 包含角色信息的Excel数据对象
+	 * 插入excel Role
 	 */
 	private void insertExcelRole(RoleExcelVO excel) {
 		SysRole sysRole = new SysRole();

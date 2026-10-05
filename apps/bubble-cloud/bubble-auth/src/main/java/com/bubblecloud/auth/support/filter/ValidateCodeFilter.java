@@ -1,19 +1,5 @@
 package com.bubblecloud.auth.support.filter;
 
-import java.io.IOException;
-import java.util.Optional;
-
-import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
-import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
-import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
-
-import com.bubblecloud.common.core.constant.CacheConstants;
-import com.bubblecloud.common.core.constant.SecurityConstants;
-import com.bubblecloud.common.core.exception.ValidateCodeException;
-import com.bubblecloud.common.core.util.RedisUtils;
-import com.bubblecloud.common.core.util.WebUtils;
-
 /**
  * 登录前处理器
  *
@@ -22,32 +8,37 @@ import com.bubblecloud.common.core.util.WebUtils;
  */
 
 import cn.hutool.core.util.StrUtil;
+import com.bubblecloud.auth.support.core.AuthCaptchaSupport;
+import com.bubblecloud.common.core.constant.SecurityConstants;
+import com.bubblecloud.common.core.exception.ValidateCodeException;
+import com.bubblecloud.common.core.util.WebUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
 
 /**
- * 验证码过滤器：用于处理登录请求中的验证码校验
- *
- * @author lengleng
- * @date 2025/05/30
+ * @author lbw
+ * @date 2024-01-06
+ * <p>
+ * 登录前置处理器： 前端密码传输密文解密，验证码处理
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class ValidateCodeFilter extends OncePerRequestFilter {
 
-	private final AuthSecurityConfigProperties authSecurityConfigProperties;
+	private final AuthCaptchaSupport authCaptchaSupport;
 
-	/**
-	 * 过滤器内部处理逻辑，用于验证码校验
-	 * @param request HTTP请求
-	 * @param response HTTP响应
-	 * @param filterChain 过滤器链
-	 * @throws ServletException Servlet异常
-	 * @throws IOException IO异常
-	 */
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
@@ -62,15 +53,25 @@ public class ValidateCodeFilter extends OncePerRequestFilter {
 
 		// 如果登录URL 但是刷新token的请求，直接向下执行
 		String grantType = request.getParameter(OAuth2ParameterNames.GRANT_TYPE);
-		if (StrUtil.equals(SecurityConstants.REFRESH_TOKEN, grantType)) {
+		if (StrUtil.containsAny(grantType, SecurityConstants.REFRESH_TOKEN)) {
 			filterChain.doFilter(request, response);
 			return;
 		}
 
-		// 如果是密码模式 && 客户端不需要校验验证码
-		boolean isIgnoreClient = authSecurityConfigProperties.getIgnoreClients().contains(WebUtils.getClientId());
-		if (StrUtil.equalsAnyIgnoreCase(grantType, SecurityConstants.PASSWORD, SecurityConstants.CLIENT_CREDENTIALS,
-				SecurityConstants.AUTHORIZATION_CODE) && isIgnoreClient) {
+		// mobile模式, 如果请求不包含mobile 参数直接
+		String mobile = request.getParameter(SecurityConstants.GRANT_MOBILE);
+		if (StrUtil.equals(SecurityConstants.GRANT_MOBILE, grantType) && StrUtil.isBlank(mobile)) {
+			throw new OAuth2AuthenticationException(SecurityConstants.GRANT_MOBILE);
+		}
+
+		// mobile模式, 社交登录模式不校验验证码直接跳过
+		if (StrUtil.equals(SecurityConstants.GRANT_MOBILE, grantType) && !StrUtil.contains(mobile, "SMS")) {
+			filterChain.doFilter(request, response);
+			return;
+		}
+
+		// 判断客户端是否跳过检验
+		if (!isCheckCaptchaClient(request)) {
 			filterChain.doFilter(request, response);
 			return;
 		}
@@ -89,37 +90,18 @@ public class ValidateCodeFilter extends OncePerRequestFilter {
 	 * 校验验证码
 	 */
 	private void checkCode() throws ValidateCodeException {
-		Optional<HttpServletRequest> request = WebUtils.getRequest();
-		String code = request.get().getParameter("code");
+		authCaptchaSupport.validateCode(WebUtils.getRequest());
+	}
 
-		if (StrUtil.isBlank(code)) {
-			throw new ValidateCodeException("验证码不能为空");
-		}
-
-		String randomStr = request.get().getParameter("randomStr");
-
-		// https://gitee.com/log4j/pig/issues/IWA0D
-		String mobile = request.get().getParameter("mobile");
-		if (StrUtil.isNotBlank(mobile)) {
-			randomStr = mobile;
-		}
-
-		String key = CacheConstants.DEFAULT_CODE_KEY + randomStr;
-		if (!RedisUtils.hasKey(key)) {
-			throw new ValidateCodeException("验证码不合法");
-		}
-
-		String saveCode = RedisUtils.get(key);
-
-		if (StrUtil.isBlank(saveCode)) {
-			RedisUtils.delete(key);
-			throw new ValidateCodeException("验证码不合法");
-		}
-
-		if (!StrUtil.equals(saveCode, code)) {
-			RedisUtils.delete(key);
-			throw new ValidateCodeException("验证码不合法");
-		}
+	/**
+	 * 是否需要校验客户端，根据client 查询客户端配置
+	 * @param request 请求
+	 * @return true 需要校验， false 不需要校验
+	 */
+	private boolean isCheckCaptchaClient(HttpServletRequest request) {
+		String header = request.getHeader(HttpHeaders.AUTHORIZATION);
+		String clientId = WebUtils.extractClientId(header).orElse(null);
+		return authCaptchaSupport.isCaptchaEnabled(clientId);
 	}
 
 }

@@ -13,14 +13,14 @@ import java.lang.annotation.*;
  * 启用框架的Spring文档支持
  *
  * @author lengleng
- * @date 2025/05/31
+ * @date 2022-03-26
  */
 @Target({ ElementType.TYPE })
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Inherited
 @EnableConfigurationProperties(SwaggerProperties.class)
-@Import(OpenAPIDefinitionImportSelector.class)
+@Import({ OpenAPIDefinitionImportSelector.class })
 @PropertySource(value = "classpath:openapi-config.yaml", factory = YamlPropertySourceFactory.class)
 public @interface EnableDoc {
 
@@ -28,7 +28,7 @@ public @interface EnableDoc {
 	 * 网关路由前缀
 	 * @return String
 	 */
-	String value();
+	String value() default "";
 
 	/**
 	 * 是否是微服务架构

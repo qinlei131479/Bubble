@@ -1,71 +1,110 @@
 package com.bubblecloud.common.security.component;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.regex.Pattern;
-
+import cn.hutool.core.util.ReUtil;
+import com.bubblecloud.common.core.util.SpringContextHolder;
 import com.bubblecloud.common.security.annotation.Inner;
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.regex.Pattern;
+import lombok.Getter;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.ApplicationListener;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.util.AntPathMatcher;
+import org.springframework.util.PathMatcher;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
-import cn.hutool.core.util.ReUtil;
-import cn.hutool.extra.spring.SpringUtil;
-import lombok.Getter;
-import lombok.Setter;
-
 /**
- * 资源服务器对外直接暴露URL配置类
- * <p>
- * 用于配置不需要认证即可访问的URL路径，支持路径变量替换
+ * 资源服务器对外直接暴露URL配置类。
  *
  * @author lengleng
  * @date 2025/05/31
  */
 @ConfigurationProperties(prefix = "security.oauth2.ignore")
-public class PermitAllUrlProperties implements InitializingBean {
+public class PermitAllUrlProperties implements InitializingBean, ApplicationListener<ApplicationReadyEvent> {
 
-	private static final Pattern PATTERN = Pattern.compile("\\{(.*?)\\}");
+	private static final Pattern PATH_VARIABLE = Pattern.compile("\\{(.*?)\\}");
 
-	private static final String[] DEFAULT_IGNORE_URLS = new String[] { "/actuator/**", "/error", "/v3/api-docs" };
+	private static final String[] DEFAULT_IGNORE_URLS =
+			new String[] { "/actuator/**", "/error", "/v3/api-docs/**" };
 
 	@Getter
-	@Setter
-	private List<String> urls = new ArrayList<>();
+	private final CopyOnWriteArrayList<String> urls = new CopyOnWriteArrayList<>();
+
+	private final PathMatcher pathMatcher = new AntPathMatcher();
 
 	/**
-	 * 初始化方法，在属性设置完成后执行 收集带有@Inner注解的Controller方法路径，并将路径中的变量替换为*
+	 * 上次扫描时的 Handler 数量。Boot 4 可能在映射注册完成前触发扫描，
+	 * 数量变化后需要重新收集 @Inner 路径。
 	 */
+	private volatile int scannedHandlerCount = -1;
+
 	@Override
 	public void afterPropertiesSet() {
-		urls.addAll(Arrays.asList(DEFAULT_IGNORE_URLS));
-		RequestMappingHandlerMapping mapping = SpringUtil.getBean("requestMappingHandlerMapping");
-		Map<RequestMappingInfo, HandlerMethod> map = mapping.getHandlerMethods();
+		urls.addAllAbsent(Arrays.asList(DEFAULT_IGNORE_URLS));
+	}
 
-		map.keySet().forEach(info -> {
-			HandlerMethod handlerMethod = map.get(info);
+	@Override
+	public void onApplicationEvent(ApplicationReadyEvent event) {
+		scanInnerUrls();
+	}
 
-			// 获取方法上边的注解 替代path variable 为 *
+	/**
+	 * 判断请求是否配置或标记为免鉴权。
+	 * @param request 当前请求
+	 * @return 是否免鉴权
+	 */
+	public boolean isPermitAll(HttpServletRequest request) {
+		String path = request.getRequestURI().substring(request.getContextPath().length());
+		return isPermitAll(path);
+	}
+
+	public boolean isPermitAll(String path) {
+		scanInnerUrls();
+		return urls.stream().anyMatch(url -> pathMatcher.match(url, path));
+	}
+
+	/**
+	 * Boot 4 在 advisor sorting 阶段会提前初始化安全配置，不能在 afterPropertiesSet 中
+	 * 获取 RequestMappingHandlerMapping。映射可能在首次扫描之后才注册完成，因此按
+	 * Handler 数量变化重新收集，避免把空结果冻结成最终白名单。
+	 */
+	private synchronized void scanInnerUrls() {
+		RequestMappingHandlerMapping mapping;
+		try {
+			mapping = SpringContextHolder.getBean("requestMappingHandlerMapping");
+		}
+		catch (Exception ex) {
+			return;
+		}
+
+		Map<RequestMappingInfo, HandlerMethod> handlerMethods = mapping.getHandlerMethods();
+		int handlerCount = handlerMethods.size();
+		if (handlerCount == 0 || handlerCount == scannedHandlerCount) {
+			return;
+		}
+
+		Set<String> innerUrls = new HashSet<>();
+		handlerMethods.forEach((info, handlerMethod) -> {
 			Inner method = AnnotationUtils.findAnnotation(handlerMethod.getMethod(), Inner.class);
-			Optional.ofNullable(method)
-				.ifPresent(inner -> Objects.requireNonNull(info.getPathPatternsCondition())
-					.getPatternValues()
-					.forEach(url -> urls.add(ReUtil.replaceAll(url, PATTERN, "*"))));
-
-			// 获取类上边的注解, 替代path variable 为 *
 			Inner controller = AnnotationUtils.findAnnotation(handlerMethod.getBeanType(), Inner.class);
-			Optional.ofNullable(controller)
-				.ifPresent(inner -> Objects.requireNonNull(info.getPathPatternsCondition())
-					.getPatternValues()
-					.forEach(url -> urls.add(ReUtil.replaceAll(url, PATTERN, "*"))));
+			if (method == null && controller == null) {
+				return;
+			}
+
+			info.getPatternValues().forEach(url -> innerUrls.add(ReUtil.replaceAll(url, PATH_VARIABLE, "*")));
 		});
+		urls.addAllAbsent(innerUrls);
+		scannedHandlerCount = handlerCount;
 	}
 
 }

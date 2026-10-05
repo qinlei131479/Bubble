@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.bubblecloud.backend.api.dto.RegisterUserDTO;
 import com.bubblecloud.backend.api.dto.UserDTO;
 import com.bubblecloud.backend.api.dto.UserInfo;
+import com.bubblecloud.backend.api.entity.SysDept;
 import com.bubblecloud.backend.api.entity.SysUser;
 import com.bubblecloud.backend.api.vo.UserExcelVO;
 import com.bubblecloud.backend.api.vo.UserVO;
@@ -15,27 +16,23 @@ import org.springframework.validation.BindingResult;
 import java.util.List;
 
 /**
- * 系统用户服务接口
- * <p>
- * 提供用户信息查询、分页查询、增删改查等操作
- *
  * @author lengleng
- * @date 2025/05/30
+ * @date 2026-02-10
  */
 public interface SysUserService extends IService<SysUser> {
 
 	/**
-	 * 根据用户信息查询用户详情
-	 * @param query 用户查询条件
-	 * @return 用户详细信息
+	 * 查询用户信息
+	 * @param userDTO 用户数据传输对象
+	 * @return 用户信息对象
 	 */
-	R<UserInfo> getUserInfo(UserDTO query);
+	R<UserInfo> getUserInfo(UserDTO userDTO);
 
 	/**
-	 * 分页查询用户信息（包含角色信息）
+	 * 分页查询用户信息（含有角色信息）
 	 * @param page 分页对象
-	 * @param userDTO 查询参数
-	 * @return 分页结果
+	 * @param userDTO 参数列表
+	 * @return
 	 */
 	IPage getUsersWithRolePage(Page page, UserDTO userDTO);
 
@@ -44,7 +41,7 @@ public interface SysUserService extends IService<SysUser> {
 	 * @param ids 用户
 	 * @return boolean
 	 */
-	Boolean removeUserByIds(Long[] ids);
+	Boolean deleteUserByIds(Long[] ids);
 
 	/**
 	 * 更新当前用户基本信息
@@ -56,7 +53,7 @@ public interface SysUserService extends IService<SysUser> {
 	/**
 	 * 更新指定用户信息
 	 * @param userDto 用户信息DTO对象
-	 * @return 更新是否成功
+	 * @return 更新操作是否成功
 	 */
 	Boolean updateUser(UserDTO userDto);
 
@@ -65,7 +62,14 @@ public interface SysUserService extends IService<SysUser> {
 	 * @param id 用户ID
 	 * @return 用户信息
 	 */
-	UserVO getUserById(Long id);
+	UserVO selectUserVoById(Long id);
+
+	/**
+	 * 查询上级部门的用户信息
+	 * @param username 用户名
+	 * @return 上级部门的用户列表
+	 */
+	List<SysUser> listAncestorUsers(String username);
 
 	/**
 	 * 保存用户信息
@@ -77,17 +81,18 @@ public interface SysUserService extends IService<SysUser> {
 	/**
 	 * 查询全部的用户
 	 * @param userDTO 查询条件
+	 * @param ids 目标列表
 	 * @return list
 	 */
-	List<UserExcelVO> listUsers(UserDTO userDTO);
+	List<UserExcelVO> listUser(UserDTO userDTO, Long[] ids);
 
 	/**
 	 * excel 导入用户
 	 * @param excelVOList excel 列表数据
-	 * @param bindingResult 错误数据
-	 * @return ok fail
+	 * @param bindingResult 通用校验结果，其 target 持有错误信息列表
+	 * @return 全部导入成功返回 ok；存在校验失败时返回携带错误信息列表的 failed
 	 */
-	R importUsers(List<UserExcelVO> excelVOList, BindingResult bindingResult);
+	R importUser(List<UserExcelVO> excelVOList, BindingResult bindingResult);
 
 	/**
 	 * 注册用户
@@ -99,7 +104,7 @@ public interface SysUserService extends IService<SysUser> {
 	/**
 	 * 锁定用户
 	 * @param username 用户名
-	 * @return 包含操作结果的R对象，true表示锁定成功
+	 * @return R
 	 */
 	R<Boolean> lockUser(String username);
 
@@ -111,10 +116,46 @@ public interface SysUserService extends IService<SysUser> {
 	R changePassword(UserDTO userDto);
 
 	/**
-	 * 校验密码
-	 * @param password 待校验的密码明文
-	 * @return 校验结果
+	 * 解绑社交登录
+	 * @param type 社交登录类型
+	 * @return R
 	 */
-	R checkPassword(String password);
+	R unbinding(String type);
+
+	/**
+	 * 校验密码
+	 * @param username 用户名
+	 * @param password 密码
+	 * @return R
+	 */
+	R checkPassword(String username, String password);
+
+	/**
+	 * 重置用户密码
+	 * @param userDto 用户信息DTO
+	 * @return 操作结果，包含是否成功的布尔值
+	 */
+	R<Boolean> resetUserPassword(RegisterUserDTO userDto);
+
+	/**
+	 * 找回用户密码
+	 * @param userDto 用户信息DTO
+	 * @param code 验证码
+	 * @return 操作结果，包含是否成功的布尔值
+	 */
+	R<Boolean> forgetUserPassword(RegisterUserDTO userDto, String code);
+
+	/**
+	 * 获取当前用户的部门列表
+	 * @return 部门列表
+	 */
+	List<SysDept> getUserDeptList();
+
+	/**
+	 * 切换用户当前部门
+	 * @param deptId 部门ID
+	 * @return 操作结果
+	 */
+	R<Boolean> updateUserDept(Long deptId);
 
 }

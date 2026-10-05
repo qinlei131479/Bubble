@@ -321,4 +321,65 @@ BEGIN;
 INSERT INTO `users` (`username`, `password`, `enabled`) VALUES ('nacos', '$2a$10$W6PKgRTzXUp6R/NY853Kn.nRaIcX3whIMTZ/WWkNqo2MTOeSBjKJq', 1);
 COMMIT;
 
+-- ---------------------------------------------------------------------------
+-- Bubble Cloud 4.1 configuration migration.
+-- These updates are intentionally scoped to the Bubble tenant. Existing Nacos
+-- rows for the public namespace and the upstream Pig seed data stay untouched.
+-- ---------------------------------------------------------------------------
+UPDATE `config_info`
+SET `content` = '# Configuration encryption root password\njasypt:\n  encryptor:\n    password: bubble\n    algorithm: PBEWithMD5AndDES\n    iv-generator-classname: org.jasypt.iv.NoIvGenerator\n\nspring:\n  cache:\n    type: redis\n  data:\n    redis:\n      host: ${REDIS_HOST:127.0.0.1}\n  cloud:\n    sentinel:\n      eager: true\n      transport:\n        dashboard: bubble-sentinel:5003\n    refresh:\n      never-refreshable: datasource\n    openfeign:\n      sentinel:\n        enabled: false\n      okhttp:\n        enabled: true\n      httpclient:\n        enabled: false\n      client:\n        config:\n          default:\n            connectTimeout: 10000\n            readTimeout: 10000\n      compression:\n        request:\n          enabled: true\n        response:\n          enabled: true\n\nmanagement:\n  endpoints:\n    web:\n      exposure:\n        include: "*"\n  endpoint:\n    health:\n      show-details: ALWAYS\n\nmybatis-plus:\n  mapper-locations: classpath:/mapper/*Mapper.xml\n  type-handlers-package: com.bubblecloud.common.data.handler,com.bubblecloud.common.mybatis.handler\n  global-config:\n    banner: false\n    db-config:\n      id-type: auto\n      table-underline: true\n      logic-delete-value: 1\n      logic-not-delete-value: 0\n  configuration:\n    map-underscore-to-camel-case: true\n    shrink-whitespaces-in-sql: true\n    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl\n', `gmt_modified` = NOW()
+WHERE `tenant_id` = 'bubble' AND `group_id` = 'DEFAULT_GROUP' AND `data_id` = 'application-dev.yml';
+UPDATE `config_info`
+SET `md5` = MD5(`content`), `gmt_modified` = NOW()
+WHERE `tenant_id` = 'bubble' AND `group_id` = 'DEFAULT_GROUP' AND `data_id` = 'application-dev.yml';
+
+UPDATE `config_info`
+SET `content` = 'spring:\n  cloud:\n    gateway:\n      server:\n        webflux:\n          routes:\n            - id: bubble-auth\n              uri: lb://bubble-auth\n              predicates:\n                - Path=/auth/**\n            - id: bubble-biz-backend\n              uri: lb://bubble-biz-backend\n              predicates:\n                - Path=/admin/**\n            - id: bubble-codegen\n              uri: lb://bubble-codegen\n              predicates:\n                - Path=/gen/**\n            - id: bubble-quartz\n              uri: lb://bubble-quartz\n              predicates:\n                - Path=/job/**\n            - id: bubble-biz-oa\n              uri: lb://bubble-biz-oa\n              predicates:\n                - Path=/api/**\n            - id: bubble-biz-flow\n              uri: lb://bubble-biz-flow\n              predicates:\n                - Path=/flow/**\n            - id: bubble-biz-agi\n              uri: lb://bubble-biz-agi\n              predicates:\n                - Path=/agi/**\n            - id: openapi\n              uri: lb://bubble-gateway\n              predicates:\n                - Path=/v3/api-docs/**\n              filters:\n                - RewritePath=/v3/api-docs/(?<path>.*), /$\\{path}/$\\{path}/v3/api-docs\n', `gmt_modified` = NOW()
+WHERE `tenant_id` = 'bubble' AND `group_id` = 'DEFAULT_GROUP' AND `data_id` = 'bubble-gateway-dev.yml';
+UPDATE `config_info`
+SET `md5` = MD5(`content`), `gmt_modified` = NOW()
+WHERE `tenant_id` = 'bubble' AND `group_id` = 'DEFAULT_GROUP' AND `data_id` = 'bubble-gateway-dev.yml';
+
+UPDATE `config_info`
+SET `content` = 'spring:\n  datasource:\n    type: com.alibaba.druid.pool.DruidDataSource\n    druid:\n      driver-class-name: com.mysql.cj.jdbc.Driver\n      username: ${MYSQL_USER:root}\n      password: ${MYSQL_PWD:root}\n      url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/bubble?characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true&allowPublicKeyRetrieval=true\n      query-ds-enabled: false\n', `gmt_modified` = NOW()
+WHERE `tenant_id` = 'bubble' AND `group_id` = 'DEFAULT_GROUP' AND `data_id` = 'bubble-codegen-dev.yml';
+UPDATE `config_info`
+SET `md5` = MD5(`content`), `gmt_modified` = NOW()
+WHERE `tenant_id` = 'bubble' AND `group_id` = 'DEFAULT_GROUP' AND `data_id` = 'bubble-codegen-dev.yml';
+
+UPDATE `config_info`
+SET `content` = 'spring:\n  datasource:\n    type: com.alibaba.druid.pool.DruidDataSource\n    druid:\n      driver-class-name: com.mysql.cj.jdbc.Driver\n      username: ${MYSQL_USER:root}\n      password: ${MYSQL_PWD:root}\n      url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/bubble?characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowMultiQueries=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true&allowPublicKeyRetrieval=true\n\npig:\n  quartz:\n    protection:\n      enabled: true\n      fire-dedup-ttl-seconds: 86400\n      running-lock-ttl-seconds: 600\n      log-skipped: true\n      rest-task-url-whitelist:\n        - ${QUARTZ_REST_TASK_URL:}\n', `gmt_modified` = NOW()
+WHERE `tenant_id` = 'bubble' AND `group_id` = 'DEFAULT_GROUP' AND `data_id` = 'bubble-quartz-dev.yml';
+UPDATE `config_info`
+SET `md5` = MD5(`content`), `gmt_modified` = NOW()
+WHERE `tenant_id` = 'bubble' AND `group_id` = 'DEFAULT_GROUP' AND `data_id` = 'bubble-quartz-dev.yml';
+
+UPDATE `config_info`
+SET `content` = 'spring:\n  datasource:\n    type: com.zaxxer.hikari.HikariDataSource\n    driver-class-name: com.mysql.cj.jdbc.Driver\n    username: ${MYSQL_USER:root}\n    password: ${MYSQL_PWD:root}\n    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/bubble?characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowMultiQueries=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true&allowPublicKeyRetrieval=true\n\nfile:\n  bucketName: s3demo\n  local:\n    enable: true\n    base-path: /Users/qinlei/Downloads/img\n', `gmt_modified` = NOW()
+WHERE `tenant_id` = 'bubble' AND `group_id` = 'DEFAULT_GROUP' AND `data_id` = 'bubble-biz-backend-dev.yml';
+UPDATE `config_info`
+SET `md5` = MD5(`content`), `gmt_modified` = NOW()
+WHERE `tenant_id` = 'bubble' AND `group_id` = 'DEFAULT_GROUP' AND `data_id` = 'bubble-biz-backend-dev.yml';
+
+UPDATE `config_info`
+SET `content` = 'spring:\n  datasource:\n    type: com.zaxxer.hikari.HikariDataSource\n    driver-class-name: com.mysql.cj.jdbc.Driver\n    username: ${MYSQL_USER:root}\n    password: ${MYSQL_PWD:root}\n    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/bubble_oa?characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowMultiQueries=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true&allowPublicKeyRetrieval=true\n\nmybatis-plus:\n  global-config:\n    db-config:\n      table-prefix: eb_\n\nfile:\n  bucketName: s3demo\n  local:\n    enable: true\n    base-path: /Users/qinlei/Downloads/img\n\noa:\n  php-jwt:\n    secret: ${OA_PHP_JWT_SECRET:QFFIY8jvNlhY2tWPofaTDOry8tphCzX5RlyWgDtTZE7zFcj6727cq8gU5afY9acR}\n    expire-seconds: ${OA_PHP_JWT_EXPIRE_SECONDS:7200}\n    issuer: bubble-oa\n', `gmt_modified` = NOW()
+WHERE `tenant_id` = 'bubble' AND `group_id` = 'DEFAULT_GROUP' AND `data_id` = 'bubble-biz-oa-dev.yml';
+UPDATE `config_info`
+SET `md5` = MD5(`content`), `gmt_modified` = NOW()
+WHERE `tenant_id` = 'bubble' AND `group_id` = 'DEFAULT_GROUP' AND `data_id` = 'bubble-biz-oa-dev.yml';
+
+UPDATE `config_info`
+SET `content` = 'spring:\n  datasource:\n    type: com.zaxxer.hikari.HikariDataSource\n    driver-class-name: com.mysql.cj.jdbc.Driver\n    username: ${MYSQL_USER:root}\n    password: ${MYSQL_PWD:root}\n    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/bubble_flow?characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowMultiQueries=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true&allowPublicKeyRetrieval=true\n\nfile:\n  bucketName: s3demo\n  local:\n    enable: true\n    base-path: /Users/qinlei/Downloads/img\n', `gmt_modified` = NOW()
+WHERE `tenant_id` = 'bubble' AND `group_id` = 'DEFAULT_GROUP' AND `data_id` = 'bubble-biz-flow-dev.yml';
+UPDATE `config_info`
+SET `md5` = MD5(`content`), `gmt_modified` = NOW()
+WHERE `tenant_id` = 'bubble' AND `group_id` = 'DEFAULT_GROUP' AND `data_id` = 'bubble-biz-flow-dev.yml';
+
+UPDATE `config_info`
+SET `content` = 'spring:\n  datasource:\n    driver-class-name: org.postgresql.Driver\n    username: ${POSTGRES_USER:postgres}\n    password: ${POSTGRES_PASSWORD:postgres}\n    url: jdbc:postgresql://${POSTGRES_HOST:127.0.0.1}:${POSTGRES_PORT:5432}/bubble_ai\n\nfile:\n  bucketName: s3demo\n  local:\n    enable: true\n    base-path: /Users/qinlei/Downloads/img\n', `gmt_modified` = NOW()
+WHERE `tenant_id` = 'bubble' AND `group_id` = 'DEFAULT_GROUP' AND `data_id` = 'bubble-biz-agi-dev.yml';
+UPDATE `config_info`
+SET `md5` = MD5(`content`), `gmt_modified` = NOW()
+WHERE `tenant_id` = 'bubble' AND `group_id` = 'DEFAULT_GROUP' AND `data_id` = 'bubble-biz-agi-dev.yml';
+
 SET FOREIGN_KEY_CHECKS = 1;

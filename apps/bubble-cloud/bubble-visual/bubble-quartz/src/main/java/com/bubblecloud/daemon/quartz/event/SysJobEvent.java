@@ -1,6 +1,7 @@
 package com.bubblecloud.daemon.quartz.event;
 
 import com.bubblecloud.daemon.quartz.entity.SysJob;
+import com.bubblecloud.daemon.quartz.support.QuartzExecutionMetadata;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.quartz.Trigger;
@@ -19,5 +20,7 @@ public class SysJobEvent {
 	private final SysJob sysJob;
 
 	private final Trigger trigger;
+
+	private final QuartzExecutionMetadata executionMetadata;
 
 }

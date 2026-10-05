@@ -13,7 +13,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 /**
- * 基于Spring Bean的定时任务反射执行器
+ * 定时任务spring bean反射实现
  *
  * @author qinlei
  * @date 2025/05/31
@@ -22,13 +22,24 @@ import java.lang.reflect.Method;
 @Slf4j
 public class SpringBeanTaskInvok implements ITaskInvok {
 
-	/**
-	 * 调用定时任务方法
-	 * @param sysJob 定时任务信息
-	 * @throws TaskException 当任务执行失败或反射调用异常时抛出
-	 */
+	private final JobSecurityValidator jobSecurityValidator;
+
+	public SpringBeanTaskInvok(JobSecurityValidator jobSecurityValidator) {
+		this.jobSecurityValidator = jobSecurityValidator;
+	}
+
 	@Override
 	public void invokMethod(SysJob sysJob) throws TaskException {
+		// Security validation before reflection
+		// 在执行反射之前进行安全验证
+		String securityError = jobSecurityValidator.validateJobConfig(sysJob.getClassName(), sysJob.getMethodName(),
+				sysJob.getMethodParamsValue());
+
+		if (securityError != null) {
+			log.error("Security validation failed during job execution: {}", securityError);
+			throw new TaskException("安全验证失败: " + securityError);
+		}
+
 		Object target;
 		Method method;
 		Object returnValue;

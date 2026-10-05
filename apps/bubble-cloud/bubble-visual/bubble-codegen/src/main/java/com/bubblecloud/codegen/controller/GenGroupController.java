@@ -9,9 +9,10 @@ import com.bubblecloud.codegen.service.GenGroupService;
 import com.bubblecloud.codegen.util.vo.GroupVO;
 import com.bubblecloud.codegen.util.vo.TemplateGroupDTO;
 import com.bubblecloud.common.core.util.R;
+import com.bubblecloud.common.excel.annotation.ResponseExcel;
 import com.bubblecloud.common.log.annotation.SysLog;
 import com.bubblecloud.common.security.annotation.HasPermission;
-import com.pig4cloud.plugin.excel.annotation.ResponseExcel;
+import com.bubblecloud.common.excel.annotation.ResponseExcel;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,7 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 模板分组管理控制器
+ * 模板分组
  *
  * @author qinlei
  * @date 2025/05/31
@@ -30,22 +31,22 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/group")
-@Tag(description = "group", name = "模板分组管理模块")
+@Tag(description = "group", name = "模板分组管理")
 @SecurityRequirement(name = HttpHeaders.AUTHORIZATION)
 public class GenGroupController {
 
 	private final GenGroupService genGroupService;
 
 	/**
-	 * 分页查询模板分组
+	 * 分页查询
 	 * @param page 分页对象
-	 * @param genGroup 模板分组查询条件
-	 * @return 分页查询结果
+	 * @param genGroup 模板分组
+	 * @return
 	 */
+	@Operation(summary = "分页查询", description = "分页查询")
 	@GetMapping("/page")
 	@HasPermission("codegen_group_view")
-	@Operation(summary = "分页查询模板分组", description = "分页查询模板分组")
-	public R getGroupPage(Page page, GenGroupEntity genGroup) {
+	public R getgenGroupPage(Page page, GenGroupEntity genGroup) {
 		LambdaQueryWrapper<GenGroupEntity> wrapper = Wrappers.<GenGroupEntity>lambdaQuery()
 			.like(genGroup.getId() != null, GenGroupEntity::getId, genGroup.getId())
 			.like(StrUtil.isNotEmpty(genGroup.getGroupName()), GenGroupEntity::getGroupName, genGroup.getGroupName());
@@ -57,10 +58,10 @@ public class GenGroupController {
 	 * @param id id
 	 * @return R
 	 */
+	@Operation(summary = "通过id查询", description = "通过id查询")
 	@GetMapping("/{id}")
 	@HasPermission("codegen_group_view")
-	@Operation(summary = "通过id查询模板分组", description = "通过id查询模板分组")
-	public R getGroupById(@PathVariable("id") Long id) {
+	public R getById(@PathVariable("id") Long id) {
 		return R.ok(genGroupService.getGroupVoById(id));
 	}
 
@@ -69,11 +70,11 @@ public class GenGroupController {
 	 * @param genTemplateGroup 模板分组
 	 * @return R
 	 */
-	@PostMapping
-	@SysLog("新增模板分组")
-	@HasPermission("codegen_group_add")
 	@Operation(summary = "新增模板分组", description = "新增模板分组")
-	public R saveGroup(@RequestBody TemplateGroupDTO genTemplateGroup) {
+	@SysLog("新增模板分组")
+	@PostMapping
+	@HasPermission("codegen_group_add")
+	public R save(@RequestBody TemplateGroupDTO genTemplateGroup) {
 		genGroupService.saveGenGroup(genTemplateGroup);
 		return R.ok();
 	}
@@ -83,11 +84,11 @@ public class GenGroupController {
 	 * @param groupVo 模板分组
 	 * @return R
 	 */
-	@PutMapping
-	@SysLog("修改模板分组")
-	@HasPermission("codegen_group_edit")
 	@Operation(summary = "修改模板分组", description = "修改模板分组")
-	public R updateGroup(@RequestBody GroupVO groupVo) {
+	@SysLog("修改模板分组")
+	@PutMapping
+	@HasPermission("codegen_group_edit")
+	public R updateById(@RequestBody GroupVO groupVo) {
 		genGroupService.updateGroupAndTemplateById(groupVo);
 		return R.ok();
 	}
@@ -97,11 +98,11 @@ public class GenGroupController {
 	 * @param ids id列表
 	 * @return R
 	 */
-	@DeleteMapping
-	@SysLog("通过id删除模板分组")
-	@HasPermission("codegen_group_del")
 	@Operation(summary = "通过id删除模板分组", description = "通过id删除模板分组")
-	public R removeGroupByIds(@RequestBody Long[] ids) {
+	@SysLog("通过id删除模板分组")
+	@DeleteMapping
+	@HasPermission("codegen_group_del")
+	public R removeById(@RequestBody Long[] ids) {
 		genGroupService.delGroupAndTemplate(ids);
 		return R.ok();
 	}
@@ -114,18 +115,16 @@ public class GenGroupController {
 	@ResponseExcel
 	@GetMapping("/export")
 	@HasPermission("codegen_group_export")
-	@Operation(summary = "导出模板分组", description = "导出模板分组")
-	public List<GenGroupEntity> exportGroups(GenGroupEntity genGroup) {
+	public List<GenGroupEntity> export(GenGroupEntity genGroup) {
 		return genGroupService.list(Wrappers.query(genGroup));
 	}
 
 	/**
-	 * 查询列表
-	 * @return 包含列表数据的响应信息
+	 * @return 响应信息主体
 	 */
 	@GetMapping("/list")
 	@Operation(summary = "查询列表", description = "查询列表")
-	public R listGroups() {
+	public R list() {
 		List<GenGroupEntity> list = genGroupService
 			.list(Wrappers.<GenGroupEntity>lambdaQuery().orderByDesc(GenGroupEntity::getCreateTime));
 		return R.ok(list);

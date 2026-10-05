@@ -3,10 +3,8 @@ package com.bubblecloud.common.core.exception;
 import lombok.NoArgsConstructor;
 
 /**
- * 受检异常类，继承自RuntimeException
- *
  * @author lengleng
- * @date 2025/05/30
+ * @date 😴2018年06月22日16:21:57
  */
 @NoArgsConstructor
 public class CheckedException extends RuntimeException {

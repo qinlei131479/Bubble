@@ -1,6 +1,5 @@
 package com.bubblecloud.gateway.config;
 
-import com.bubblecloud.gateway.filter.RequestGlobalFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.bubblecloud.gateway.handler.GlobalExceptionHandler;
 import org.springframework.context.annotation.Bean;
@@ -14,15 +13,6 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration(proxyBeanMethods = false)
 public class GatewayConfiguration {
-
-	/**
-	 * 创建Request全局过滤器
-	 * @return Request全局过滤器
-	 */
-	@Bean
-	public RequestGlobalFilter requestGlobalFilter() {
-		return new RequestGlobalFilter();
-	}
 
 	/**
 	 * 创建全局异常处理程序

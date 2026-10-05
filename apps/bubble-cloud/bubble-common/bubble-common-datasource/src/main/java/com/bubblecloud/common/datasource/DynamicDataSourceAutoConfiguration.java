@@ -2,7 +2,7 @@ package com.bubblecloud.common.datasource;
 
 import com.baomidou.dynamic.datasource.creator.DataSourceCreator;
 import com.baomidou.dynamic.datasource.creator.DefaultDataSourceCreator;
-import com.baomidou.dynamic.datasource.creator.hikaricp.HikariDataSourceCreator;
+import com.baomidou.dynamic.datasource.creator.druid.DruidDataSourceCreator;
 import com.baomidou.dynamic.datasource.processor.DsJakartaHeaderProcessor;
 import com.baomidou.dynamic.datasource.processor.DsJakartaSessionProcessor;
 import com.baomidou.dynamic.datasource.processor.DsProcessor;
@@ -13,25 +13,27 @@ import lombok.RequiredArgsConstructor;
 import org.jasypt.encryption.StringEncryptor;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.expression.BeanFactoryResolver;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 动态数据源切换配置
- *
  * @author lengleng
  * @date 2020-02-06
+ * <p>
+ * 动态数据源切换配置
  */
 @Configuration
 @RequiredArgsConstructor
+@Import(DynamicLogConfiguration.class)
 @AutoConfigureAfter(DataSourceAutoConfiguration.class)
-@EnableConfigurationProperties(DataSourceProperties.class)
+@EnableConfigurationProperties(DruidDataSourceProperties.class)
 public class DynamicDataSourceAutoConfiguration {
 
 	/**
@@ -43,7 +45,7 @@ public class DynamicDataSourceAutoConfiguration {
 	 */
 	@Bean
 	public DynamicDataSourceProvider dynamicDataSourceProvider(DefaultDataSourceCreator defaultDataSourceCreator,
-			StringEncryptor stringEncryptor, DataSourceProperties properties) {
+			StringEncryptor stringEncryptor, DruidDataSourceProperties properties) {
 		return new JdbcDynamicDataSourceProvider(defaultDataSourceCreator, stringEncryptor, properties);
 	}
 
@@ -55,7 +57,7 @@ public class DynamicDataSourceAutoConfiguration {
 	 */
 	@Bean
 	public DynamicDataSourceProvider masterDataSourceProvider(DefaultDataSourceCreator defaultDataSourceCreator,
-			DataSourceProperties properties) {
+			DruidDataSourceProperties properties) {
 		return new MasterDataSourceProvider(defaultDataSourceCreator, properties);
 	}
 
@@ -65,7 +67,7 @@ public class DynamicDataSourceAutoConfiguration {
 	 * @return 默认数据源创建器
 	 */
 	@Bean
-	public DefaultDataSourceCreator defaultDataSourceCreator(HikariDataSourceCreator druidDataSourceCreator) {
+	public DefaultDataSourceCreator defaultDataSourceCreator(DruidDataSourceCreator druidDataSourceCreator) {
 		DefaultDataSourceCreator defaultDataSourceCreator = new DefaultDataSourceCreator();
 		List<DataSourceCreator> creators = new ArrayList<>();
 		creators.add(druidDataSourceCreator);

@@ -11,10 +11,10 @@ import jakarta.servlet.ServletResponse;
 import java.io.IOException;
 
 /**
- * 清空上文的DS 设置避免污染当前线程
- *
  * @author lengleng
  * @date 2020/12/11
+ * <p>
+ * 清空上文的DS 设置避免污染当前线程
  */
 public class ClearTtlDataSourceFilter extends GenericFilterBean implements Ordered {
 

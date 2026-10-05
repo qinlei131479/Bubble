@@ -4,20 +4,20 @@ import com.bubblecloud.backend.api.feign.RemoteTokenService;
 import com.bubblecloud.common.core.util.R;
 import com.bubblecloud.common.log.annotation.SysLog;
 import com.bubblecloud.common.security.annotation.HasPermission;
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpHeaders;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
 /**
- * 令牌管理控制器：提供令牌的分页查询和删除功能
- *
  * @author lengleng
- * @date 2025/05/30
+ * @date 2018/9/4 getTokenPage 管理
  */
 @RestController
 @AllArgsConstructor
@@ -29,26 +29,24 @@ public class SysTokenController {
 	private final RemoteTokenService remoteTokenService;
 
 	/**
-	 * 获取分页token信息
-	 * @param params 请求参数集合
-	 * @return 包含token分页信息的响应结果
+	 * 分页token 信息
+	 * @param params 参数集
+	 * @return token集合
 	 */
-	@PostMapping("/page")
+	@RequestMapping("/page")
 	@HasPermission("sys_token_del")
-	@Operation(summary = "获取分页token信息", description = "获取分页token信息")
 	public R getTokenPage(@RequestBody Map<String, Object> params) {
 		return remoteTokenService.getTokenPage(params);
 	}
 
 	/**
-	 * 根据token数组删除token
-	 * @param tokens 需要删除的token数组
-	 * @return 操作结果，成功返回success，失败返回false
+	 * 删除
+	 * @param token getTokenPage
+	 * @return success/false
 	 */
 	@SysLog("删除用户token")
 	@DeleteMapping("/delete")
 	@HasPermission("sys_token_del")
-	@Operation(summary = "删除用户token", description = "删除用户token")
 	public R removeById(@RequestBody String[] tokens) {
 		for (String token : tokens) {
 			remoteTokenService.removeTokenById(token);

@@ -1,23 +1,24 @@
 package com.bubblecloud.common.security.service;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.SpringSecurityCoreVersion;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 
 import java.io.Serial;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
- * 扩展用户信息类，继承自User并实现OAuth2AuthenticatedPrincipal接口
- *
  * @author lengleng
- * @date 2025/05/31
+ * @date 2020/4/16 扩展用户信息
  */
 public class CustomUser extends User implements OAuth2AuthenticatedPrincipal {
 
@@ -33,47 +34,126 @@ public class CustomUser extends User implements OAuth2AuthenticatedPrincipal {
 	 * 用户ID
 	 */
 	@Getter
-	@JsonSerialize(using = ToStringSerializer.class)
-	private final Long id;
+	private Long id;
 
 	/**
-	 * 部门ID
+	 * 角色ID列表
 	 */
 	@Getter
-	@JsonSerialize(using = ToStringSerializer.class)
-	private final Long deptId;
+	private List<Long> roleIds;
+
+	/**
+	 * 主部门ID
+	 */
+	@Getter
+	private Long deptId;
+
+	/**
+	 * (全部)部门ID
+	 */
+	@Getter
+	private List<Long> deptIds;
+
+	/**
+	 * 岗位ID列表
+	 */
+	@Getter
+	private List<Long> postIds;
 
 	/**
 	 * 手机号
 	 */
 	@Getter
-	private final String phone;
-
-	public CustomUser(Long id, Long deptId, String username, String password, String phone, boolean enabled,
-			boolean accountNonExpired, boolean credentialsNonExpired, boolean accountNonLocked,
-			Collection<? extends GrantedAuthority> authorities) {
-		super(username, password, enabled, accountNonExpired, credentialsNonExpired, accountNonLocked, authorities);
-		this.id = id;
-		this.deptId = deptId;
-		this.phone = phone;
-	}
+	private String phone;
 
 	/**
-	 * 获取OAuth 2.0令牌属性
-	 * @return OAuth 2.0令牌属性Map
+	 * 头像
 	 */
+	@Getter
+	private String avatar;
+
+	/**
+	 * 拓展字段:昵称
+	 */
+	@Getter
+	private String nickname;
+
+	/**
+	 * 拓展字段:姓名
+	 */
+	@Getter
+	private String name;
+
+	/**
+	 * 拓展字段:邮箱
+	 */
+	@Getter
+	private String email;
+
+	/**
+	 * 用户类型
+	 */
+	@Getter
+	private String userType;
+
+	/**
+	 * 密码修改时间
+	 */
+	@Getter
+	private LocalDateTime passwordModifyTime;
+
+	/**
+	 * Construct the <code>User</code> with the details required by
+	 * {@link DaoAuthenticationProvider}.
+	 * @param id 用户ID
+	 * @param deptIds 部门ID
+	 * @param nickname 昵称
+	 * @param name 姓名
+	 * @param email 邮箱 the username presented to the
+	 * <code>DaoAuthenticationProvider</code>
+	 * @param password the password that should be presented to the
+	 * <code>DaoAuthenticationProvider</code>
+	 * @param enabled set to <code>true</code> if the user is enabled
+	 * @param accountNonExpired set to <code>true</code> if the account has not expired
+	 * @param credentialsNonExpired set to <code>true</code> if the credentials have not
+	 * expired
+	 * @param accountNonLocked set to <code>true</code> if the account is not locked
+	 * @param authorities the authorities that should be granted to the caller if they
+	 * presented the correct username and password and the user is enabled. Not null.
+	 * @throws IllegalArgumentException if a <code>null</code> value was passed either as
+	 * a parameter or as an element in the <code>GrantedAuthority</code> collection
+	 */
+	@JsonCreator
+	public CustomUser(@JsonProperty("id") Long id, @JsonProperty("username") String username,
+			@JsonProperty("roleIds") List<Long> roleIds, @JsonProperty("deptId") Long deptId,
+			@JsonProperty("deptIds") List<Long> deptIds, @JsonProperty("postIds") List<Long> postIds,
+			@JsonProperty("phone") String phone, @JsonProperty("avatar") String avatar,
+			@JsonProperty("nickname") String nickname, @JsonProperty("name") String name,
+			@JsonProperty("email") String email, @JsonProperty("password") String password,
+			@JsonProperty("enabled") boolean enabled, @JsonProperty("accountNonExpired") boolean accountNonExpired,
+			@JsonProperty("userType") String userType,
+			@JsonProperty("credentialsNonExpired") boolean credentialsNonExpired,
+			@JsonProperty("passwordModifyTime") LocalDateTime passwordModifyTime,
+			@JsonProperty("accountNonLocked") boolean accountNonLocked,
+			@JsonProperty("authorities") Collection<? extends GrantedAuthority> authorities) {
+		super(username, password, enabled, accountNonExpired, credentialsNonExpired, accountNonLocked, authorities);
+		this.id = id;
+		this.roleIds = roleIds;
+		this.deptId = deptId;
+		this.deptIds = deptIds;
+		this.postIds = postIds;
+		this.phone = phone;
+		this.avatar = avatar;
+		this.nickname = nickname;
+		this.name = name;
+		this.email = email;
+		this.userType = userType;
+		this.passwordModifyTime = passwordModifyTime;
+	}
+
 	@Override
 	public Map<String, Object> getAttributes() {
 		return this.attributes;
-	}
-
-	/**
-	 * 获取用户名称
-	 * @return 用户名称
-	 */
-	@Override
-	public String getName() {
-		return this.getUsername();
 	}
 
 }

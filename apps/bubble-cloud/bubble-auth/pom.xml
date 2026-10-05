@@ -48,11 +48,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-freemarker</artifactId>
         </dependency>
-        <!--undertow容器-->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-undertow</artifactId>
-        </dependency>
         <!-- log -->
         <dependency>
             <groupId>com.bubblecloud</groupId>
@@ -60,13 +55,21 @@
         </dependency>
         <!-- 调用验证码核心模块 -->
         <dependency>
-            <groupId>com.pig4cloud.plugin</groupId>
+            <groupId>io.springboot.plugin</groupId>
             <artifactId>captcha-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.pig-mesh.plugin</groupId>
+            <artifactId>captcha-spring-boot-starter</artifactId>
         </dependency>
         <!-- 加解密依赖 -->
         <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-crypto</artifactId>
+        </dependency>
+            <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
     </dependencies>
 

@@ -5,8 +5,6 @@ import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Element;
 import org.springframework.util.StringUtils;
 
-import cn.hutool.core.util.StrUtil;
-
 /**
  * xss clean
  *
@@ -19,7 +17,7 @@ import cn.hutool.core.util.StrUtil;
  */
 public class XssUtil {
 
-	public static final HtmlSafeList WHITE_LIST = HtmlSafeList.INSTANCE;
+	public static final HtmlWhitelist WHITE_LIST = new HtmlWhitelist();
 
 	/**
 	 * trim 字符串
@@ -27,7 +25,7 @@ public class XssUtil {
 	 * @return 清理后的 text
 	 */
 	public static String trim(String text, boolean trim) {
-		return trim ? StrUtil.trim(text) : text;
+		return trim ? StringUtils.trimWhitespace(text) : text;
 	}
 
 	/**
@@ -47,11 +45,9 @@ public class XssUtil {
 	 *
 	 * @author michael
 	 */
-	public static class HtmlSafeList extends org.jsoup.safety.Safelist {
+	public static class HtmlWhitelist extends org.jsoup.safety.Safelist {
 
-		public static final HtmlSafeList INSTANCE = new HtmlSafeList();
-
-		public HtmlSafeList() {
+		public HtmlWhitelist() {
 			addTags("a", "b", "blockquote", "br", "caption", "cite", "code", "col", "colgroup", "dd", "div", "span",
 					"embed", "object", "dl", "dt", "em", "h1", "h2", "h3", "h4", "h5", "h6", "i", "img", "li", "ol",
 					"p", "pre", "q", "small", "strike", "strong", "sub", "sup", "table", "tbody", "td", "tfoot", "th",

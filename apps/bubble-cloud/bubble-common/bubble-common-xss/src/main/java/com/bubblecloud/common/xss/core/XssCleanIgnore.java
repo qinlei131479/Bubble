@@ -12,9 +12,4 @@ import java.lang.annotation.*;
 @Documented
 public @interface XssCleanIgnore {
 
-	/**
-	 * @return 需要跳过的字段列表
-	 */
-	String[] value() default {};
-
 }

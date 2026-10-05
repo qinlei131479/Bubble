@@ -1,59 +1,82 @@
+/*
+ *
+ *      Copyright (c) 2018-2026, lengleng All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *
+ * Redistributions of source code must retain the above copyright notice,
+ *  this list of conditions and the following disclaimer.
+ *  Redistributions in binary form must reproduce the above copyright
+ *  notice, this list of conditions and the following disclaimer in the
+ *  documentation and/or other materials provided with the distribution.
+ *  Neither the name of the pig4cloud.com developer nor the names of its
+ *  contributors may be used to endorse or promote products derived from
+ *  this software without specific prior written permission.
+ *  Author: lengleng (wangiegie@gmail.com)
+ *
+ */
+
 package com.bubblecloud.biz.backend.service.impl;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.lang.Dict;
+import cn.hutool.core.lang.tree.Tree;
+import cn.hutool.core.lang.tree.TreeNode;
+import cn.hutool.core.lang.tree.TreeUtil;
+import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.github.yulichang.wrapper.MPJLambdaWrapper;
+import com.bubblecloud.backend.api.constant.OrgTypeEnum;
+import com.bubblecloud.backend.api.constant.UpmsErrorCodes;
+import com.bubblecloud.backend.api.entity.*;
+import com.bubblecloud.backend.api.utils.DataUtil;
+import com.bubblecloud.backend.api.vo.DeptExcelVO;
+import com.bubblecloud.backend.api.vo.OrgTreeVO;
+import com.bubblecloud.biz.backend.mapper.*;
 import com.bubblecloud.biz.backend.service.SysDeptService;
-import com.bubblecloud.backend.api.entity.SysDept;
-import com.bubblecloud.backend.api.vo.DeptExcelVo;
+import com.bubblecloud.common.core.util.MsgUtils;
+import com.bubblecloud.common.core.util.R;
+import com.bubblecloud.common.excel.vo.ErrorMessage;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
 
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.bubblecloud.biz.backend.mapper.SysDeptMapper;
-import com.bubblecloud.common.core.util.R;
-import com.pig4cloud.plugin.excel.vo.ErrorMessage;
-
-import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.lang.tree.Tree;
-import cn.hutool.core.lang.tree.TreeNode;
-import cn.hutool.core.lang.tree.TreeUtil;
-import cn.hutool.core.util.StrUtil;
-import lombok.AllArgsConstructor;
+import java.util.*;
 
 /**
- * 部门管理服务实现类
+ * <p>
+ * 部门管理 服务实现类
+ * </p>
  *
  * @author lengleng
- * @date 2025/05/30
  * @since 2018-01-20
  */
 @Service
 @AllArgsConstructor
 public class SysDeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> implements SysDeptService {
 
+	private final SysUserMapper userMapper;
+
 	private final SysDeptMapper deptMapper;
 
+	private final SysPostMapper postMapper;
+
+	private final SysRoleMapper roleMapper;
+
 	/**
-	 * 根据部门ID删除部门（包含级联删除子部门）
-	 * @param id 要删除的部门ID
-	 * @return 删除操作是否成功，始终返回true
-	 * @throws Exception 事务执行过程中可能抛出的异常
+	 * 删除部门
+	 * @param id 部门 ID
+	 * @return 成功、失败
 	 */
 	@Override
 	@Transactional(rollbackFor = Exception.class)
 	public Boolean removeDeptById(Long id) {
 		// 级联删除部门
-		List<Long> idList = this.listDescendants(id).stream().map(SysDept::getDeptId).toList();
+		List<Long> idList = this.listDescendant(id).stream().map(SysDept::getDeptId).toList();
 
 		Optional.ofNullable(idList).filter(CollUtil::isNotEmpty).ifPresent(this::removeByIds);
 
@@ -61,29 +84,31 @@ public class SysDeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impl
 	}
 
 	/**
-	 * 查询部门树结构
-	 * @param deptName 部门名称(模糊查询)
-	 * @return 部门树结构列表，模糊查询时返回平铺列表
+	 * 查询全部部门树
+	 * @param deptName
+	 * @param parentId
+	 * @return 树 部门名称
 	 */
 	@Override
-	public List<Tree<Long>> getDeptTree(String deptName) {
+	public List<Tree<Long>> selectTree(String deptName, Long parentId) {
 		// 查询全部部门
 		List<SysDept> deptAllList = deptMapper
 			.selectList(Wrappers.<SysDept>lambdaQuery().like(StrUtil.isNotBlank(deptName), SysDept::getName, deptName));
+		List<Long> deptOwnIdList = deptAllList.stream().map(SysDept::getDeptId).toList();
 
-		// 权限内部门
 		List<TreeNode<Long>> collect = deptAllList.stream()
 			.filter(dept -> dept.getDeptId().intValue() != dept.getParentId())
 			.sorted(Comparator.comparingInt(SysDept::getSortOrder))
 			.map(dept -> {
-				TreeNode<Long> treeNode = new TreeNode();
+				TreeNode<Long> treeNode = new TreeNode<>();
 				treeNode.setId(dept.getDeptId());
 				treeNode.setParentId(dept.getParentId());
 				treeNode.setName(dept.getName());
 				treeNode.setWeight(dept.getSortOrder());
 				// 有权限不返回标识
 				Map<String, Object> extra = new HashMap<>(8);
-				extra.put(SysDept.Fields.createTime, dept.getCreateTime());
+				extra.put("isLock", !deptOwnIdList.contains(dept.getDeptId()));
+				extra.put("createTime", dept.getCreateTime());
 				treeNode.setExtra(extra);
 				return treeNode;
 			})
@@ -99,43 +124,36 @@ public class SysDeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impl
 			}).toList();
 		}
 
-		return TreeUtil.build(collect, 0L);
+		return TreeUtil.build(collect, parentId == null ? 0 : parentId);
 	}
 
 	/**
-	 * 导出部门列表为Excel视图对象列表
-	 * @return 部门Excel视图对象列表，包含部门名称、父部门名称和排序号
+	 * 导出部门
+	 * @return
 	 */
 	@Override
-	public List<DeptExcelVo> exportDepts() {
+	public List<DeptExcelVO> listExcelVo() {
 		List<SysDept> list = this.list();
-		List<DeptExcelVo> deptExcelVos = list.stream().map(item -> {
-			DeptExcelVo deptExcelVo = new DeptExcelVo();
+		// 一次性构建 deptId -> name 映射，避免每个部门都触发一次全表查询（N+1）
+		Map<Long, String> deptIdNameMap = new HashMap<>(list.size());
+		list.forEach(it -> deptIdNameMap.put(it.getDeptId(), it.getName()));
+		List<DeptExcelVO> deptExcelVos = list.stream().map(item -> {
+			DeptExcelVO deptExcelVo = new DeptExcelVO();
 			deptExcelVo.setName(item.getName());
-			Optional<String> first = this.list()
-				.stream()
-				.filter(it -> item.getParentId().equals(it.getDeptId()))
-				.map(SysDept::getName)
-				.findFirst();
-			deptExcelVo.setParentName(first.orElse("根部门"));
+			String parentName = deptIdNameMap.get(item.getParentId());
+			deptExcelVo.setParentName(parentName == null ? "根部门" : parentName);
 			deptExcelVo.setSortOrder(item.getSortOrder());
 			return deptExcelVo;
 		}).toList();
 		return deptExcelVos;
 	}
 
-	/**
-	 * 导入部门信息
-	 * @param excelVOList 部门Excel数据列表
-	 * @param bindingResult 数据校验结果
-	 * @return 导入结果，包含错误信息或成功信息
-	 */
 	@Override
-	public R importDept(List<DeptExcelVo> excelVOList, BindingResult bindingResult) {
+	public R importDept(List<DeptExcelVO> excelVOList, BindingResult bindingResult) {
 		List<ErrorMessage> errorMessageList = (List<ErrorMessage>) bindingResult.getTarget();
 
 		List<SysDept> deptList = this.list();
-		for (DeptExcelVo item : excelVOList) {
+		for (DeptExcelVO item : excelVOList) {
 			Set<String> errorMsg = new HashSet<>();
 			boolean exsitUsername = deptList.stream().anyMatch(sysDept -> item.getName().equals(sysDept.getName()));
 			if (exsitUsername) {
@@ -164,16 +182,16 @@ public class SysDeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impl
 		if (CollUtil.isNotEmpty(errorMessageList)) {
 			return R.failed(errorMessageList);
 		}
-		return R.ok(null, "部门导入成功");
+		return R.ok(null, MsgUtils.getMessage(UpmsErrorCodes.SYS_DEPT_IMPORT_SUCCEED));
 	}
 
 	/**
-	 * 查询部门及其所有子部门
-	 * @param deptId 目标部门ID
-	 * @return 包含目标部门及其所有子部门的列表
+	 * 查询所有子节点 （包含当前节点）
+	 * @param deptId 部门ID 目标部门ID
+	 * @return ID
 	 */
 	@Override
-	public List<SysDept> listDescendants(Long deptId) {
+	public List<SysDept> listDescendant(Long deptId) {
 		// 查询全部部门
 		List<SysDept> allDeptList = baseMapper.selectList(Wrappers.emptyWrapper());
 
@@ -187,7 +205,131 @@ public class SysDeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impl
 	}
 
 	/**
-	 * 递归查询所有子节点
+	 * 根据父部门ID和类型获取组织树
+	 * @param parentDeptId 父部门ID
+	 * @param type 类型
+	 * @return 组织树信息
+	 */
+	public Map<String, Object> listOrgTree(Long parentDeptId, String type) {
+
+		List<OrgTreeVO> orgs = new LinkedList<>();
+
+		if (StrUtil.equals(type, OrgTypeEnum.ROLE.getType())) {
+			// 角色
+			List<SysRole> roleList = roleMapper.selectList(Wrappers.emptyWrapper());
+
+			roleList.forEach(role -> {
+				OrgTreeVO orgTreeVo = new OrgTreeVO();
+				orgTreeVo.setId(role.getRoleId());
+				orgTreeVo.setName(role.getRoleName());
+				orgTreeVo.setType(OrgTypeEnum.ROLE.getType());
+				orgTreeVo.setSelected(false);
+				orgs.add(orgTreeVo);
+			});
+
+			return Dict.create()
+				.set("roleList", orgs)
+				.set("postList", new ArrayList<>())
+				.set("childDepartments", orgs)
+				.set("employees", new ArrayList<>());
+		}
+
+		if (StrUtil.equals(type, OrgTypeEnum.POST.getType())) {
+			// 角色
+			List<SysPost> postList = postMapper.selectList(Wrappers.emptyWrapper());
+
+			postList.forEach(post -> {
+				OrgTreeVO orgTreeVo = new OrgTreeVO();
+				orgTreeVo.setId(post.getPostId());
+				orgTreeVo.setName(post.getPostName());
+				orgTreeVo.setType(OrgTypeEnum.POST.getType());
+				orgTreeVo.setSelected(false);
+				orgs.add(orgTreeVo);
+			});
+
+			return Dict.create()
+				.set("roleList", new ArrayList<>())
+				.set("postList", orgs)
+				.set("childDepartments", orgs)
+				.set("employees", new ArrayList<>());
+		}
+
+		Dict dict = Dict.create()
+			.set("titleDepartments", new ArrayList<>())
+			.set("roleList", new ArrayList<>())
+			.set("postList", new ArrayList<>())
+			.set("employees", new ArrayList<>());
+
+		List<SysDept> deptList = this.list(
+				Wrappers.<SysDept>lambdaQuery().eq(Objects.nonNull(parentDeptId), SysDept::getParentId, parentDeptId));
+
+		// 查询所有部门及员工
+		List<OrgTreeVO> deptVoList = new ArrayList<>();
+		deptList.forEach(dept -> {
+			OrgTreeVO orgTreeVo = new OrgTreeVO();
+			orgTreeVo.setId(dept.getDeptId());
+			orgTreeVo.setName(dept.getName());
+			orgTreeVo.setType(OrgTypeEnum.DEPT.getType());
+			orgTreeVo.setSelected(false);
+			deptVoList.add(orgTreeVo);
+		});
+		dict.set("childDepartments", deptVoList);
+
+		// parentDeptId 可为空（首次加载组织树不传参），为空时无需查询部门下的员工
+		if (!StrUtil.equals(type, OrgTypeEnum.DEPT.getType()) && Objects.nonNull(parentDeptId)) {
+
+			List<OrgTreeVO> userVoList = new ArrayList<>();
+
+			MPJLambdaWrapper<SysUser> userQuery = new MPJLambdaWrapper<>();
+			userQuery.selectAll(SysUser.class)
+				.leftJoin(SysUserDept.class, SysUserDept::getUserId, SysUser::getUserId)
+				.eq(SysUserDept::getDeptId, parentDeptId);
+
+			List<SysUser> userList = userMapper.selectJoinList(userQuery);
+
+			userList.forEach(user -> {
+				OrgTreeVO orgTreeVo = new OrgTreeVO();
+				orgTreeVo.setId(user.getUserId());
+				orgTreeVo.setName(user.getUsername());
+				orgTreeVo.setType(OrgTypeEnum.USER.getType());
+				orgTreeVo.setSelected(false);
+				orgTreeVo.setAvatar(user.getAvatar());
+				userVoList.add(orgTreeVo);
+			});
+			dict.set("employees", userVoList);
+		}
+
+		if (Objects.nonNull(parentDeptId) && parentDeptId > 0) {
+			List<SysDept> allDept = this.list();
+			List<SysDept> depts = DataUtil.selectParentByDept(parentDeptId, allDept);
+			dict.set("titleDepartments", CollUtil.reverse(depts));
+		}
+
+		return dict;
+	}
+
+	/**
+	 * 模糊搜索用户
+	 * @param username 用户名/拼音/首字母
+	 * @return 匹配到的用户
+	 */
+	public List<OrgTreeVO> getOrgTreeUser(String username) {
+		return userMapper.selectList(Wrappers.<SysUser>lambdaQuery().like(SysUser::getUsername, username))
+			.stream()
+			.map(user -> {
+				OrgTreeVO orgTreeVo = new OrgTreeVO();
+				orgTreeVo.setId(user.getUserId());
+				orgTreeVo.setName(user.getUsername());
+				orgTreeVo.setType(OrgTypeEnum.USER.getType());
+				orgTreeVo.setSelected(false);
+				orgTreeVo.setAvatar(user.getAvatar());
+				return orgTreeVo;
+			})
+			.toList();
+	}
+
+	/**
+	 * 递归查询所有子节点。
 	 * @param allDeptList 所有部门列表
 	 * @param parentId 父部门ID
 	 * @param resDeptList 结果集合

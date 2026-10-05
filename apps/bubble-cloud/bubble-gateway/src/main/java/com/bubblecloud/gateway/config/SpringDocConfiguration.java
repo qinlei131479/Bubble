@@ -8,11 +8,19 @@ import com.alibaba.nacos.common.utils.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.properties.AbstractSwaggerUiConfigProperties;
 import org.springdoc.core.properties.SwaggerUiConfigProperties;
+import org.springdoc.webflux.ui.SwaggerResourceResolver;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.core.io.Resource;
+import org.springframework.web.reactive.resource.ResourceResolverChain;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -37,18 +45,61 @@ public class SpringDocConfiguration implements InitializingBean {
 	@Override
 	public void afterPropertiesSet() {
 		SwaggerDocRegister swaggerDocRegister = new SwaggerDocRegister(swaggerUiConfigProperties, discoveryClient);
-		NotifyCenter.registerSubscriber(swaggerDocRegister);
-		// 初始加载一次文档配置
+		// 手动调用一次，避免监听事件掉线问题
 		swaggerDocRegister.onEvent(null);
+		NotifyCenter.registerSubscriber(swaggerDocRegister);
+	}
+
+	/**
+	 * Swagger resource resolver swagger resource resolver.
+	 * @param swaggerUiConfigProperties the swagger ui config properties
+	 * @return the swagger resource resolver
+	 */
+	@Bean
+	@Lazy(false)
+	SwaggerResourceResolver swaggerResourceResolver(SwaggerUiConfigProperties swaggerUiConfigProperties) {
+		return new SwaggerResourceResolverPlus(swaggerUiConfigProperties);
 	}
 
 }
 
 /**
- * Swagger文档注册器，用于处理服务实例变更事件并更新Swagger UI配置
- *
- * @author qinlei
- * @date 2025/05/30
+ * 扩展的 SwaggerResourceResolver 类
+ */
+class SwaggerResourceResolverPlus extends SwaggerResourceResolver {
+
+	/**
+	 * 构造方法
+	 * @param swaggerUiConfigProperties Swagger UI 配置属性
+	 */
+	public SwaggerResourceResolverPlus(SwaggerUiConfigProperties swaggerUiConfigProperties) {
+		super(swaggerUiConfigProperties);
+	}
+
+	/**
+	 * 解析资源
+	 * @param exchange ServerWebExchange 对象
+	 * @param requestPath 请求路径
+	 * @param locations 资源位置列表
+	 * @param chain ResourceResolverChain 对象
+	 * @return 解析后的 Mono<Resource> 对象
+	 */
+	@Override
+	public Mono<Resource> resolveResource(ServerWebExchange exchange, String requestPath,
+			List<? extends Resource> locations, ResourceResolverChain chain) {
+		Mono<Resource> resolved = chain.resolveResource(exchange, requestPath, locations);
+		if (!Mono.empty().equals(resolved) && requestPath.startsWith("swagger-ui")) {
+			String webJarResourcePath = findWebJarResourcePath(requestPath);
+			if (webJarResourcePath != null)
+				return chain.resolveResource(exchange, webJarResourcePath, locations);
+		}
+		return resolved;
+	}
+
+}
+
+/**
+ * Swagger文档注册器，继承自Subscriber<InstancesChangeEvent>
  */
 @RequiredArgsConstructor
 class SwaggerDocRegister extends Subscriber<InstancesChangeEvent> {
@@ -58,8 +109,8 @@ class SwaggerDocRegister extends Subscriber<InstancesChangeEvent> {
 	private final DiscoveryClient discoveryClient;
 
 	/**
-	 * 处理服务实例变更事件
-	 * @param event 服务实例变更事件对象
+	 * 事件回调方法，处理InstancesChangeEvent事件
+	 * @param event 事件对象
 	 */
 	@Override
 	public void onEvent(InstancesChangeEvent event) {

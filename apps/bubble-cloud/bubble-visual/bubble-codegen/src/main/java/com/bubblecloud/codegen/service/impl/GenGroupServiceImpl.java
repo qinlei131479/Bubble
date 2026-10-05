@@ -1,30 +1,46 @@
+/*
+ *    Copyright (c) 2018-2026, lengleng All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ * Redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the distribution.
+ * Neither the name of the pig4cloud.com developer nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ * Author: lengleng (wangiegie@gmail.com)
+ */
 package com.bubblecloud.codegen.service.impl;
 
-import java.util.LinkedList;
-import java.util.List;
-
-import com.bubblecloud.codegen.service.GenGroupService;
-import com.bubblecloud.codegen.util.vo.GroupVO;
-import com.bubblecloud.codegen.util.vo.TemplateGroupDTO;
-import org.springframework.stereotype.Service;
-
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.bubblecloud.codegen.entity.GenGroupEntity;
 import com.bubblecloud.codegen.entity.GenTemplateGroupEntity;
 import com.bubblecloud.codegen.mapper.GenGroupMapper;
+import com.bubblecloud.codegen.service.GenGroupService;
 import com.bubblecloud.codegen.service.GenTemplateGroupService;
-
-import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.collection.CollUtil;
+import com.bubblecloud.codegen.util.vo.GroupVO;
+import com.bubblecloud.codegen.util.vo.TemplateGroupDTO;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.util.LinkedList;
+import java.util.List;
 
 /**
- * 模板分组服务实现类
+ * 模板分组
  *
  * @author qinlei
  * @date 2025/05/31
  */
+@Slf4j
 @Service
 @AllArgsConstructor
 public class GenGroupServiceImpl extends ServiceImpl<GenGroupMapper, GenGroupEntity> implements GenGroupService {
@@ -32,8 +48,8 @@ public class GenGroupServiceImpl extends ServiceImpl<GenGroupMapper, GenGroupEnt
 	private final GenTemplateGroupService genTemplateGroupService;
 
 	/**
-	 * 保存模板分组信息
-	 * @param genTemplateGroup 模板分组DTO对象，包含分组信息及关联模板ID列表
+	 * 新增模板分组
+	 * @param genTemplateGroup
 	 */
 	@Override
 	public void saveGenGroup(TemplateGroupDTO genTemplateGroup) {
@@ -53,8 +69,8 @@ public class GenGroupServiceImpl extends ServiceImpl<GenGroupMapper, GenGroupEnt
 	}
 
 	/**
-	 * 按照分组ID数组删除分组及其关联模板
-	 * @param ids 分组ID数组
+	 * 按照ids删除
+	 * @param ids groupIds
 	 */
 	@Override
 	public void delGroupAndTemplate(Long[] ids) {
@@ -66,9 +82,9 @@ public class GenGroupServiceImpl extends ServiceImpl<GenGroupMapper, GenGroupEnt
 	}
 
 	/**
-	 * 根据ID查询组信息
-	 * @param id 组ID
-	 * @return 组信息视图对象
+	 * 按照id查询
+	 * @param id
+	 * @return
 	 */
 	@Override
 	public GroupVO getGroupVoById(Long id) {
@@ -76,8 +92,8 @@ public class GenGroupServiceImpl extends ServiceImpl<GenGroupMapper, GenGroupEnt
 	}
 
 	/**
-	 * 根据ID更新分组及其关联模板
-	 * @param groupVo 分组VO对象，包含分组ID和模板ID列表
+	 * 根据id更新
+	 * @param groupVo
 	 */
 	@Override
 	public void updateGroupAndTemplateById(GroupVO groupVo) {

@@ -1,6 +1,8 @@
 package com.bubblecloud.common.file.oss;
 
 import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 
 /**
  * aws 配置信息
@@ -14,7 +16,14 @@ import lombok.Data;
  * bucket 设置公共读权限
  */
 @Data
+@ConfigurationProperties(prefix = "oss")
 public class OssProperties {
+
+	/**
+	 * 是否开启
+	 */
+	@Deprecated
+	private Boolean enable;
 
 	/**
 	 * 对象存储服务的URL
@@ -57,5 +66,21 @@ public class OssProperties {
 	 * 最大线程数，默认： 100
 	 */
 	private Integer maxConnections = 100;
+
+	/**
+	 * 跳过 MD5 检查
+	 */
+	private boolean skipMd5Check = true;
+
+	/**
+	 * 是否启用 AWS S3 streaming chunked encoding，S3 兼容服务默认关闭
+	 */
+	private Boolean chunkedEncodingEnabled = false;
+
+	@Deprecated
+	@DeprecatedConfigurationProperty(reason = "使用 file.type=oss 替代 file.oss.enable", replacement = "file.type")
+	public Boolean getEnable() {
+		return enable;
+	}
 
 }

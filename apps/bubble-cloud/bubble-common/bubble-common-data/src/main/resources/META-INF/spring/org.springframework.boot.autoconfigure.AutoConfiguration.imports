@@ -1,0 +1,5 @@
+com.bubblecloud.common.data.cache.RedisTemplateConfiguration
+com.bubblecloud.common.data.cache.RedisMessageConfiguration
+com.bubblecloud.common.data.cache.RedisCacheManagerConfiguration
+com.bubblecloud.common.data.cache.RedisCacheAutoConfiguration
+com.bubblecloud.common.data.mybatis.MybatisPlusConfiguration

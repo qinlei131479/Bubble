@@ -8,10 +8,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Swagger配置属性类
+ * SwaggerProperties
  *
  * @author lengleng
- * @date 2025/05/31
+ * @date 2018/7/25 14:00
  */
 @Data
 @ConfigurationProperties("swagger")

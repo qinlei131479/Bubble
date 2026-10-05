@@ -43,11 +43,28 @@
         <!--mybatis-->
         <dependency>
             <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+            <artifactId>mybatis-plus-spring-boot4-starter</artifactId>
         </dependency>
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.microsoft.sqlserver</groupId>
+            <artifactId>mssql-jdbc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.highgo</groupId>
+            <artifactId>HgdbJdbc</artifactId>
+        </dependency>
+        <!-- druid 连接池 -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid-spring-boot-4-starter</artifactId>
         </dependency>
         <!--anyline-->
         <dependency>
@@ -64,6 +81,10 @@
         <dependency>
             <groupId>com.bubblecloud</groupId>
             <artifactId>bubble-common-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.bubblecloud</groupId>
+            <artifactId>bubble-common-excel</artifactId>
         </dependency>
         <dependency>
             <groupId>cn.hutool</groupId>
@@ -105,12 +126,7 @@
         <!--web 模块-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-        <!--undertow容器-->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-undertow</artifactId>
+            <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
 		<dependency>
 			<groupId>junit</groupId>

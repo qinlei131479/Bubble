@@ -5,7 +5,7 @@ import com.bubblecloud.codegen.entity.GenTemplateEntity;
 import com.bubblecloud.common.core.util.R;
 
 /**
- * 代码生成模板服务接口
+ * 模板
  *
  * @author qinlei
  * @date 2025/05/31
@@ -13,14 +13,14 @@ import com.bubblecloud.common.core.util.R;
 public interface GenTemplateService extends IService<GenTemplateEntity> {
 
 	/**
-	 * 检查版本信息
-	 * @return 返回检查结果，包含版本信息
+	 * 检查版本
+	 * @return {@link R }
 	 */
 	R checkVersion();
 
 	/**
 	 * 在线更新
-	 * @return 更新结果
+	 * @return {@link R }
 	 */
 	R onlineUpdate();
 

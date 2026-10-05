@@ -3,15 +3,15 @@ package com.bubblecloud.biz.backend.service.impl;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.bubblecloud.backend.api.constant.UpmsErrorCodes;
 import com.bubblecloud.backend.api.entity.SysUser;
 import com.bubblecloud.biz.backend.mapper.SysUserMapper;
 import com.bubblecloud.biz.backend.service.SysMobileService;
 import com.bubblecloud.common.core.constant.CacheConstants;
 import com.bubblecloud.common.core.constant.SecurityConstants;
-import com.bubblecloud.common.core.exception.ErrorCodes;
 import com.bubblecloud.common.core.util.MsgUtils;
 import com.bubblecloud.common.core.util.R;
-import com.bubblecloud.common.core.util.RedisUtils;
+import com.bubblecloud.common.data.cache.RedisUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dromara.sms4j.api.SmsBlend;
@@ -50,7 +50,7 @@ public class SysMobileServiceImpl implements SysMobileService {
 
 		if (CollUtil.isEmpty(userList)) {
 			log.info("手机号未注册:{}", mobile);
-			return R.ok(Boolean.FALSE, MsgUtils.getMessage(ErrorCodes.SYS_APP_PHONE_UNREGISTERED, mobile));
+			return R.ok(Boolean.FALSE, MsgUtils.getMessage(UpmsErrorCodes.SYS_APP_PHONE_UNREGISTERED, mobile));
 		}
 
 		String cacheKey = CacheConstants.DEFAULT_CODE_KEY + mobile;
@@ -58,7 +58,7 @@ public class SysMobileServiceImpl implements SysMobileService {
 
 		if (codeObj != null) {
 			log.info("手机号验证码未过期:{}，{}", mobile, codeObj);
-			return R.ok(Boolean.FALSE, MsgUtils.getMessage(ErrorCodes.SYS_APP_SMS_OFTEN));
+			return R.ok(Boolean.FALSE, MsgUtils.getMessage(UpmsErrorCodes.SYS_APP_SMS_OFTEN));
 		}
 
 		String code = RandomUtil.randomNumbers(Integer.parseInt(SecurityConstants.CODE_SIZE));
@@ -68,7 +68,7 @@ public class SysMobileServiceImpl implements SysMobileService {
 		// 集成短信服务发送验证码
 		SmsBlend smsBlend = SmsFactory.getSmsBlend();
 		if (Objects.isNull(smsBlend)) {
-			return R.ok(Boolean.FALSE, MsgUtils.getMessage(ErrorCodes.SYS_SMS_BLEND_UNREGISTERED));
+			return R.ok(Boolean.FALSE, MsgUtils.getMessage(UpmsErrorCodes.SYS_SMS_BLEND_UNREGISTERED));
 		}
 
 		SmsResponse smsResponse = smsBlend.sendMessage(mobile, new LinkedHashMap<>(Map.of("code", code)));

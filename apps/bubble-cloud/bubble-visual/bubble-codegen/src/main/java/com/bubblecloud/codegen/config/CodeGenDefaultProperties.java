@@ -26,6 +26,11 @@ public class CodeGenDefaultProperties implements InitializingBean {
 	private boolean autoCheckVersion = true;
 
 	/**
+	 * 在线模板分支
+	 */
+	private String branch = "master";
+
+	/**
 	 * 模板项目地址
 	 */
 	private String onlineUrl = DefaultConstants.CGTM_URL;
@@ -85,6 +90,11 @@ public class CodeGenDefaultProperties implements InitializingBean {
 	 * 下载方式 （0 文件下载、1写入目录）
 	 */
 	private String generatorType = "0";
+
+	/**
+	 * 是否同步路由
+	 */
+	private String syncRoute = "0";
 
 	@Override
 	public void afterPropertiesSet() throws Exception {

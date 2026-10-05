@@ -30,8 +30,8 @@
 			<artifactId>bubble-common-mybatis</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>com.pig4cloud.excel</groupId>
-			<artifactId>excel-spring-boot-starter</artifactId>
+			<groupId>com.bubblecloud</groupId>
+			<artifactId>bubble-common-excel</artifactId>
 		</dependency>
 	</dependencies>
 </project>

@@ -1,10 +1,8 @@
 package com.bubblecloud.common.core.exception;
 
 /**
- * 验证码异常类
- *
  * @author lengleng
- * @date 2018/06/22
+ * @date 2018年06月22日16:22:15
  */
 public class ValidateCodeException extends RuntimeException {
 

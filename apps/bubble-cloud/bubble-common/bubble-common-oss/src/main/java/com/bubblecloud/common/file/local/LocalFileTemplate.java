@@ -1,13 +1,14 @@
 package com.bubblecloud.common.file.local;
 
 import cn.hutool.core.io.FileUtil;
-import com.bubblecloud.common.file.core.FileProperties;
-import com.bubblecloud.common.file.core.FileTemplate;
+import cn.hutool.core.util.StrUtil;
+import com.bubblecloud.common.file.core.*;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
 import java.io.File;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 
@@ -21,20 +22,6 @@ import java.util.List;
 public class LocalFileTemplate implements FileTemplate {
 
 	private final FileProperties properties;
-
-	/**
-	 * 简单的 Bucket 数据对象
-	 */
-	public record SimpleBucket(String name) {
-
-	}
-
-	/**
-	 * 简单的 ObjectSummary 数据对象
-	 */
-	public record SimpleObjectSummary(String key) {
-
-	}
 
 	/**
 	 * 创建bucket
@@ -52,10 +39,10 @@ public class LocalFileTemplate implements FileTemplate {
 	 * API Documentation</a>
 	 */
 	@Override
-	public List<SimpleBucket> getAllBuckets() {
+	public List<FileBucket> getAllBuckets() {
 		return Arrays.stream(FileUtil.ls(properties.getLocal().getBasePath()))
 			.filter(FileUtil::isDirectory)
-			.map(dir -> new SimpleBucket(dir.getName()))
+			.map(dir -> new FileBucket(dir.getName()))
 			.toList();
 	}
 
@@ -89,23 +76,57 @@ public class LocalFileTemplate implements FileTemplate {
 	}
 
 	/**
-	 * 获取文件
+	 * 上传文件
 	 * @param bucketName bucket名称
+	 * @param dir 文件夹名称
 	 * @param objectName 文件名称
-	 * @return 文件输入流
+	 * @param stream 文件流
+	 * @param contextType 文件类型
+	 * @throws Exception
 	 */
 	@Override
-	@SneakyThrows
-	public InputStream getObject(String bucketName, String objectName) {
-		String dir = properties.getLocal().getBasePath() + FileUtil.FILE_SEPARATOR + bucketName;
-		return FileUtil.getInputStream(dir + FileUtil.FILE_SEPARATOR + objectName);
+	public void putObject(String bucketName, String dir, String objectName, InputStream stream, String contextType)
+			throws Exception {
+		if (StrUtil.isNotBlank(dir)) {
+			bucketName = bucketName + FileUtil.FILE_SEPARATOR + dir;
+		}
+		putObject(bucketName, objectName, stream, contextType);
 	}
 
 	/**
-	 * 删除指定存储桶中的对象
-	 * @param bucketName 存储桶名称
-	 * @param objectName 对象名称
-	 * @throws Exception 删除过程中可能抛出的异常
+	 * 获取文件
+	 * @param bucketName bucket名称
+	 * @param objectName 文件名称
+	 * @return 二进制流 API Documentation</a>
+	 */
+	@Override
+	@SneakyThrows
+	public FileObject getObject(String bucketName, String objectName) {
+		String dir = properties.getLocal().getBasePath() + FileUtil.FILE_SEPARATOR + bucketName;
+		File file = FileUtil.file(dir + FileUtil.FILE_SEPARATOR + objectName);
+		return new FileObject(bucketName, objectName, Files.probeContentType(file.toPath()), file.length(),
+				FileUtil.getInputStream(file));
+	}
+
+	/**
+	 * 获取文件
+	 * @param bucketName bucket名称
+	 * @param dir 文件夹名称
+	 * @param objectName 文件名称
+	 * @return 二进制流 API Documentation</a>
+	 */
+	@Override
+	public FileObject getObject(String bucketName, String dir, String objectName) {
+		if (StrUtil.isNotBlank(dir)) {
+			bucketName = bucketName + FileUtil.FILE_SEPARATOR + dir;
+		}
+		return getObject(bucketName, objectName);
+	}
+
+	/**
+	 * @param bucketName
+	 * @param objectName
+	 * @throws Exception
 	 */
 	@Override
 	public void removeObject(String bucketName, String objectName) throws Exception {
@@ -114,11 +135,11 @@ public class LocalFileTemplate implements FileTemplate {
 	}
 
 	/**
-	 * 上传文件到指定存储桶
-	 * @param bucketName 存储桶名称
+	 * 上传文件
+	 * @param bucketName bucket名称
 	 * @param objectName 文件名称
-	 * @param stream 文件输入流
-	 * @throws Exception 上传过程中可能发生的异常
+	 * @param stream 文件流
+	 * @throws Exception
 	 */
 	@Override
 	public void putObject(String bucketName, String objectName, InputStream stream) throws Exception {
@@ -130,17 +151,17 @@ public class LocalFileTemplate implements FileTemplate {
 	 * @param bucketName bucket名称
 	 * @param prefix 前缀
 	 * @param recursive 是否递归查询
-	 * @return 文件对象摘要列表
+	 * @return FileObjectSummary 列表
 	 * @see <a href="http://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/ListObjects">AWS
 	 * API Documentation</a>
 	 */
 	@Override
-	public List<SimpleObjectSummary> getAllObjectsByPrefix(String bucketName, String prefix, boolean recursive) {
+	public List<FileObjectSummary> getAllObjectsByPrefix(String bucketName, String prefix, boolean recursive) {
 		String dir = properties.getLocal().getBasePath() + FileUtil.FILE_SEPARATOR + bucketName;
 
 		return Arrays.stream(FileUtil.ls(dir))
 			.filter(file -> file.getName().startsWith(prefix))
-			.map(file -> new SimpleObjectSummary(file.getName()))
+			.map(file -> new FileObjectSummary(bucketName, file.getName(), file.length(), null))
 			.toList();
 	}
 

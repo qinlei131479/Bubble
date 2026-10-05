@@ -3,25 +3,23 @@ package com.bubblecloud.common.xss.core;
 import cn.hutool.core.util.CharsetUtil;
 import com.bubblecloud.common.xss.config.XssProperties;
 import com.bubblecloud.common.xss.utils.XssUtil;
+import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.internal.StringUtil;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Entities;
+import org.jsoup.safety.Cleaner;
 import org.springframework.web.util.HtmlUtils;
 
 /**
- * 默认的XSS清理器实现类，提供HTML内容的安全清理功能
+ * 默认的 xss 清理器
  *
- * @author lengleng
- * @date 2025/05/31
+ * @author L.cm
  */
+@RequiredArgsConstructor
 public class DefaultXssCleaner implements XssCleaner {
 
 	private final XssProperties properties;
-
-	public DefaultXssCleaner(XssProperties properties) {
-		this.properties = properties;
-	}
 
 	/**
 	 * 获取文档输出设置
@@ -44,7 +42,7 @@ public class DefaultXssCleaner implements XssCleaner {
 	 * @throws XssException 当模式为validate且内容不合法时抛出异常
 	 */
 	@Override
-	public String clean(String bodyHtml, XssType type) {
+	public String clean(String bodyHtml) {
 		// 1. 为空直接返回
 		if (StringUtil.isBlank(bodyHtml)) {
 			return bodyHtml;
@@ -59,11 +57,21 @@ public class DefaultXssCleaner implements XssCleaner {
 			if (Jsoup.isValid(bodyHtml, XssUtil.WHITE_LIST)) {
 				return bodyHtml;
 			}
-			throw type.getXssException(bodyHtml, "Xss validate fail, input value:" + bodyHtml);
+			throw new IllegalArgumentException("Xss validate fail, input value:" + bodyHtml);
 		}
 		else {
+			// jsoup html 清理
+			Document.OutputSettings outputSettings = new Document.OutputSettings()
+				// 2. 转义，没找到关闭的方法，目前这个规则最少
+				.escapeMode(Entities.EscapeMode.xhtml)
+				// 3. 保留换行
+				.prettyPrint(properties.isPrettyPrint());
+			Document dirty = Jsoup.parseBodyFragment(bodyHtml, "");
+			Cleaner cleaner = new Cleaner(XssUtil.WHITE_LIST);
+			Document clean = cleaner.clean(dirty);
+			clean.outputSettings(outputSettings);
 			// 4. 清理后的 html
-			String escapedHtml = Jsoup.clean(bodyHtml, "", XssUtil.WHITE_LIST, getOutputSettings(properties));
+			String escapedHtml = clean.body().html();
 			if (properties.isEnableEscape()) {
 				return escapedHtml;
 			}

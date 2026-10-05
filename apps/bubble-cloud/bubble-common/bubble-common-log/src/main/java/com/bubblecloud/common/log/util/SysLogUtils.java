@@ -6,9 +6,9 @@ import cn.hutool.core.util.URLUtil;
 import cn.hutool.extra.servlet.JakartaServletUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import cn.hutool.http.HttpUtil;
-import com.bubblecloud.common.core.util.SpringContextHolder;
-import com.bubblecloud.common.log.config.LogProperties;
-import com.bubblecloud.common.log.event.SysLogEventSource;
+import com.bubblecloud.backend.api.dto.SysLogDTO;
+import com.bubblecloud.common.core.constant.SecurityConstants;
+import com.bubblecloud.common.log.config.CustomLogProperties;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.experimental.UtilityClass;
 import org.springframework.core.StandardReflectionParameterNameDiscoverer;
@@ -19,6 +19,7 @@ import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -30,30 +31,28 @@ import java.util.Objects;
 /**
  * 系统日志工具类
  *
- * @author lengleng
- * @date 2025/05/31
+ * @author L.cm
  */
 @UtilityClass
 public class SysLogUtils {
 
-	/**
-	 * 获取系统日志事件源
-	 * @return 系统日志事件源对象
-	 */
-	public SysLogEventSource getSysLog() {
+	public SysLogDTO getSysLog() {
 		HttpServletRequest request = ((ServletRequestAttributes) Objects
 			.requireNonNull(RequestContextHolder.getRequestAttributes())).getRequest();
-		SysLogEventSource sysLog = new SysLogEventSource();
+		SysLogDTO sysLog = new SysLogDTO();
 		sysLog.setLogType(LogTypeEnum.NORMAL.getType());
 		sysLog.setRequestUri(URLUtil.getPath(request.getRequestURI()));
 		sysLog.setMethod(request.getMethod());
 		sysLog.setRemoteAddr(JakartaServletUtil.getClientIP(request));
 		sysLog.setUserAgent(request.getHeader(HttpHeaders.USER_AGENT));
 		sysLog.setCreateBy(getUsername());
+		// 获取服务名称
 		sysLog.setServiceId(SpringUtil.getProperty("spring.application.name"));
 
 		// get 参数脱敏
-		LogProperties logProperties = SpringContextHolder.getBean(LogProperties.class);
+		CustomLogProperties logProperties = SpringUtil.getBean(CustomLogProperties.class);
+
+		// 修复request.getParameterMap()其他容器不允许改，tomcat会报错，当然undertow默认可以的
 		Map<String, String[]> paramsMap = MapUtil.removeAny(new HashMap<>(request.getParameterMap()),
 				ArrayUtil.toArray(logProperties.getExcludeFields(), String.class));
 		sysLog.setParams(HttpUtil.toParams(paramsMap));
@@ -102,6 +101,24 @@ public class SysLogUtils {
 			context.setVariable(parameterNames[i], arguments[i]);
 		}
 		return context;
+	}
+
+	/**
+	 * 获取客户端
+	 * @return clientId
+	 */
+	private String getClientId() {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		if (authentication == null) {
+			return null;
+		}
+
+		Object principal = authentication.getPrincipal();
+		if (principal instanceof OAuth2AuthenticatedPrincipal) {
+			OAuth2AuthenticatedPrincipal auth2Authentication = (OAuth2AuthenticatedPrincipal) principal;
+			return MapUtil.getStr(auth2Authentication.getAttributes(), SecurityConstants.CLIENT_ID);
+		}
+		return null;
 	}
 
 }

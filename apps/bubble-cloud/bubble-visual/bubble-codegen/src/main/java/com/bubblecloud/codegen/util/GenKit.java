@@ -6,8 +6,8 @@ import lombok.experimental.UtilityClass;
 /**
  * 代码生成工具类
  *
- * @author qinlei
- * @date 2025/05/31
+ * @author lengleng
+ * @date 2023/2/16
  */
 @UtilityClass
 public class GenKit {

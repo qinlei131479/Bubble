@@ -17,6 +17,8 @@
     <modules>
         <module>bubble-common-bom</module>
         <module>bubble-common-core</module>
+        <module>bubble-common-data</module>
+        <module>bubble-common-sentinel</module>
         <module>bubble-common-datasource</module>
         <module>bubble-common-log</module>
         <module>bubble-common-mybatis</module>

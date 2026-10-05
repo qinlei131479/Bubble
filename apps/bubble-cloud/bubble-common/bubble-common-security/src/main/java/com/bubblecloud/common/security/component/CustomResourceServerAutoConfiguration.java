@@ -1,21 +1,19 @@
 package com.bubblecloud.common.security.component;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.bubblecloud.common.core.context.UserContextHolder;
+import com.bubblecloud.common.security.context.CustomSecurityUserContextHolder;
+import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
-import org.springframework.security.core.annotation.AnnotationTemplateExpressionDefaults;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import lombok.RequiredArgsConstructor;
-
 /**
- * 资源服务器自动配置类
- *
  * @author lengleng
- * @date 2025/05/31
+ * @date 2022-06-02
  */
 @RequiredArgsConstructor
 @EnableConfigurationProperties(PermitAllUrlProperties.class)
@@ -63,12 +61,13 @@ public class CustomResourceServerAutoConfiguration {
 	}
 
 	/**
-	 * 支持自定义权限表达式
-	 * @return {@link PrePostTemplateDefaults }
+	 * 通用用户上下文 SPI 的安全实现，供 data / audit 等模块按接口注入使用。
+	 * @return UserContextHolder
 	 */
 	@Bean
-	AnnotationTemplateExpressionDefaults prePostTemplateDefaults() {
-		return new AnnotationTemplateExpressionDefaults();
+	@ConditionalOnMissingBean(UserContextHolder.class)
+	public UserContextHolder userContextHolder() {
+		return new CustomSecurityUserContextHolder();
 	}
 
 }

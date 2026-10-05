@@ -7,13 +7,18 @@ package com.bubblecloud.common.core.constant;
 public interface ServiceNameConstants {
 
 	/**
-	 * 认证服务的SERVICEID
+	 * 认证中心
 	 */
 	String AUTH_SERVICE = "bubble-auth";
 
 	/**
-	 * UPMS模块
+	 * UMPS模块
 	 */
 	String BACKEND_SERVICE = "bubble-biz-backend";
+
+	/**
+	 * 代码生成模块
+	 */
+	String CODEGEN_SERVICE = "bubble-codegen";
 
 }

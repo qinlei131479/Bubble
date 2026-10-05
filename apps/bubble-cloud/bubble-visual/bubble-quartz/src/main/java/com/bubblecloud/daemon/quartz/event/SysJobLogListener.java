@@ -9,6 +9,8 @@ import org.springframework.core.annotation.Order;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
+
 /**
  * 系统任务日志监听器：用于异步监听并处理定时任务日志事件
  *
@@ -23,16 +25,15 @@ public class SysJobLogListener {
 
 	private final SysJobLogService sysJobLogService;
 
-	/**
-	 * 异步保存系统任务日志
-	 * @param event 系统任务日志事件
-	 */
 	@Async
 	@Order
 	@EventListener(SysJobLogEvent.class)
 	public void saveSysJobLog(SysJobLogEvent event) {
 		SysJobLog sysJobLog = event.getSysJobLog();
-		sysJobLogService.save(sysJobLog);
+		// 只保存发布状态的任务日志
+		if (Objects.nonNull(sysJobLog.getJobId())) {
+			sysJobLogService.save(sysJobLog);
+		}
 		log.info("执行定时任务日志");
 	}
 

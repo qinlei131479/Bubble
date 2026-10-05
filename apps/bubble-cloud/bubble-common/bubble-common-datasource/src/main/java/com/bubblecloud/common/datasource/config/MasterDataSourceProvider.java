@@ -3,26 +3,29 @@ package com.bubblecloud.common.datasource.config;
 import com.baomidou.dynamic.datasource.creator.DataSourceProperty;
 import com.baomidou.dynamic.datasource.creator.DefaultDataSourceCreator;
 import com.baomidou.dynamic.datasource.provider.AbstractDataSourceProvider;
-import com.bubblecloud.common.datasource.support.DataSourceConstants;
 
 import javax.sql.DataSource;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.bubblecloud.common.datasource.support.DataSourceConstants.DS_MASTER;
+
 /**
- * 主数据源提供者，用于保证原有配置有效性并扩展其他数据源，和原有spring.datasource配置兼容。
- *
  * @author lengleng
- * @date 2025/07/14
+ * @date 2025/1/14
+ * <p>
+ * 保证原有的 druid 配置有效性，只需要增加其他扩展数据源即可
  */
 public class MasterDataSourceProvider extends AbstractDataSourceProvider {
 
-	private final DataSourceProperties properties;
+	private static final String SQL_LOG_FILTER = "sqlLogFilter";
+
+	private final DruidDataSourceProperties properties;
 
 	private final DefaultDataSourceCreator defaultDataSourceCreator;
 
 	public MasterDataSourceProvider(DefaultDataSourceCreator defaultDataSourceCreator,
-			DataSourceProperties properties) {
+			DruidDataSourceProperties properties) {
 		super(defaultDataSourceCreator);
 		this.properties = properties;
 		this.defaultDataSourceCreator = defaultDataSourceCreator;
@@ -40,7 +43,10 @@ public class MasterDataSourceProvider extends AbstractDataSourceProvider {
 		property.setUsername(properties.getUsername());
 		property.setPassword(properties.getPassword());
 		property.setUrl(properties.getUrl());
-		map.put(DataSourceConstants.DS_MASTER, defaultDataSourceCreator.createDataSource(property));
+
+		properties.setProxyFilters(SQL_LOG_FILTER);
+		property.setDruid(properties);
+		map.put(DS_MASTER, defaultDataSourceCreator.createDataSource(property));
 		return map;
 	}
 

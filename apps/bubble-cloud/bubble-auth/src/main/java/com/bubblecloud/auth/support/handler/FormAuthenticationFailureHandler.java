@@ -1,7 +1,9 @@
 package com.bubblecloud.auth.support.handler;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.http.HttpUtil;
+import com.bubblecloud.common.core.constant.SecurityConstants;
 import com.bubblecloud.common.core.util.WebUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -13,19 +15,19 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 import java.io.IOException;
 
 /**
- * 表单登录失败处理逻辑
- *
  * @author lengleng
- * @date 2025/05/30
+ * @date 2022-06-02
+ * <p>
+ * 表单登录失败处理逻辑
  */
 @Slf4j
 public class FormAuthenticationFailureHandler implements AuthenticationFailureHandler {
 
 	/**
-	 * 当认证失败时调用
-	 * @param request 认证尝试发生的请求
-	 * @param response 响应对象
-	 * @param exception 拒绝认证时抛出的异常
+	 * Called when an authentication attempt fails.
+	 * @param request the request during which the authentication attempt occurred.
+	 * @param response the response.
+	 * @param exception the exception which was thrown to reject the authentication
 	 */
 	@Override
 	@SneakyThrows
@@ -35,11 +37,14 @@ public class FormAuthenticationFailureHandler implements AuthenticationFailureHa
 
 		// 获取当前请求的context-path
 		String contextPath = request.getContextPath();
+		String clientId = request.getParameter(SecurityConstants.CLIENT_ID);
+		String redirectUrl = String.format("%s/token/login?error=%s", contextPath, exception.getMessage());
+		if (StrUtil.isNotBlank(clientId)) {
+			redirectUrl = String.format("%s&%s=%s", redirectUrl, SecurityConstants.CLIENT_ID, clientId);
+		}
 
 		// 构建重定向URL，加入context-path
-		String url = HttpUtil.encodeParams(
-				String.format("%s/token/login?error=%s", contextPath, exception.getMessage()),
-				CharsetUtil.CHARSET_UTF_8);
+		String url = HttpUtil.encodeParams(redirectUrl, CharsetUtil.CHARSET_UTF_8);
 
 		try {
 			WebUtils.getResponse().sendRedirect(url);

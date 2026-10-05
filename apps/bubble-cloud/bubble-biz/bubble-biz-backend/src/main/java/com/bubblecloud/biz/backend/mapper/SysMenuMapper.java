@@ -1,7 +1,7 @@
 package com.bubblecloud.biz.backend.mapper;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.bubblecloud.backend.api.entity.SysMenu;
+import com.github.yulichang.base.MPJBaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
@@ -15,12 +15,12 @@ import java.util.List;
  * @since 2017-10-29
  */
 @Mapper
-public interface SysMenuMapper extends BaseMapper<SysMenu> {
+public interface SysMenuMapper extends MPJBaseMapper<SysMenu> {
 
 	/**
-	 * 通过角色编号查询菜单
+	 * 通过角色编号查询菜单列表
 	 * @param roleId 角色ID
-	 * @return
+	 * @return 菜单列表
 	 */
 	List<SysMenu> listMenusByRoleId(Long roleId);
 

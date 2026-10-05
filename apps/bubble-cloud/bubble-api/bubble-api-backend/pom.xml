@@ -35,5 +35,9 @@
             <groupId>com.bubblecloud</groupId>
             <artifactId>bubble-common-excel</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.javers</groupId>
+            <artifactId>javers-core</artifactId>
+        </dependency>
     </dependencies>
 </project>

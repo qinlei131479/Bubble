@@ -6,17 +6,13 @@ import com.bubblecloud.codegen.util.vo.GroupVO;
 import com.bubblecloud.codegen.util.vo.TemplateGroupDTO;
 
 /**
- * 模板分组服务接口
+ * 模板分组
  *
  * @author qinlei
  * @date 2025/05/31
  */
 public interface GenGroupService extends IService<GenGroupEntity> {
 
-	/**
-	 * 保存生成模板组
-	 * @param genTemplateGroup 模板组DTO对象
-	 */
 	void saveGenGroup(TemplateGroupDTO genTemplateGroup);
 
 	/**

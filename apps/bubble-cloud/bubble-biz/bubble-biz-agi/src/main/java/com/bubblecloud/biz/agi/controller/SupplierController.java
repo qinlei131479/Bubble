@@ -5,7 +5,7 @@ import cn.hutool.core.util.ArrayUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.bubblecloud.common.security.annotation.HasPermission;
-import com.pig4cloud.plugin.excel.annotation.ResponseExcel;
+import com.bubblecloud.common.excel.annotation.ResponseExcel;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.validation.annotation.Validated;

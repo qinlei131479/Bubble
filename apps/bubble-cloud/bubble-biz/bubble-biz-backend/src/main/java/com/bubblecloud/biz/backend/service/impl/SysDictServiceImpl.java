@@ -1,32 +1,46 @@
+/*
+ *    Copyright (c) 2018-2026, lengleng All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ * Redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the distribution.
+ * Neither the name of the pig4cloud.com developer nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ * Author: lengleng (wangiegie@gmail.com)
+ */
 package com.bubblecloud.biz.backend.service.impl;
 
-import java.util.List;
-
-import com.bubblecloud.backend.api.entity.SysDict;
-import com.bubblecloud.backend.api.entity.SysDictItem;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.bubblecloud.backend.api.constant.UpmsErrorCodes;
+import com.bubblecloud.backend.api.entity.SysDict;
+import com.bubblecloud.backend.api.entity.SysDictItem;
 import com.bubblecloud.biz.backend.mapper.SysDictItemMapper;
 import com.bubblecloud.biz.backend.mapper.SysDictMapper;
 import com.bubblecloud.biz.backend.service.SysDictService;
 import com.bubblecloud.common.core.constant.CacheConstants;
 import com.bubblecloud.common.core.constant.enums.DictTypeEnum;
-import com.bubblecloud.common.core.exception.ErrorCodes;
 import com.bubblecloud.common.core.util.MsgUtils;
 import com.bubblecloud.common.core.util.R;
-
-import cn.hutool.core.collection.CollUtil;
 import lombok.AllArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
- * 系统字典服务实现类
+ * 字典表
  *
  * @author lengleng
- * @date 2025/05/30
+ * @date 2019/03/19
  */
 @Service
 @AllArgsConstructor
@@ -35,9 +49,9 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictMapper, SysDict> impl
 	private final SysDictItemMapper dictItemMapper;
 
 	/**
-	 * 根据ID删除字典
-	 * @param ids 字典ID数组
-	 * @return 操作结果
+	 * 根据ID 删除字典
+	 * @param ids 字典ID 列表
+	 * @return
 	 */
 	@Override
 	@Transactional(rollbackFor = Exception.class)
@@ -57,10 +71,9 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictMapper, SysDict> impl
 	}
 
 	/**
-	 * 更新字典数据
-	 * @param dict 字典对象
-	 * @return 操作结果
-	 * @see R 返回结果封装类
+	 * 更新字典
+	 * @param dict 字典
+	 * @return
 	 */
 	@Override
 	@CacheEvict(value = CacheConstants.DICT_DETAILS, key = "#dict.dictType")
@@ -68,15 +81,15 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictMapper, SysDict> impl
 		SysDict sysDict = this.getById(dict.getId());
 		// 系统内置
 		if (DictTypeEnum.SYSTEM.getType().equals(sysDict.getSystemFlag())) {
-			return R.failed(MsgUtils.getMessage(ErrorCodes.SYS_DICT_UPDATE_SYSTEM));
+			return R.failed(MsgUtils.getMessage(UpmsErrorCodes.SYS_DICT_UPDATE_SYSTEM));
 		}
 		this.updateById(dict);
 		return R.ok(dict);
 	}
 
 	/**
-	 * 同步字典缓存（清空缓存）
-	 * @return 操作结果
+	 * 同步缓存 （清空缓存）
+	 * @return R
 	 */
 	@Override
 	@CacheEvict(value = CacheConstants.DICT_DETAILS, allEntries = true)

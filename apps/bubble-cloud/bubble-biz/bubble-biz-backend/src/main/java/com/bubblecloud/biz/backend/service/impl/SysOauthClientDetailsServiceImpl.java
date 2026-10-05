@@ -1,20 +1,30 @@
 package com.bubblecloud.biz.backend.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.bubblecloud.backend.api.dto.SysOauthClientDetailsDTO;
 import com.bubblecloud.backend.api.entity.SysOauthClientDetails;
 import com.bubblecloud.biz.backend.service.SysOauthClientDetailsService;
 import com.bubblecloud.biz.backend.mapper.SysOauthClientDetailsMapper;
 import com.bubblecloud.common.core.constant.CacheConstants;
+import com.bubblecloud.common.core.constant.CommonConstants;
 import com.bubblecloud.common.core.util.R;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.BeanUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 /**
- * OAuth2客户端详情服务实现类
+ * <p>
+ * 服务实现类
+ * </p>
  *
  * @author lengleng
  * @since 2018-05-15
@@ -25,60 +35,97 @@ public class SysOauthClientDetailsServiceImpl extends ServiceImpl<SysOauthClient
 		implements SysOauthClientDetailsService {
 
 	/**
-	 * 根据客户端信息更新客户端详情
-	 * @param clientDetails 客户端详情信息
-	 * @return 更新结果，成功返回true
+	 * 更新 OAuth 客户端配置，并清空客户端详情缓存。
+	 * <p>
+	 * 编辑时允许调整客户端ID，清空全部客户端缓存可以避免旧 clientId 对应的缓存继续生效。
+	 * @param clientDetailsDTO 客户端配置传输对象，必须包含主键和客户端ID
+	 * @return 更新是否成功
 	 */
 	@Override
-	@CacheEvict(value = CacheConstants.CLIENT_DETAILS_KEY, key = "#clientDetails.clientId")
+	@CacheEvict(value = CacheConstants.CLIENT_DETAILS_KEY, allEntries = true)
 	@Transactional(rollbackFor = Exception.class)
-	public Boolean updateClientById(SysOauthClientDetails clientDetails) {
-		this.insertOrUpdate(clientDetails);
+	public Boolean updateClientById(SysOauthClientDetailsDTO clientDetailsDTO) {
+		this.insertOrUpdate(clientDetailsDTO);
 		return Boolean.TRUE;
 	}
 
 	/**
-	 * 保存客户端信息
-	 * @param clientDetails 客户端详细信息
-	 * @return 操作是否成功
+	 * 新增 OAuth 客户端配置，并失效对应客户端详情缓存。
+	 * @param clientDetailsDTO 客户端配置传输对象，必须包含客户端ID、密钥和授权范围
+	 * @return 新增是否成功
 	 */
 	@Override
+	@CacheEvict(value = CacheConstants.CLIENT_DETAILS_KEY, key = "#clientDetailsDTO.clientId")
 	@Transactional(rollbackFor = Exception.class)
-	public Boolean saveClient(SysOauthClientDetails clientDetails) {
-		this.insertOrUpdate(clientDetails);
+	public Boolean saveClient(SysOauthClientDetailsDTO clientDetailsDTO) {
+		this.insertOrUpdate(clientDetailsDTO);
 		return Boolean.TRUE;
 	}
 
 	/**
-	 * 插入或更新客户端对象
-	 * @param clientDetails 客户端详情对象
-	 * @return 更新后的客户端详情对象
+	 * 插入或更新客户端对象，并把页面上的验证码、加密和在线数量开关写回扩展信息。
+	 * @param clientDetailsDTO 客户端配置传输对象
+	 * @return 已持久化的客户端实体
 	 */
-	private SysOauthClientDetails insertOrUpdate(SysOauthClientDetails clientDetails) {
+	private SysOauthClientDetails insertOrUpdate(SysOauthClientDetailsDTO clientDetailsDTO) {
+		// copy dto 对象
+		SysOauthClientDetails clientDetails = new SysOauthClientDetails();
+		BeanUtils.copyProperties(clientDetailsDTO, clientDetails);
+
+		// 获取扩展信息,插入开关相关
+		String information = clientDetailsDTO.getAdditionalInformation();
+		JSONObject informationObj = JSONUtil.parseObj(information)
+			.set(CommonConstants.CAPTCHA_FLAG, clientDetailsDTO.getCaptchaFlag())
+			.set(CommonConstants.ENC_FLAG, clientDetailsDTO.getEncFlag())
+			.set(CommonConstants.ONLINE_QUANTITY, clientDetailsDTO.getOnlineQuantity());
+		clientDetails.setAdditionalInformation(informationObj.toString());
+
 		// 更新数据库
 		saveOrUpdate(clientDetails);
 		return clientDetails;
 	}
 
 	/**
-	 * 分页查询OAuth客户端详情
+	 * 分页查询客户端信息，并把扩展信息中的开关字段展开为 DTO 字段。
 	 * @param page 分页参数
-	 * @param query 查询条件
-	 * @return 分页查询结果
+	 * @param query 客户端查询条件
+	 * @return 客户端配置分页数据
 	 */
 	@Override
-	public Page getClientPage(Page page, SysOauthClientDetails query) {
-		return baseMapper.selectPage(page, Wrappers.query(query));
+	public Page queryPage(Page page, SysOauthClientDetails query) {
+		Page<SysOauthClientDetails> selectPage = baseMapper.selectPage(page, Wrappers.query(query));
+
+		// 处理扩展字段组装dto
+		List<SysOauthClientDetailsDTO> collect = selectPage.getRecords().stream().map(details -> {
+			String information = details.getAdditionalInformation();
+			String captchaFlag = JSONUtil.parseObj(information).getStr(CommonConstants.CAPTCHA_FLAG);
+			String encFlag = JSONUtil.parseObj(information).getStr(CommonConstants.ENC_FLAG);
+			String onlineQuantity = JSONUtil.parseObj(information).getStr(CommonConstants.ONLINE_QUANTITY);
+			SysOauthClientDetailsDTO dto = new SysOauthClientDetailsDTO();
+			BeanUtils.copyProperties(details, dto);
+			dto.setCaptchaFlag(captchaFlag);
+			dto.setEncFlag(encFlag);
+			dto.setOnlineQuantity(onlineQuantity);
+			return dto;
+		}).toList();
+
+		// 构建dto page 对象
+		Page<SysOauthClientDetailsDTO> dtoPage = new Page<>(page.getCurrent(), page.getSize(), selectPage.getTotal());
+		dtoPage.setRecords(collect);
+		return dtoPage;
 	}
 
-	/**
-	 * 同步客户端缓存
-	 * @return 操作结果
-	 */
 	@Override
 	@CacheEvict(value = CacheConstants.CLIENT_DETAILS_KEY, allEntries = true)
 	public R syncClientCache() {
+		// 清空客户端缓存，下次访问时重新查库
 		return R.ok();
+	}
+
+	@Override
+	@CacheEvict(value = CacheConstants.CLIENT_DETAILS_KEY, allEntries = true)
+	public Boolean removeClientByIds(Long[] ids) {
+		return removeBatchByIds(CollUtil.toList(ids));
 	}
 
 }

@@ -1,26 +1,23 @@
 package com.bubblecloud.auth.support.password;
 
 import com.bubblecloud.auth.support.base.OAuth2ResourceOwnerBaseAuthenticationConverter;
+import com.bubblecloud.common.core.constant.SecurityConstants;
 import com.bubblecloud.common.security.util.OAuth2EndpointUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
-import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 
 import java.util.Map;
 import java.util.Set;
 
-import static com.bubblecloud.common.core.constant.SecurityConstants.PASSWORD;
-
 /**
- * OAuth2 资源所有者密码认证转换器
- *
- * @author lengleng
  * @author jumuning
- * @date 2025/05/30
+ * @date 2022-06-02
+ *
+ * 密码认证转换器
  */
 public class OAuth2ResourceOwnerPasswordAuthenticationConverter
 		extends OAuth2ResourceOwnerBaseAuthenticationConverter<OAuth2ResourceOwnerPasswordAuthenticationToken> {
@@ -31,21 +28,15 @@ public class OAuth2ResourceOwnerPasswordAuthenticationConverter
 	 */
 	@Override
 	public boolean support(String grantType) {
-		return PASSWORD.equals(grantType);
+		return SecurityConstants.PASSWORD.equals(grantType);
 	}
 
-	/**
-	 * 构建OAuth2资源所有者密码认证令牌
-	 * @param clientPrincipal 客户端主体认证信息
-	 * @param requestedScopes 请求的作用域集合
-	 * @param additionalParameters 附加参数映射
-	 * @return 构建完成的OAuth2资源所有者密码认证令牌
-	 */
 	@Override
 	public OAuth2ResourceOwnerPasswordAuthenticationToken buildToken(Authentication clientPrincipal,
 			Set requestedScopes, Map additionalParameters) {
-		return new OAuth2ResourceOwnerPasswordAuthenticationToken(new AuthorizationGrantType(PASSWORD), clientPrincipal,
-				requestedScopes, additionalParameters);
+		return new OAuth2ResourceOwnerPasswordAuthenticationToken(
+				new AuthorizationGrantType(SecurityConstants.PASSWORD), clientPrincipal, requestedScopes,
+				additionalParameters);
 	}
 
 	/**
@@ -56,16 +47,16 @@ public class OAuth2ResourceOwnerPasswordAuthenticationConverter
 	public void checkParams(HttpServletRequest request) {
 		MultiValueMap<String, String> parameters = OAuth2EndpointUtils.getParameters(request);
 		// username (REQUIRED)
-		String username = parameters.getFirst(OAuth2ParameterNames.USERNAME);
-		if (!StringUtils.hasText(username) || parameters.get(OAuth2ParameterNames.USERNAME).size() != 1) {
-			OAuth2EndpointUtils.throwError(OAuth2ErrorCodes.INVALID_REQUEST, OAuth2ParameterNames.USERNAME,
+		String username = parameters.getFirst(SecurityConstants.DETAILS_USERNAME);
+		if (!StringUtils.hasText(username) || parameters.get(SecurityConstants.DETAILS_USERNAME).size() != 1) {
+			OAuth2EndpointUtils.throwError(OAuth2ErrorCodes.INVALID_REQUEST, SecurityConstants.DETAILS_USERNAME,
 					OAuth2EndpointUtils.ACCESS_TOKEN_REQUEST_ERROR_URI);
 		}
 
 		// password (REQUIRED)
-		String password = parameters.getFirst(OAuth2ParameterNames.PASSWORD);
-		if (!StringUtils.hasText(password) || parameters.get(OAuth2ParameterNames.PASSWORD).size() != 1) {
-			OAuth2EndpointUtils.throwError(OAuth2ErrorCodes.INVALID_REQUEST, OAuth2ParameterNames.PASSWORD,
+		String password = parameters.getFirst(SecurityConstants.PASSWORD);
+		if (!StringUtils.hasText(password) || parameters.get(SecurityConstants.PASSWORD).size() != 1) {
+			OAuth2EndpointUtils.throwError(OAuth2ErrorCodes.INVALID_REQUEST, SecurityConstants.PASSWORD,
 					OAuth2EndpointUtils.ACCESS_TOKEN_REQUEST_ERROR_URI);
 		}
 	}

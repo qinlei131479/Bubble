@@ -1,33 +1,38 @@
 package com.bubblecloud.biz.backend.controller;
 
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.bubblecloud.backend.api.dto.SysOauthClientDetailsDTO;
 import com.bubblecloud.backend.api.entity.SysOauthClientDetails;
 import com.bubblecloud.biz.backend.service.SysOauthClientDetailsService;
+import com.bubblecloud.common.core.constant.CommonConstants;
 import com.bubblecloud.common.core.util.R;
+import com.bubblecloud.common.excel.annotation.ResponseExcel;
 import com.bubblecloud.common.log.annotation.SysLog;
 import com.bubblecloud.common.security.annotation.HasPermission;
 import com.bubblecloud.common.security.annotation.Inner;
-import com.pig4cloud.plugin.excel.annotation.ResponseExcel;
+import com.bubblecloud.common.excel.annotation.ResponseExcel;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.beans.BeanUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /**
- * 客户端管理模块前端控制器
+ * <p>
+ * 前端控制器
+ * </p>
  *
  * @author lengleng
- * @date 2025/05/30
  * @since 2018-05-15
  */
 @RestController
@@ -40,27 +45,36 @@ public class SysClientController {
 	private final SysOauthClientDetailsService clientDetailsService;
 
 	/**
-	 * 通过客户端ID查询客户端详情
-	 * @param clientId 客户端ID
-	 * @return 包含客户端详情的响应对象
+	 * 通过ID查询
+	 * @param clientId clientId
+	 * @return SysOauthClientDetails
 	 */
 	@GetMapping("/{clientId}")
-	@Operation(summary = "通过客户端ID查询客户端详情", description = "通过客户端ID查询客户端详情")
 	public R getByClientId(@PathVariable String clientId) {
 		SysOauthClientDetails details = clientDetailsService
 			.getOne(Wrappers.<SysOauthClientDetails>lambdaQuery().eq(SysOauthClientDetails::getClientId, clientId));
-		return R.ok(details);
+		String information = details.getAdditionalInformation();
+		String captchaFlag = JSONUtil.parseObj(information).getStr(CommonConstants.CAPTCHA_FLAG);
+		String encFlag = JSONUtil.parseObj(information).getStr(CommonConstants.ENC_FLAG);
+		String onlineQuantity = JSONUtil.parseObj(information).getStr(CommonConstants.ONLINE_QUANTITY);
+		SysOauthClientDetailsDTO dto = new SysOauthClientDetailsDTO();
+		BeanUtils.copyProperties(details, dto);
+		dto.setCaptchaFlag(captchaFlag);
+		dto.setEncFlag(encFlag);
+		dto.setOnlineQuantity(onlineQuantity);
+		return R.ok(dto);
 	}
 
 	/**
-	 * 分页查询系统终端信息
-	 * @param page 分页参数对象
-	 * @param sysOauthClientDetails 系统终端查询条件
-	 * @return 分页查询结果
+	 * 简单分页查询
+	 * @param page 分页对象
+	 * @param sysOauthClientDetails 系统终端
+	 * @return
 	 */
 	@GetMapping("/page")
-	@Operation(summary = "分页查询系统终端信息", description = "分页查询系统终端信息")
-	public R getClientPage(@ParameterObject Page page, @ParameterObject SysOauthClientDetails sysOauthClientDetails) {
+	@HasPermission("sys_client_view")
+	public R getOauthClientDetailsPage(@ParameterObject Page page,
+			@ParameterObject SysOauthClientDetails sysOauthClientDetails) {
 		LambdaQueryWrapper<SysOauthClientDetails> wrapper = Wrappers.<SysOauthClientDetails>lambdaQuery()
 			.like(StrUtil.isNotBlank(sysOauthClientDetails.getClientId()), SysOauthClientDetails::getClientId,
 					sysOauthClientDetails.getClientId())
@@ -70,79 +84,82 @@ public class SysClientController {
 	}
 
 	/**
-	 * 添加客户端终端
-	 * @param clientDetails 客户端详情实体
-	 * @return 操作结果，成功返回success，失败返回false
+	 * 添加
+	 * @param clientDetailsDTO 实体
+	 * @return success/false
 	 */
 	@SysLog("添加终端")
 	@PostMapping
 	@HasPermission("sys_client_add")
-	@Operation(summary = "添加客户端终端", description = "添加客户端终端")
-	public R saveClient(@Valid @RequestBody SysOauthClientDetails clientDetails) {
-		return R.ok(clientDetailsService.saveClient(clientDetails));
+	public R add(@Valid @RequestBody SysOauthClientDetailsDTO clientDetailsDTO) {
+		return R.ok(clientDetailsService.saveClient(clientDetailsDTO));
 	}
 
 	/**
-	 * 根据ID列表批量删除终端
-	 * @param ids 要删除的终端ID数组
-	 * @return 操作结果，成功返回success
+	 * 删除
+	 * @param ids ID 列表
+	 * @return success/false
 	 */
 	@SysLog("删除终端")
 	@DeleteMapping
 	@HasPermission("sys_client_del")
-	@Operation(summary = "根据ID列表批量删除终端", description = "根据ID列表批量删除终端")
 	public R removeById(@RequestBody Long[] ids) {
-		clientDetailsService.removeBatchByIds(CollUtil.toList(ids));
-		return R.ok();
+		return R.ok(clientDetailsService.removeClientByIds(ids));
 	}
 
 	/**
-	 * 编辑终端信息
-	 * @param clientDetails 终端实体信息
-	 * @return 操作结果
+	 * 编辑
+	 * @param clientDetailsDTO 实体
+	 * @return success/false
 	 */
 	@SysLog("编辑终端")
 	@PutMapping
 	@HasPermission("sys_client_edit")
-	@Operation(summary = "编辑终端信息", description = "编辑终端信息")
-	public R updateClient(@Valid @RequestBody SysOauthClientDetails clientDetails) {
-		return R.ok(clientDetailsService.updateClientById(clientDetails));
+	public R update(@Valid @RequestBody SysOauthClientDetailsDTO clientDetailsDTO) {
+		return R.ok(clientDetailsService.updateClientById(clientDetailsDTO));
 	}
 
 	/**
-	 * 根据客户端ID获取客户端详情
-	 * @param clientId 客户端ID
-	 * @return 包含客户端详情的响应结果
+	 * feign 查询客户端信息的接口
+	 * @param clientId 客户端 ID
+	 * @return 基本信息
 	 */
 	@Inner
 	@GetMapping("/getClientDetailsById/{clientId}")
-	@Operation(summary = "根据客户端ID获取客户端详情", description = "根据客户端ID获取客户端详情")
 	public R getClientDetailsById(@PathVariable String clientId) {
 		return R.ok(clientDetailsService.getOne(
 				Wrappers.<SysOauthClientDetails>lambdaQuery().eq(SysOauthClientDetails::getClientId, clientId), false));
 	}
 
 	/**
+	 * 通过条件查询详情
+	 * @param clientDetails 查询条件
+	 * @return 基本信息
+	 */
+	@GetMapping("/details")
+	@HasPermission("sys_client_view")
+	public R getDetails(@ParameterObject SysOauthClientDetails clientDetails) {
+		return getClientDetailsById(clientDetails.getClientId());
+	}
+
+	/**
 	 * 同步缓存字典
-	 * @return 操作结果
+	 * @return R
 	 */
 	@SysLog("同步终端")
 	@PutMapping("/sync")
-	@Operation(summary = "同步缓存字典", description = "同步缓存字典")
-	public R syncClient() {
+	public R sync() {
 		return clientDetailsService.syncClientCache();
 	}
 
 	/**
-	 * 导出客户端信息到Excel
-	 * @param sysOauthClientDetails 客户端查询条件
-	 * @return 符合条件的客户端列表
+	 * 导出所有客户端
+	 * @return excel
 	 */
 	@ResponseExcel
 	@SysLog("导出excel")
 	@GetMapping("/export")
-	@Operation(summary = "导出客户端信息到Excel", description = "导出客户端信息到Excel")
-	public List<SysOauthClientDetails> exportClients(SysOauthClientDetails sysOauthClientDetails) {
+	public List<SysOauthClientDetails> export(SysOauthClientDetails sysOauthClientDetails) {
 		return clientDetailsService.list(Wrappers.query(sysOauthClientDetails));
 	}
 

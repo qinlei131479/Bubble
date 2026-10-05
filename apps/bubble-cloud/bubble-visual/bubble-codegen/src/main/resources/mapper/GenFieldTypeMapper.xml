@@ -8,6 +8,8 @@
         <result property="columnType" column="column_type"/>
         <result property="attrType" column="attr_type"/>
         <result property="packageName" column="package_name"/>
+        <result property="defaultFormType" column="default_form_type"/>
+        <result property="defaultQueryFormType" column="default_query_form_type"/>
         <result property="createTime" column="create_time"/>
     </resultMap>
 

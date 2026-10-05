@@ -14,7 +14,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
  *
  * @author qinlei
  * @author frwcloud
- * @date 2025/05/31
+ * @date 2019/01/23 定时任务模块
  */
 @EnableDoc("job")
 @EnableCustomFeignClients

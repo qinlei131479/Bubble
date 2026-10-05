@@ -1,20 +1,14 @@
 package com.bubblecloud.daemon.quartz.entity;
 
-import java.io.Serial;
-import java.time.LocalDateTime;
-
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
-
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.experimental.FieldNameConstants;
+import java.time.LocalDateTime;
 
 /**
  * 定时任务调度表
@@ -25,11 +19,11 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@FieldNameConstants
 @Schema(description = "定时任务")
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = true)
 public class SysJob extends Model<SysJob> {
 
-	@Serial
 	private static final long serialVersionUID = 1L;
 
 	/**
@@ -91,6 +85,7 @@ public class SysJob extends Model<SysJob> {
 	/**
 	 * 1、多租户任务;2、非多租户任务
 	 */
+	@Schema(description = "任务租户类型")
 	private String jobTenantType;
 
 	/**

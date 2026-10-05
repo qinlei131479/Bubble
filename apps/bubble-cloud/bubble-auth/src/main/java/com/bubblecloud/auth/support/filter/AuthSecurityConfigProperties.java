@@ -5,18 +5,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 /**
  * 安全认证配置属性类
  *
- * <p>
- * 用于配置网关安全相关属性
- * </p>
- *
  * @author lengleng
- * @date 2025/05/30
- * @since 2020/10/4
+ * @date 2026/05/03
  */
 @Data
 @Component
@@ -30,13 +23,33 @@ public class AuthSecurityConfigProperties {
 	private boolean isMicro;
 
 	/**
-	 * 网关解密登录前端密码 秘钥
+	 * 认证中心解密登录前端密码的密钥。AES 使用 16 字节字符串，SM4 使用 32 位 HEX 字符串。
 	 */
 	private String encodeKey;
 
 	/**
-	 * 网关不需要校验验证码的客户端
+	 * 认证中心解密登录前端密码的算法，默认使用 AES 以兼容历史配置。
 	 */
-	private List<String> ignoreClients;
+	private EncodeType encodeType = EncodeType.AES;
+
+	/**
+	 * 是否开启密码超期强制修改密码，默认关闭。
+	 */
+	private boolean expirePassword = false;
+
+	/**
+	 * 登录密码加密算法枚举
+	 * <p>
+	 * AES：使用 16 字节 UTF-8 字符串作为密钥，CFB / NoPadding 模式，IV 等于密钥。<br>
+	 * SM4：国密 SM4 算法，使用 32 位 HEX 字符串作为密钥（解码后 16 字节）。
+	 */
+	public enum EncodeType {
+
+		/** AES 算法（默认） */
+		AES,
+		/** 国密 SM4 算法 */
+		SM4
+
+	}
 
 }

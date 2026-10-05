@@ -9,8 +9,8 @@ import com.bubblecloud.common.mybatis.base.Pg;
 import com.bubblecloud.common.mybatis.base.Req;
 import com.bubblecloud.common.core.util.R;
 import com.bubblecloud.common.log.annotation.SysLog;
-import com.pig4cloud.plugin.excel.annotation.ResponseExcel;
-import com.pig4cloud.plugin.excel.annotation.RequestExcel;
+import com.bubblecloud.common.excel.annotation.ResponseExcel;
+import com.bubblecloud.common.excel.annotation.RequestExcel;
 import com.bubblecloud.agi.api.entity.Conversations;
 import com.bubblecloud.biz.agi.service.ConversationsService;
 

@@ -1,41 +1,42 @@
 package com.bubblecloud.codegen.controller;
 
+import com.baomidou.dynamic.datasource.toolkit.DynamicDataSourceContextHolder;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.core.toolkit.sql.SqlInjectionUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.bubblecloud.codegen.service.GenTableColumnService;
 import com.bubblecloud.codegen.service.GenTableService;
 import com.bubblecloud.codegen.entity.GenTable;
 import com.bubblecloud.codegen.entity.GenTableColumnEntity;
 import com.bubblecloud.common.core.util.R;
+import com.bubblecloud.common.excel.annotation.ResponseExcel;
 import com.bubblecloud.common.log.annotation.SysLog;
-import com.pig4cloud.plugin.excel.annotation.ResponseExcel;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /**
- * 代码表管理控制器
+ * 列属性
  *
  * @author qinlei
  * @date 2025/05/31
  */
 @RestController
+@Slf4j
 @RequiredArgsConstructor
 @RequestMapping("/table")
-@Tag(description = "table", name = "代码表管理模块")
+@Tag(description = "table", name = "列属性管理")
 @SecurityRequirement(name = HttpHeaders.AUTHORIZATION)
 public class GenTableController {
 
 	private final GenTableColumnService tableColumnService;
 
-	/**
-	 * 表服务
-	 */
 	private final GenTableService tableService;
 
 	/**
@@ -44,8 +45,8 @@ public class GenTableController {
 	 * @param table 列属性
 	 * @return
 	 */
-	@GetMapping("/page")
 	@Operation(summary = "分页查询", description = "分页查询")
+	@GetMapping("/page")
 	public R getTablePage(Page page, GenTable table) {
 		return R.ok(tableService.queryTablePage(page, table));
 	}
@@ -55,20 +56,18 @@ public class GenTableController {
 	 * @param id id
 	 * @return R
 	 */
-	@GetMapping("/{id}")
 	@Operation(summary = "通过id查询", description = "通过id查询")
-	public R getTableById(@PathVariable("id") Long id) {
+	@GetMapping("/{id}")
+	public R getTable(@PathVariable("id") Long id) {
 		return R.ok(tableService.getById(id));
 	}
 
 	/**
 	 * 查询数据源所有表
-	 * @param dsName 数据源名称
-	 * @return 包含表列表的响应结果
+	 * @param dsName 数据源
 	 */
 	@GetMapping("/list/{dsName}")
-	@Operation(summary = "查询数据源所有表", description = "查询数据源所有表")
-	public R listTables(@PathVariable("dsName") String dsName) {
+	public R listTable(@PathVariable("dsName") String dsName) {
 		return R.ok(tableService.queryTableList(dsName));
 	}
 
@@ -78,8 +77,11 @@ public class GenTableController {
 	 * @param tableName 表名称
 	 */
 	@GetMapping("/{dsName}/{tableName}")
-	@Operation(summary = "获取表信息", description = "获取表信息")
 	public R<GenTable> getTable(@PathVariable("dsName") String dsName, @PathVariable String tableName) {
+		if (SqlInjectionUtils.check(tableName)) {
+			log.warn("代码生成检测到非法表名，dsName: {}, tableName: {}", dsName, tableName);
+			return R.failed("非法内容");
+		}
 		return R.ok(tableService.queryOrBuildTable(dsName, tableName));
 	}
 
@@ -89,8 +91,11 @@ public class GenTableController {
 	 * @param tableName 表名称
 	 */
 	@GetMapping("/column/{dsName}/{tableName}")
-	@Operation(summary = "查询表Column的DDL语句", description = "查询表Column的DDL语句")
-	public R getTableColumn(@PathVariable("dsName") String dsName, @PathVariable String tableName) throws Exception {
+	public R getColumn(@PathVariable("dsName") String dsName, @PathVariable String tableName) throws Exception {
+		if (SqlInjectionUtils.check(tableName)) {
+			log.warn("代码生成检测到非法表名，dsName: {}, tableName: {}", dsName, tableName);
+			return R.failed("非法内容");
+		}
 		return R.ok(tableService.queryTableColumn(dsName, tableName));
 	}
 
@@ -100,27 +105,27 @@ public class GenTableController {
 	 * @param tableName 表名称
 	 */
 	@GetMapping("/ddl/{dsName}/{tableName}")
-	@Operation(summary = "查询表DDL语句", description = "查询表DDL语句")
-	public R getTableDdl(@PathVariable("dsName") String dsName, @PathVariable String tableName) throws Exception {
+	public R getDdl(@PathVariable("dsName") String dsName, @PathVariable String tableName) throws Exception {
+		if (SqlInjectionUtils.check(tableName)) {
+			log.warn("代码生成检测到非法表名，dsName: {}, tableName: {}", dsName, tableName);
+			return R.failed("非法内容");
+		}
 		return R.ok(tableService.queryTableDdl(dsName, tableName));
 	}
 
 	/**
 	 * 同步表信息
-	 * @param dsName 数据源
+	 * @param dsName 数据源名称
 	 * @param tableName 表名称
+	 * @return 操作结果
 	 */
 	@GetMapping("/sync/{dsName}/{tableName}")
-	@Operation(summary = "同步表信息", description = "同步表信息")
 	public R<GenTable> syncTable(@PathVariable("dsName") String dsName, @PathVariable String tableName) {
-		// 表配置删除
-		tableService.remove(
-				Wrappers.<GenTable>lambdaQuery().eq(GenTable::getDsName, dsName).eq(GenTable::getTableName, tableName));
-		// 字段配置删除
-		tableColumnService.remove(Wrappers.<GenTableColumnEntity>lambdaQuery()
-			.eq(GenTableColumnEntity::getDsName, dsName)
-			.eq(GenTableColumnEntity::getTableName, tableName));
-		return R.ok(tableService.queryOrBuildTable(dsName, tableName));
+		if (SqlInjectionUtils.check(tableName)) {
+			log.warn("代码生成检测到非法表名，dsName: {}, tableName: {}", dsName, tableName);
+			return R.failed("非法内容");
+		}
+		return R.ok(tableService.syncTable(dsName, tableName));
 	}
 
 	/**
@@ -128,10 +133,10 @@ public class GenTableController {
 	 * @param table 列属性
 	 * @return R
 	 */
-	@PutMapping
-	@SysLog("修改列属性")
 	@Operation(summary = "修改列属性", description = "修改列属性")
-	public R updateTable(@RequestBody GenTable table) {
+	@SysLog("修改列属性")
+	@PutMapping
+	public R updateById(@RequestBody GenTable table) {
 		return R.ok(tableService.updateById(table));
 	}
 
@@ -142,7 +147,6 @@ public class GenTableController {
 	 * @param tableFieldList 字段列表
 	 */
 	@PutMapping("/field/{dsName}/{tableName}")
-	@Operation(summary = "修改表字段数据", description = "修改表字段数据")
 	public R<String> updateTableField(@PathVariable("dsName") String dsName, @PathVariable String tableName,
 			@RequestBody List<GenTableColumnEntity> tableFieldList) {
 		tableColumnService.updateTableField(dsName, tableName, tableFieldList);
@@ -156,8 +160,9 @@ public class GenTableController {
 	 */
 	@ResponseExcel
 	@GetMapping("/export")
-	@Operation(summary = "导出字段数据", description = "导出字段数据")
-	public List<GenTable> exportTables(GenTable table) {
+	public List<GenTable> export(GenTable table) {
+		// 切换至对应数据源
+		DynamicDataSourceContextHolder.push(table.getDsName());
 		return tableService.list(Wrappers.query(table));
 	}
 

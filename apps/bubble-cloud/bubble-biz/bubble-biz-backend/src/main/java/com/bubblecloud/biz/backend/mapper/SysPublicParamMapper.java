@@ -1,7 +1,7 @@
 package com.bubblecloud.biz.backend.mapper;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.bubblecloud.backend.api.entity.SysPublicParam;
+import com.github.yulichang.base.MPJBaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
@@ -11,6 +11,6 @@ import org.apache.ibatis.annotations.Mapper;
  * @date 2019-04-29
  */
 @Mapper
-public interface SysPublicParamMapper extends BaseMapper<SysPublicParam> {
+public interface SysPublicParamMapper extends MPJBaseMapper<SysPublicParam> {
 
 }

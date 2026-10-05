@@ -1,22 +1,23 @@
 package com.bubblecloud.common.datasource.annotation;
 
+import com.alibaba.druid.spring.boot4.autoconfigure.DruidDataSourceAutoConfigure;
 import com.bubblecloud.common.datasource.DynamicDataSourceAutoConfiguration;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.*;
 
 /**
- * 开启动态数据源注解
+ * @author Lucky
+ * @date 2019-05-18
  * <p>
- * 用于启用动态数据源自动配置功能
- *
- * @author lengleng
- * @date 2025/07/14
+ * 开启动态数据源
  */
 @Target({ ElementType.TYPE })
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Inherited
+@EnableAutoConfiguration(exclude = { DruidDataSourceAutoConfigure.class })
 @Import(DynamicDataSourceAutoConfiguration.class)
 public @interface EnableDynamicDataSource {
 

@@ -6,23 +6,16 @@ import com.fasterxml.jackson.datatype.jsr310.PackageVersion;
 import com.fasterxml.jackson.datatype.jsr310.deser.*;
 import com.fasterxml.jackson.datatype.jsr310.ser.*;
 
-import java.io.Serial;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Java 8 时间默认序列化模块
+ * java 8 时间默认序列化
  *
  * @author L.cm
  * @author lishanbu
- * @author lengleng
- * @date 2025/05/30
  */
-
 public class CustomJavaTimeModule extends SimpleModule {
-
-	@Serial
-	private static final long serialVersionUID = 1L;
 
 	/**
 	 * JavaTimeModule构造函数，用于初始化时间序列化和反序列化规则
@@ -32,27 +25,37 @@ public class CustomJavaTimeModule extends SimpleModule {
 
 		// ======================= 时间序列化规则 ===============================
 		// yyyy-MM-dd HH:mm:ss
-		this.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer(DatePattern.NORM_DATETIME_FORMATTER));
+		this.addSerializer(LocalDateTime.class,
+				new LocalDateTimeSerializer(DateTimeFormatter.ofPattern(DatePattern.NORM_DATETIME_PATTERN)));
 		// yyyy-MM-dd
-		this.addSerializer(LocalDate.class, new LocalDateSerializer(DateTimeFormatter.ISO_LOCAL_DATE));
+		this.addSerializer(LocalDate.class,
+				new LocalDateSerializer(DateTimeFormatter.ofPattern(DatePattern.NORM_DATE_PATTERN)));
 		// HH:mm:ss
-		this.addSerializer(LocalTime.class, new LocalTimeSerializer(DateTimeFormatter.ISO_LOCAL_TIME));
+		this.addSerializer(LocalTime.class,
+				new LocalTimeSerializer(DateTimeFormatter.ofPattern(DatePattern.NORM_TIME_PATTERN)));
+
 		// Instant 类型序列化
 		this.addSerializer(Instant.class, InstantSerializer.INSTANCE);
+
 		// Duration 类型序列化
 		this.addSerializer(Duration.class, DurationSerializer.INSTANCE);
 
 		// ======================= 时间反序列化规则 ==============================
 		// yyyy-MM-dd HH:mm:ss
-		this.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(DatePattern.NORM_DATETIME_FORMATTER));
+		this.addDeserializer(LocalDateTime.class,
+				new LocalDateTimeDeserializer(DateTimeFormatter.ofPattern(DatePattern.NORM_DATETIME_PATTERN)));
 		// yyyy-MM-dd
-		this.addDeserializer(LocalDate.class, new LocalDateDeserializer(DateTimeFormatter.ISO_LOCAL_DATE));
+		this.addDeserializer(LocalDate.class,
+				new LocalDateDeserializer(DateTimeFormatter.ofPattern(DatePattern.NORM_DATE_PATTERN)));
 		// HH:mm:ss
-		this.addDeserializer(LocalTime.class, new LocalTimeDeserializer(DateTimeFormatter.ISO_LOCAL_TIME));
+		this.addDeserializer(LocalTime.class,
+				new LocalTimeDeserializer(DateTimeFormatter.ofPattern(DatePattern.NORM_TIME_PATTERN)));
 		// Instant 反序列化
 		this.addDeserializer(Instant.class, InstantDeserializer.INSTANT);
+
 		// Duration 反序列化
 		this.addDeserializer(Duration.class, DurationDeserializer.INSTANCE);
+
 	}
 
 }

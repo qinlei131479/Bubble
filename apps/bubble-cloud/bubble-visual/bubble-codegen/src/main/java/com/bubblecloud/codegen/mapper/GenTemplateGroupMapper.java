@@ -5,7 +5,7 @@ import com.bubblecloud.codegen.entity.GenTemplateGroupEntity;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
- * 模板分组关联表 Mapper 接口
+ * 模板分组关联表
  *
  * @author qinlei
  * @date 2025/05/31

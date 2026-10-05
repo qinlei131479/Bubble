@@ -1,10 +1,15 @@
 package com.bubblecloud.auth.support.base;
 
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.extra.spring.SpringUtil;
+import com.bubblecloud.common.core.constant.CommonConstants;
+import com.bubblecloud.common.security.service.CustomRedisOAuth2AuthorizationService;
 import com.bubblecloud.common.security.util.OAuth2ErrorCodesExpand;
 import com.bubblecloud.common.security.util.ScopeException;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
@@ -30,12 +35,10 @@ import java.util.*;
 import java.util.function.Supplier;
 
 /**
- * OAuth2资源所有者基础认证提供者抽象类，用于处理资源所有者密码凭证授权流程
- *
- * @param <T> OAuth2资源所有者基础认证令牌类型
- * @author lengleng
- * @date 2025/05/30
+ * @author jumuning
+ * @description 处理自定义授权
  */
+@Slf4j
 public abstract class OAuth2ResourceOwnerBaseAuthenticationProvider<T extends OAuth2ResourceOwnerBaseAuthenticationToken>
 		implements AuthenticationProvider {
 
@@ -58,8 +61,7 @@ public abstract class OAuth2ResourceOwnerBaseAuthenticationProvider<T extends OA
 	 * 构造一个基于资源所有者密码模式的OAuth2认证提供者
 	 * @param authenticationManager 认证管理器
 	 * @param authorizationService 授权服务
-	 * @param tokenGenerator token生成器
-	 * @throws IllegalArgumentException 当authorizationService或tokenGenerator为null时抛出
+	 * @param tokenGenerator 令牌生成器
 	 * @since 0.2.3
 	 */
 	public OAuth2ResourceOwnerBaseAuthenticationProvider(AuthenticationManager authenticationManager,
@@ -75,44 +77,34 @@ public abstract class OAuth2ResourceOwnerBaseAuthenticationProvider<T extends OA
 		this.messages = new MessageSourceAccessor(SpringUtil.getBean("securityMessageSource"), Locale.CHINA);
 	}
 
-	/**
-	 * 设置刷新令牌生成器
-	 * @param refreshTokenGenerator 刷新令牌生成器，不能为null
-	 * @deprecated 该方法已废弃
-	 */
 	@Deprecated
 	public void setRefreshTokenGenerator(Supplier<String> refreshTokenGenerator) {
 		Assert.notNull(refreshTokenGenerator, "refreshTokenGenerator cannot be null");
 		this.refreshTokenGenerator = refreshTokenGenerator;
 	}
 
-	/**
-	 * 构建用户名密码认证令牌
-	 * @param reqParameters 请求参数映射
-	 * @return 用户名密码认证令牌
-	 */
 	public abstract UsernamePasswordAuthenticationToken buildToken(Map<String, Object> reqParameters);
 
 	/**
-	 * 当前provider是否支持此令牌类型
-	 * @param authentication
-	 * @return
+	 * 判断当前provider是否支持指定的令牌类型
+	 * @param authentication 要检查的令牌类型
+	 * @return 如果支持则返回true，否则返回false
 	 */
 	@Override
 	public abstract boolean supports(Class<?> authentication);
 
 	/**
-	 * 当前的请求客户端是否支持此模式
-	 * @param registeredClient
+	 * 检查当前请求客户端是否支持此模式
+	 * @param registeredClient 已注册的客户端
 	 */
 	public abstract void checkClient(RegisteredClient registeredClient);
 
 	/**
-	 * 执行认证操作，遵循与{@link AuthenticationManager#authenticate(Authentication)}相同的契约
-	 * @param authentication 认证请求对象
-	 * @return 包含凭证的完整认证对象，如果当前认证提供者无法处理传入的认证对象可能返回null
-	 * @throws AuthenticationException 认证失败时抛出
-	 * @throws OAuth2AuthenticationException 当scope无效或token生成失败时抛出
+	 * 执行身份验证，与{@link AuthenticationManager#authenticate(Authentication)}具有相同契约
+	 * @param authentication 身份验证请求对象
+	 * @return 包含凭据的完全认证对象，如果无法支持传入的认证对象则可能返回null
+	 * @throws AuthenticationException 身份验证失败时抛出
+	 * @throws OAuth2AuthenticationException 当scope无效或服务器错误时抛出
 	 */
 	@Override
 	public Authentication authenticate(Authentication authentication) throws AuthenticationException {
@@ -149,86 +141,118 @@ public abstract class OAuth2ResourceOwnerBaseAuthenticationProvider<T extends OA
 			Authentication usernamePasswordAuthentication = authenticationManager
 				.authenticate(usernamePasswordAuthenticationToken);
 
-			// @formatter:off
-			DefaultOAuth2TokenContext.Builder tokenContextBuilder = DefaultOAuth2TokenContext.builder()
-					.registeredClient(registeredClient)
-					.principal(usernamePasswordAuthentication)
-					.authorizationServerContext(AuthorizationServerContextHolder.getContext())
-					.authorizedScopes(authorizedScopes)
-					.authorizationGrantType(resouceOwnerBaseAuthentication.getAuthorizationGrantType())
-					.authorizationGrant(resouceOwnerBaseAuthentication);
-			// @formatter:on
-
-			OAuth2Authorization.Builder authorizationBuilder = OAuth2Authorization
-				.withRegisteredClient(registeredClient)
-				.principalName(usernamePasswordAuthentication.getName())
-				.authorizationGrantType(resouceOwnerBaseAuthentication.getAuthorizationGrantType())
-				// 0.4.0 新增的方法
-				.authorizedScopes(authorizedScopes);
-
-			// ----- Access token -----
-			OAuth2TokenContext tokenContext = tokenContextBuilder.tokenType(OAuth2TokenType.ACCESS_TOKEN).build();
-			OAuth2Token generatedAccessToken = this.tokenGenerator.generate(tokenContext);
-			if (generatedAccessToken == null) {
-				OAuth2Error error = new OAuth2Error(OAuth2ErrorCodes.SERVER_ERROR,
-						"The token generator failed to generate the access token.", ERROR_URI);
-				throw new OAuth2AuthenticationException(error);
+			Object onlineQuantity = registeredClient.getClientSettings()
+				.getSettings()
+				.get(CommonConstants.ONLINE_QUANTITY);
+			// 没有设置并发控制走原有逻辑生成 || 设置同时在线为 true
+			if (Objects.isNull(onlineQuantity) || BooleanUtil.toBooleanObject((String) onlineQuantity)) {
+				return generatAuthenticationToken(resouceOwnerBaseAuthentication, clientPrincipal, registeredClient,
+						authorizedScopes, usernamePasswordAuthentication);
 			}
-			OAuth2AccessToken accessToken = new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER,
-					generatedAccessToken.getTokenValue(), generatedAccessToken.getIssuedAt(),
-					generatedAccessToken.getExpiresAt(), tokenContext.getAuthorizedScopes());
-			if (generatedAccessToken instanceof ClaimAccessor) {
-				authorizationBuilder.id(accessToken.getTokenValue())
-					.token(accessToken,
-							(metadata) -> metadata.put(OAuth2Authorization.Token.CLAIMS_METADATA_NAME,
-									((ClaimAccessor) generatedAccessToken).getClaims()))
-					// 0.4.0 新增的方法
-					.authorizedScopes(authorizedScopes)
-					.attribute(Principal.class.getName(), usernamePasswordAuthentication);
+
+			// 不允许同时在线,删除原有username 关联的所有token
+			CustomRedisOAuth2AuthorizationService redisOAuth2AuthorizationService = (CustomRedisOAuth2AuthorizationService) this.authorizationService;
+			redisOAuth2AuthorizationService.removeByUsername(usernamePasswordAuthentication);
+
+			return generatAuthenticationToken(resouceOwnerBaseAuthentication, clientPrincipal, registeredClient,
+					authorizedScopes, usernamePasswordAuthentication);
+
+		}
+		catch (AuthenticationException ex) {
+			throw oAuth2AuthenticationException(authentication, ex);
+		}
+		catch (Exception e) {
+			log.error("登录异常:", e);
+			throw new OAuth2AuthenticationException(new OAuth2Error(OAuth2ErrorCodes.SERVER_ERROR));
+		}
+	}
+
+	/**
+	 * 生成OAuth2访问令牌认证令牌
+	 * @param resouceOwnerBaseAuthentication 资源所有者基础认证信息
+	 * @param clientPrincipal 客户端认证主体
+	 * @param registeredClient 已注册的客户端信息
+	 * @param authorizedScopes 授权范围集合
+	 * @param usernamePasswordAuthentication 用户名密码认证信息
+	 * @return OAuth2访问令牌认证令牌
+	 * @throws OAuth2AuthenticationException 令牌生成失败时抛出异常
+	 */
+	@NotNull
+	private OAuth2AccessTokenAuthenticationToken generatAuthenticationToken(T resouceOwnerBaseAuthentication,
+			OAuth2ClientAuthenticationToken clientPrincipal, RegisteredClient registeredClient,
+			Set<String> authorizedScopes, Authentication usernamePasswordAuthentication) {
+		// @formatter:off
+		DefaultOAuth2TokenContext.Builder tokenContextBuilder = DefaultOAuth2TokenContext.builder()
+				.registeredClient(registeredClient)
+				.principal(usernamePasswordAuthentication)
+				.authorizationServerContext(AuthorizationServerContextHolder.getContext())
+				.authorizedScopes(authorizedScopes)
+				.authorizationGrantType(resouceOwnerBaseAuthentication.getAuthorizationGrantType())
+				.authorizationGrant(resouceOwnerBaseAuthentication);
+		// @formatter:on
+
+		OAuth2Authorization.Builder authorizationBuilder = OAuth2Authorization.withRegisteredClient(registeredClient)
+			.principalName(usernamePasswordAuthentication.getName())
+			.authorizationGrantType(resouceOwnerBaseAuthentication.getAuthorizationGrantType())
+			// 0.4.0 新增的方法
+			.authorizedScopes(authorizedScopes);
+
+		// ----- Access token -----
+		OAuth2TokenContext tokenContext = tokenContextBuilder.tokenType(OAuth2TokenType.ACCESS_TOKEN).build();
+		OAuth2Token generatedAccessToken = this.tokenGenerator.generate(tokenContext);
+		if (generatedAccessToken == null) {
+			OAuth2Error error = new OAuth2Error(OAuth2ErrorCodes.SERVER_ERROR,
+					"The token generator failed to generate the access token.", ERROR_URI);
+			throw new OAuth2AuthenticationException(error);
+		}
+		OAuth2AccessToken accessToken = new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER,
+				generatedAccessToken.getTokenValue(), generatedAccessToken.getIssuedAt(),
+				generatedAccessToken.getExpiresAt(), tokenContext.getAuthorizedScopes());
+		if (generatedAccessToken instanceof ClaimAccessor) {
+			authorizationBuilder.id(accessToken.getTokenValue())
+				.token(accessToken,
+						(metadata) -> metadata.put(OAuth2Authorization.Token.CLAIMS_METADATA_NAME,
+								((ClaimAccessor) generatedAccessToken).getClaims()))
+				// 0.4.0 新增的方法
+				.authorizedScopes(authorizedScopes)
+				.attribute(Principal.class.getName(), usernamePasswordAuthentication);
+		}
+		else {
+			authorizationBuilder.id(accessToken.getTokenValue()).accessToken(accessToken);
+		}
+
+		// ----- Refresh token -----
+		OAuth2RefreshToken refreshToken = null;
+		if (registeredClient.getAuthorizationGrantTypes().contains(AuthorizationGrantType.REFRESH_TOKEN) &&
+		// Do not issue refresh token to public client
+				!clientPrincipal.getClientAuthenticationMethod().equals(ClientAuthenticationMethod.NONE)) {
+
+			if (this.refreshTokenGenerator != null) {
+				Instant issuedAt = Instant.now();
+				Instant expiresAt = issuedAt.plus(registeredClient.getTokenSettings().getRefreshTokenTimeToLive());
+				refreshToken = new OAuth2RefreshToken(this.refreshTokenGenerator.get(), issuedAt, expiresAt);
 			}
 			else {
-				authorizationBuilder.id(accessToken.getTokenValue()).accessToken(accessToken);
-			}
-
-			// ----- Refresh token -----
-			OAuth2RefreshToken refreshToken = null;
-			if (registeredClient.getAuthorizationGrantTypes().contains(AuthorizationGrantType.REFRESH_TOKEN) &&
-			// Do not issue refresh token to public client
-					!clientPrincipal.getClientAuthenticationMethod().equals(ClientAuthenticationMethod.NONE)) {
-
-				if (this.refreshTokenGenerator != null) {
-					Instant issuedAt = Instant.now();
-					Instant expiresAt = issuedAt.plus(registeredClient.getTokenSettings().getRefreshTokenTimeToLive());
-					refreshToken = new OAuth2RefreshToken(this.refreshTokenGenerator.get(), issuedAt, expiresAt);
+				tokenContext = tokenContextBuilder.tokenType(OAuth2TokenType.REFRESH_TOKEN).build();
+				OAuth2Token generatedRefreshToken = this.tokenGenerator.generate(tokenContext);
+				if (!(generatedRefreshToken instanceof OAuth2RefreshToken)) {
+					OAuth2Error error = new OAuth2Error(OAuth2ErrorCodes.SERVER_ERROR,
+							"The token generator failed to generate the refresh token.", ERROR_URI);
+					throw new OAuth2AuthenticationException(error);
 				}
-				else {
-					tokenContext = tokenContextBuilder.tokenType(OAuth2TokenType.REFRESH_TOKEN).build();
-					OAuth2Token generatedRefreshToken = this.tokenGenerator.generate(tokenContext);
-					if (!(generatedRefreshToken instanceof OAuth2RefreshToken)) {
-						OAuth2Error error = new OAuth2Error(OAuth2ErrorCodes.SERVER_ERROR,
-								"The token generator failed to generate the refresh token.", ERROR_URI);
-						throw new OAuth2AuthenticationException(error);
-					}
-					refreshToken = (OAuth2RefreshToken) generatedRefreshToken;
-				}
-				authorizationBuilder.refreshToken(refreshToken);
+				refreshToken = (OAuth2RefreshToken) generatedRefreshToken;
 			}
-
-			OAuth2Authorization authorization = authorizationBuilder.build();
-
-			this.authorizationService.save(authorization);
-
-			LOGGER.debug("returning OAuth2AccessTokenAuthenticationToken");
-
-			return new OAuth2AccessTokenAuthenticationToken(registeredClient, clientPrincipal, accessToken,
-					refreshToken, Objects.requireNonNull(authorization.getAccessToken().getClaims()));
-
-		}
-		catch (Exception ex) {
-			LOGGER.error("problem in authenticate", ex);
-			throw oAuth2AuthenticationException(authentication, (AuthenticationException) ex);
+			authorizationBuilder.refreshToken(refreshToken);
 		}
 
+		OAuth2Authorization authorization = authorizationBuilder.build();
+
+		this.authorizationService.save(authorization);
+
+		LOGGER.debug("returning OAuth2AccessTokenAuthenticationToken");
+
+		return new OAuth2AccessTokenAuthenticationToken(registeredClient, clientPrincipal, accessToken, refreshToken,
+				Objects.requireNonNull(authorization.getAccessToken().getClaims()));
 	}
 
 	/**
@@ -239,6 +263,12 @@ public abstract class OAuth2ResourceOwnerBaseAuthenticationProvider<T extends OA
 	 */
 	private OAuth2AuthenticationException oAuth2AuthenticationException(Authentication authentication,
 			AuthenticationException authenticationException) {
+
+		// OAuth2AuthenticationException 直接返回
+		if (authenticationException instanceof OAuth2AuthenticationException) {
+			return (OAuth2AuthenticationException) authenticationException;
+		}
+
 		if (authenticationException instanceof UsernameNotFoundException) {
 			return new OAuth2AuthenticationException(new OAuth2Error(OAuth2ErrorCodesExpand.USERNAME_NOT_FOUND,
 					this.messages.getMessage("JdbcDaoImpl.notFound", new Object[] { authentication.getName() },
@@ -273,15 +303,12 @@ public abstract class OAuth2ResourceOwnerBaseAuthenticationProvider<T extends OA
 			return new OAuth2AuthenticationException(new OAuth2Error(OAuth2ErrorCodes.INVALID_SCOPE,
 					this.messages.getMessage("AbstractAccessDecisionManager.accessDenied", "invalid_scope"), ""));
 		}
-		return new OAuth2AuthenticationException(OAuth2ErrorCodesExpand.UN_KNOW_LOGIN_ERROR);
+
+		log.error(authenticationException.getLocalizedMessage());
+		return new OAuth2AuthenticationException(new OAuth2Error(OAuth2ErrorCodes.SERVER_ERROR),
+				authenticationException.getLocalizedMessage(), authenticationException);
 	}
 
-	/**
-	 * 获取已认证的客户端主体，否则抛出无效客户端异常
-	 * @param authentication 认证信息
-	 * @return 已认证的客户端主体
-	 * @throws OAuth2AuthenticationException 客户端未认证时抛出异常
-	 */
 	private OAuth2ClientAuthenticationToken getAuthenticatedClientElseThrowInvalidClient(
 			Authentication authentication) {
 

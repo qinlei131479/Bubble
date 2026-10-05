@@ -1,23 +1,20 @@
 package com.bubblecloud.daemon.quartz.entity;
 
-import java.io.Serial;
-import java.time.LocalDateTime;
-
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
-
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * 定时任务执行日志表
+ * <p>
+ * 该实体除保留原有任务日志字段外，还新增了 Quartz 防重排查字段， 用于定位同一秒重复触发、运行中跳过等场景。
+ * </p>
  *
  * @author frwcloud
  * @date 2019-01-27 13:40:20
@@ -26,11 +23,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = false)
 @Schema(description = "定时任务日志")
+@EqualsAndHashCode(callSuper = true)
 public class SysJobLog extends Model<SysJobLog> {
 
-	@Serial
 	private static final long serialVersionUID = 1L;
 
 	/**
@@ -108,6 +104,21 @@ public class SysJobLog extends Model<SysJobLog> {
 	 * 异常信息
 	 */
 	private String exceptionInfo;
+
+	/**
+	 * 计划触发时间
+	 */
+	private Date scheduledFireTime;
+
+	/**
+	 * Quartz 触发实例ID，用于定位同一轮调度是否被重复回调
+	 */
+	private String fireInstanceId;
+
+	/**
+	 * 去重状态（0正常执行 1同一触发点重复 2任务运行中跳过）
+	 */
+	private String dedupStatus;
 
 	/**
 	 * 创建时间

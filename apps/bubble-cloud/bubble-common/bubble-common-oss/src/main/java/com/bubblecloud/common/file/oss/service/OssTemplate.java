@@ -1,312 +1,338 @@
 package com.bubblecloud.common.file.oss.service;
 
-import com.bubblecloud.common.file.core.FileProperties;
-import com.bubblecloud.common.file.core.FileTemplate;
+import cn.hutool.core.util.StrUtil;
+import com.bubblecloud.common.file.core.*;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.checksums.RequestChecksumCalculation;
+import software.amazon.awssdk.core.checksums.ResponseChecksumValidation;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
 /**
- * AWS S3通用存储操作模板类
- *
- * <p>
- * 支持所有兼容S3协议的云存储服务，包括AWS S3、MinIO、阿里云OSS、腾讯云COS等
- * </p>
- * <p>
- * 提供存储桶管理、文件对象管理、预签名URL生成等功能
- * </p>
+ * S3 通用存储操作，支持所有兼容 S3 协议的云存储。
  *
  * @author lengleng
  * @author 858695266
- * @date 2025/05/31
+ * @date 2020/5/23 6:36 上午
  * @since 1.0
  */
 @RequiredArgsConstructor
-public class OssTemplate implements InitializingBean, FileTemplate {
+public class OssTemplate implements InitializingBean, DisposableBean, FileTemplate {
 
-	/**
-	 * 文件存储配置属性
-	 */
+	private static final String DEFAULT_REGION = "us-east-1";
+
 	private final FileProperties properties;
 
-	/**
-	 * S3客户端实例，用于执行S3 API操作
-	 */
 	private S3Client s3Client;
 
-	/**
-	 * S3预签名器，用于生成预签名URL
-	 */
 	private S3Presigner s3Presigner;
 
 	/**
-	 * 创建存储桶
-	 * @param bucketName 存储桶名称，必须全局唯一且符合DNS命名规范
-	 * @throws Exception 创建失败时抛出异常
+	 * 创建bucket
+	 * @param bucketName bucket名称
 	 */
-	@SneakyThrows
+	@Override
 	public void createBucket(String bucketName) {
-		// 检查存储桶是否已存在，避免重复创建
-		if (!doesBucketExist(bucketName)) {
-			CreateBucketRequest request = CreateBucketRequest.builder().bucket(bucketName).build();
-			s3Client.createBucket(request);
+		if (!bucketExists(bucketName)) {
+			s3Client.createBucket(CreateBucketRequest.builder().bucket(bucketName).build());
 		}
 	}
 
 	/**
-	 * 检查存储桶是否存在
-	 * @param bucketName 存储桶名称
-	 * @return 存在返回true，否则返回false
-	 */
-	private boolean doesBucketExist(String bucketName) {
-		try {
-			HeadBucketRequest request = HeadBucketRequest.builder().bucket(bucketName).build();
-			s3Client.headBucket(request);
-			return true;
-		}
-		catch (NoSuchBucketException e) {
-			return false;
-		}
-	}
-
-	/**
-	 * 获取所有存储桶列表
-	 * @return 存储桶列表
-	 * @see <a href="http://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/ListBuckets">AWS
-	 * API Documentation</a>
-	 */
-	@SneakyThrows
-	public List<Bucket> getAllBuckets() {
-		ListBucketsResponse response = s3Client.listBuckets();
-		return response.buckets();
-	}
-
-	/**
-	 * 根据名称查找特定存储桶
-	 * @param bucketName 存储桶名称
-	 * @return Optional包装的Bucket对象
-	 * @see <a href="http://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/ListBuckets">AWS
-	 * API Documentation</a>
-	 */
-	@SneakyThrows
-	public Optional<Bucket> getBucket(String bucketName) {
-		return getAllBuckets().stream().filter(b -> b.name().equals(bucketName)).findFirst();
-	}
-
-	/**
-	 * 删除存储桶
-	 *
+	 * 获取全部bucket
 	 * <p>
-	 * 注意：存储桶必须为空才能删除，删除操作不可逆
-	 * </p>
-	 * @param bucketName 存储桶名称
-	 * @throws Exception 删除失败时抛出异常
+	 *
+	 * @see <a href="http://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/ListBuckets">AWS
+	 * API Documentation</a>
+	 */
+	@Override
+	public List<FileBucket> getAllBuckets() {
+		return s3Client.listBuckets().buckets().stream().map(this::toFileBucket).toList();
+	}
+
+	/**
+	 * @param bucketName bucket名称
+	 * @see <a href="http://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/ListBuckets">AWS
+	 * API Documentation</a>
+	 */
+	public Optional<FileBucket> getBucket(String bucketName) {
+		return getAllBuckets().stream().filter(b -> b.getName().equals(bucketName)).findFirst();
+	}
+
+	/**
+	 * @param bucketName bucket名称
 	 * @see <a href=
 	 * "http://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/DeleteBucket">AWS API
 	 * Documentation</a>
 	 */
-	@SneakyThrows
+	@Override
 	public void removeBucket(String bucketName) {
-		DeleteBucketRequest request = DeleteBucketRequest.builder().bucket(bucketName).build();
-		s3Client.deleteBucket(request);
+		s3Client.deleteBucket(DeleteBucketRequest.builder().bucket(bucketName).build());
 	}
 
 	/**
-	 * 根据前缀查询文件对象
-	 * @param bucketName 存储桶名称
-	 * @param prefix 文件名前缀，可为null或空字符串
-	 * @param recursive 是否递归查询子目录
-	 * @return S3Object列表
+	 * 根据文件前置查询文件
+	 * @param bucketName bucket名称
+	 * @param prefix 前缀
+	 * @param recursive 是否递归查询
+	 * @return FileObjectSummary 列表
 	 * @see <a href="http://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/ListObjects">AWS
 	 * API Documentation</a>
 	 */
-	@SneakyThrows
-	public List<S3Object> getAllObjectsByPrefix(String bucketName, String prefix, boolean recursive) {
-		ListObjectsV2Request.Builder requestBuilder = ListObjectsV2Request.builder().bucket(bucketName);
-
-		// 设置前缀过滤条件
-		if (prefix != null && !prefix.isEmpty()) {
-			requestBuilder.prefix(prefix);
-		}
-
-		// 非递归查询时设置分隔符
+	@Override
+	public List<FileObjectSummary> getAllObjectsByPrefix(String bucketName, String prefix, boolean recursive) {
+		ListObjectsV2Request.Builder builder = ListObjectsV2Request.builder().bucket(bucketName).prefix(prefix);
 		if (!recursive) {
-			requestBuilder.delimiter("/");
+			builder.delimiter(StrUtil.SLASH);
 		}
-
-		ListObjectsV2Response response = s3Client.listObjectsV2(requestBuilder.build());
-		return response.contents();
+		ListObjectsV2Response response = s3Client.listObjectsV2(builder.build());
+		return response.contents().stream().map(object -> toFileObjectSummary(bucketName, object)).toList();
 	}
 
 	/**
-	 * 生成文件的预签名访问URL
-	 * @param bucketName 存储桶名称
-	 * @param objectName 文件对象名称
-	 * @param expires 过期时间（天数）
-	 * @return 预签名的访问URL
-	 * @throws Exception 生成失败时抛出异常
+	 * 获取文件外链
+	 * @param bucketName bucket名称
+	 * @param objectName 文件名称
+	 * @param expires 过期时间 <=7
+	 * @return url
 	 */
-	@SneakyThrows
 	public String getObjectURL(String bucketName, String objectName, Integer expires) {
 		GetObjectRequest getObjectRequest = GetObjectRequest.builder().bucket(bucketName).key(objectName).build();
-
 		GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
 			.signatureDuration(Duration.ofDays(expires))
 			.getObjectRequest(getObjectRequest)
 			.build();
-
-		return s3Presigner.presignGetObject(presignRequest).url().toString();
+		PresignedGetObjectRequest presignedGetObjectRequest = s3Presigner.presignGetObject(presignRequest);
+		URL url = presignedGetObjectRequest.url();
+		return url.toString();
 	}
 
 	/**
-	 * 获取文件对象
-	 * @param bucketName 存储桶名称
-	 * @param objectName 文件对象名称
-	 * @return S3响应对象，包含文件流和元数据
-	 * @throws Exception 获取失败时抛出异常
+	 * 获取文件
+	 * @param bucketName bucket名称
+	 * @param objectName 文件名称
+	 * @return 二进制流
 	 * @see <a href="http://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetObject">AWS
 	 * API Documentation</a>
 	 */
-	@SneakyThrows
-	public Object getObject(String bucketName, String objectName) {
+	@Override
+	public FileObject getObject(String bucketName, String objectName) {
 		GetObjectRequest request = GetObjectRequest.builder().bucket(bucketName).key(objectName).build();
-		return s3Client.getObject(request);
+		ResponseInputStream<GetObjectResponse> stream = s3Client.getObject(request,
+				ResponseTransformer.toInputStream());
+		GetObjectResponse response = stream.response();
+		return new FileObject(bucketName, objectName, response.contentType(), response.contentLength(), stream);
 	}
 
 	/**
-	 * 上传文件（使用默认内容类型）
-	 * @param bucketName 存储桶名称
-	 * @param objectName 文件对象名称
-	 * @param stream 文件输入流
-	 * @throws Exception 上传失败时抛出异常
+	 * 获取文件
+	 * @param bucketName bucket名称
+	 * @param dir 文件夹名称
+	 * @param objectName 文件名称
+	 * @return 二进制流 API Documentation</a>
 	 */
+	@Override
+	public FileObject getObject(String bucketName, String dir, String objectName) {
+		if (StrUtil.isNotBlank(dir)) {
+			objectName = dir + StrUtil.SLASH + objectName;
+		}
+		return getObject(bucketName, objectName);
+	}
+
+	/**
+	 * 上传文件
+	 * @param bucketName bucket名称
+	 * @param objectName 文件名称
+	 * @param stream 文件流
+	 * @throws Exception
+	 */
+	@Override
 	public void putObject(String bucketName, String objectName, InputStream stream) throws Exception {
-		putObject(bucketName, objectName, stream, "application/octet-stream");
+		putObject(bucketName, objectName, stream, stream.available(), "application/octet-stream");
 	}
 
 	/**
-	 * 上传文件（指定内容类型）
-	 * @param bucketName 存储桶名称
-	 * @param objectName 文件对象名称
-	 * @param stream 文件输入流
-	 * @param contextType 文件MIME类型
-	 * @throws Exception 上传失败时抛出异常
+	 * 上传文件
+	 * @param bucketName bucket名称
+	 * @param objectName 文件名称
+	 * @param stream 文件流
+	 * @param contextType 文件类型
+	 * @throws Exception
 	 */
+	@Override
 	public void putObject(String bucketName, String objectName, InputStream stream, String contextType)
 			throws Exception {
-		PutObjectRequest request = PutObjectRequest.builder()
-			.bucket(bucketName)
-			.key(objectName)
-			.contentType(contextType)
-			.build();
-
-		s3Client.putObject(request, RequestBody.fromInputStream(stream, stream.available()));
+		putObject(bucketName, objectName, stream, stream.available(), contextType);
 	}
 
 	/**
-	 * 上传文件（指定文件大小）
-	 * @param bucketName 存储桶名称
-	 * @param objectName 文件对象名称
-	 * @param stream 文件输入流
-	 * @param size 文件大小（字节数）
-	 * @param contextType 文件MIME类型
-	 * @return PutObjectResponse 上传响应对象
-	 * @throws Exception 上传失败时抛出异常
+	 * 上传文件
+	 * @param bucketName bucket名称
+	 * @param dir 文件夹名称
+	 * @param objectName 文件名称
+	 * @param stream 文件流
+	 * @param contextType 文件类型
+	 * @throws Exception
+	 */
+	@Override
+	public void putObject(String bucketName, String dir, String objectName, InputStream stream, String contextType)
+			throws Exception {
+		if (StrUtil.isNotBlank(dir)) {
+			objectName = dir + StrUtil.SLASH + objectName;
+		}
+		putObject(bucketName, objectName, stream, stream.available(), contextType);
+	}
+
+	/**
+	 * 上传文件
+	 * @param bucketName bucket名称
+	 * @param objectName 文件名称
+	 * @param stream 文件流
+	 * @param size 大小
+	 * @param contextType 类型
+	 * @throws Exception
 	 * @see <a href="http://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/PutObject">AWS
 	 * API Documentation</a>
 	 */
-	public PutObjectResponse putObject(String bucketName, String objectName, InputStream stream, long size,
+	public FileObjectInfo putObject(String bucketName, String objectName, InputStream stream, long size,
 			String contextType) throws Exception {
-		PutObjectRequest request = PutObjectRequest.builder()
-			.bucket(bucketName)
-			.key(objectName)
-			.contentType(contextType)
-			.contentLength(size)
-			.build();
-
-		return s3Client.putObject(request, RequestBody.fromInputStream(stream, size));
+		PutObjectRequest.Builder request = PutObjectRequest.builder().bucket(bucketName).key(objectName);
+		if (StrUtil.isNotBlank(contextType)) {
+			request.contentType(contextType);
+		}
+		Path tempFile = Files.createTempFile("pig-oss-", ".tmp");
+		try {
+			Files.copy(stream, tempFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+			long contentLength = Files.size(tempFile);
+			request.contentLength(contentLength);
+			PutObjectResponse response = s3Client.putObject(request.build(), RequestBody.fromFile(tempFile));
+			return new FileObjectInfo(bucketName, objectName, contextType, contentLength, response.eTag(), null);
+		}
+		finally {
+			deleteTempFile(tempFile);
+		}
 	}
 
 	/**
-	 * 获取文件元数据信息
-	 * @param bucketName 存储桶名称
-	 * @param objectName 文件对象名称
-	 * @return HeadObjectResponse 文件元数据响应对象
-	 * @throws Exception 获取失败时抛出异常
+	 * 获取文件信息
+	 * @param bucketName bucket名称
+	 * @param objectName 文件名称
 	 * @see <a href="http://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetObject">AWS
 	 * API Documentation</a>
 	 */
-	public HeadObjectResponse getObjectInfo(String bucketName, String objectName) throws Exception {
-		HeadObjectRequest request = HeadObjectRequest.builder().bucket(bucketName).key(objectName).build();
-		return s3Client.headObject(request);
+	public FileObjectInfo getObjectInfo(String bucketName, String objectName) {
+		HeadObjectResponse response = s3Client
+			.headObject(HeadObjectRequest.builder().bucket(bucketName).key(objectName).build());
+		return new FileObjectInfo(bucketName, objectName, response.contentType(), response.contentLength(),
+				response.eTag(), response.lastModified());
 	}
 
 	/**
-	 * 删除文件对象
-	 *
-	 * <p>
-	 * 注意：删除操作不可逆，删除不存在的文件不会报错
-	 * </p>
-	 * @param bucketName 存储桶名称
-	 * @param objectName 文件对象名称
-	 * @throws Exception 删除失败时抛出异常
+	 * 删除文件
+	 * @param bucketName bucket名称
+	 * @param objectName 文件名称
+	 * @throws Exception
 	 * @see <a href=
 	 * "http://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/DeleteObject">AWS API
 	 * Documentation</a>
 	 */
+	@Override
 	public void removeObject(String bucketName, String objectName) throws Exception {
-		DeleteObjectRequest request = DeleteObjectRequest.builder().bucket(bucketName).key(objectName).build();
-		s3Client.deleteObject(request);
+		s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(objectName).build());
 	}
 
-	/**
-	 * 初始化S3客户端和预签名器实例
-	 *
-	 * <p>
-	 * 在Spring Bean属性设置完成后自动调用，配置端点地址、区域、访问凭证等
-	 * </p>
-	 * @throws Exception 初始化失败时抛出异常
-	 */
 	@Override
 	public void afterPropertiesSet() {
-		// 创建认证凭据
-		AwsBasicCredentials awsCredentials = AwsBasicCredentials.create(properties.getOss().getAccessKey(),
-				properties.getOss().getSecretKey());
-
-		// 构建S3配置
-		S3Configuration.Builder s3ConfigBuilder = S3Configuration.builder()
-			.pathStyleAccessEnabled(properties.getOss().getPathStyleAccess());
-
-		// 创建S3客户端
-		this.s3Client = S3Client.builder()
-			.endpointOverride(URI.create(properties.getOss().getEndpoint()))
-			.region(Region.of(properties.getOss().getRegion() != null ? properties.getOss().getRegion() : "us-east-1"))
-			.credentialsProvider(StaticCredentialsProvider.create(awsCredentials))
-			.serviceConfiguration(s3ConfigBuilder.build())
+		Region region = Region.of(StrUtil.blankToDefault(properties.getOss().getRegion(), DEFAULT_REGION));
+		AwsCredentialsProvider credentialsProvider = StaticCredentialsProvider
+			.create(AwsBasicCredentials.create(properties.getOss().getAccessKey(), properties.getOss().getSecretKey()));
+		S3Configuration serviceConfiguration = S3Configuration.builder()
+			.pathStyleAccessEnabled(properties.getOss().getPathStyleAccess())
+			.chunkedEncodingEnabled(properties.getOss().getChunkedEncodingEnabled())
 			.build();
+		RequestChecksumCalculation requestChecksumCalculation = properties.getOss().isSkipMd5Check()
+				? RequestChecksumCalculation.WHEN_REQUIRED : RequestChecksumCalculation.WHEN_SUPPORTED;
+		ResponseChecksumValidation responseChecksumValidation = properties.getOss().isSkipMd5Check()
+				? ResponseChecksumValidation.WHEN_REQUIRED : ResponseChecksumValidation.WHEN_SUPPORTED;
+		S3ClientBuilder clientBuilder = S3Client.builder()
+			.region(region)
+			.credentialsProvider(credentialsProvider)
+			.serviceConfiguration(serviceConfiguration)
+			.requestChecksumCalculation(requestChecksumCalculation)
+			.responseChecksumValidation(responseChecksumValidation);
+		S3Presigner.Builder presignerBuilder = S3Presigner.builder()
+			.region(region)
+			.credentialsProvider(credentialsProvider)
+			.serviceConfiguration(serviceConfiguration);
+		if (StrUtil.isNotBlank(properties.getOss().getEndpoint())) {
+			URI endpoint = URI.create(properties.getOss().getEndpoint());
+			clientBuilder.endpointOverride(endpoint);
+			presignerBuilder.endpointOverride(endpoint);
+		}
+		this.s3Client = clientBuilder.build();
+		this.s3Presigner = presignerBuilder.build();
+	}
 
-		// 创建S3预签名器
-		this.s3Presigner = S3Presigner.builder()
-			.endpointOverride(URI.create(properties.getOss().getEndpoint()))
-			.region(Region.of(properties.getOss().getRegion() != null ? properties.getOss().getRegion() : "us-east-1"))
-			.credentialsProvider(StaticCredentialsProvider.create(awsCredentials))
-			.serviceConfiguration(s3ConfigBuilder.build())
-			.build();
+	@Override
+	public void destroy() {
+		if (s3Presigner != null) {
+			s3Presigner.close();
+		}
+		if (s3Client != null) {
+			s3Client.close();
+		}
+	}
+
+	private boolean bucketExists(String bucketName) {
+		try {
+			s3Client.headBucket(HeadBucketRequest.builder().bucket(bucketName).build());
+			return true;
+		}
+		catch (NoSuchBucketException ex) {
+			return false;
+		}
+		catch (S3Exception ex) {
+			if (ex.statusCode() == 404) {
+				return false;
+			}
+			throw ex;
+		}
+	}
+
+	private FileBucket toFileBucket(Bucket bucket) {
+		return new FileBucket(bucket.name(), bucket.creationDate());
+	}
+
+	private FileObjectSummary toFileObjectSummary(String bucketName, S3Object object) {
+		return new FileObjectSummary(bucketName, object.key(), object.size(), object.lastModified());
+	}
+
+	private void deleteTempFile(Path tempFile) throws IOException {
+		Files.deleteIfExists(tempFile);
 	}
 
 }

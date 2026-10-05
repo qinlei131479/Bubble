@@ -6,15 +6,14 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.FieldNameConstants;
-
 import java.io.Serial;
 import java.time.LocalDateTime;
 
 /**
- * 文件管理实体类
+ * 文件管理
  *
- * @author lengleng
- * @date 2025/07/03
+ * @author Luckly
+ * @date 2019-06-18 17:18:42
  */
 @Data
 @FieldNameConstants
@@ -50,6 +49,12 @@ public class SysFile extends Model<SysFile> {
 	@Schema(description = "存储桶名称")
 	private String bucketName;
 
+	/***
+	 * 文件夹
+	 */
+	@Schema(description = "文件夹")
+	private String dir;
+
 	/**
 	 * 文件类型
 	 */
@@ -57,10 +62,22 @@ public class SysFile extends Model<SysFile> {
 	private String type;
 
 	/**
+	 * 文件组
+	 */
+	@Schema(description = "文件组")
+	private Long groupId;
+
+	/**
 	 * 文件大小
 	 */
 	@Schema(description = "文件大小")
 	private Long fileSize;
+
+	/**
+	 * 文件hash
+	 */
+	@Schema(description = "文件hash")
+	private String hash;
 
 	/**
 	 * 上传人

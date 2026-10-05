@@ -11,7 +11,7 @@ import com.bubblecloud.common.log.annotation.SysLog;
 import com.bubblecloud.common.mybatis.base.Pg;
 import com.bubblecloud.common.mybatis.base.Req;
 import com.bubblecloud.common.security.annotation.HasPermission;
-import com.pig4cloud.plugin.excel.annotation.ResponseExcel;
+import com.bubblecloud.common.excel.annotation.ResponseExcel;
 import com.bubblecloud.biz.agi.service.AgentConfigsService;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

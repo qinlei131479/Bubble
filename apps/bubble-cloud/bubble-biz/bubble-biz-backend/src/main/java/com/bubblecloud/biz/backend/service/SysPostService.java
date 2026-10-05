@@ -17,16 +17,16 @@ import java.util.List;
 public interface SysPostService extends IService<SysPost> {
 
 	/**
-	 * 获取岗位列表用于导出Excel
-	 * @return 岗位Excel数据列表
+	 * 导出excel 表格
+	 * @return
 	 */
-	List<PostExcelVO> listPosts();
+	List<PostExcelVO> listPost(SysPost post, Long[] ids);
 
 	/**
-	 * 导入岗位信息
-	 * @param excelVOList 岗位Excel数据列表
-	 * @param bindingResult 数据校验结果
-	 * @return 导入结果(R对象)
+	 * 导入岗位
+	 * @param excelVOList 岗位列表
+	 * @param bindingResult 通用校验结果，其 target 持有错误信息列表
+	 * @return 全部导入成功返回 ok；存在校验失败时返回携带错误信息列表的 failed
 	 */
 	R importPost(List<PostExcelVO> excelVOList, BindingResult bindingResult);
 

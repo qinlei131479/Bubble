@@ -8,7 +8,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.FieldNameConstants;
-
 import java.time.LocalDateTime;
 
 /**
@@ -42,9 +41,9 @@ public class SysMenu extends Model<SysMenu> {
 	private String name;
 
 	/**
-	 * 菜单名称
+	 * 菜单英文名称
 	 */
-	@Schema(description = "菜单名称")
+	@Schema(description = "菜单英文名称")
 	private String enName;
 
 	/**
@@ -71,6 +70,12 @@ public class SysMenu extends Model<SysMenu> {
 	 */
 	@Schema(description = "前端路由标识路径")
 	private String path;
+
+	/**
+	 * 前端组件
+	 */
+	@Schema(description = "前端组件")
+	private String component;
 
 	/**
 	 * 菜单显示隐藏控制

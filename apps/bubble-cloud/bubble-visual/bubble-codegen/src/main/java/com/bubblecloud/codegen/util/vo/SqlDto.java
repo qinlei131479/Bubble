@@ -3,7 +3,7 @@ package com.bubblecloud.codegen.util.vo;
 import lombok.Data;
 
 /**
- * @author qinlei
+ * @author lengleng
  * @date 2022/5/2
  */
 @Data

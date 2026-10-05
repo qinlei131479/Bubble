@@ -7,6 +7,7 @@ import lombok.experimental.UtilityClass;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -15,26 +16,40 @@ import java.util.List;
 /**
  * 安全工具类
  *
- * @author lengleng
- * @date 2025/05/31
+ * @author L.cm
  */
 @UtilityClass
 public class SecurityUtils {
 
 	/**
-	 * 获取当前安全上下文的认证信息
-	 * @return 当前认证信息对象
+	 * 获取Authentication
 	 */
 	public Authentication getAuthentication() {
 		return SecurityContextHolder.getContext().getAuthentication();
 	}
 
 	/**
-	 * 获取当前认证用户
-	 * @param authentication 认证信息
-	 * @return 用户对象，如果认证主体不是CustomUser类型则返回null
+	 * 获取Authentication Token
+	 * @return
+	 */
+	public String getToken() {
+		Authentication authentication = SecurityUtils.getAuthentication();
+		if (authentication instanceof BearerTokenAuthentication bearerTokenAuthentication) {
+			return bearerTokenAuthentication.getToken().getTokenValue();
+		}
+		return null;
+	}
+
+	/**
+	 * 获取用户
+	 * @param authentication
+	 * @return CustomUser
+	 * <p>
 	 */
 	public CustomUser getUser(Authentication authentication) {
+		if (authentication == null) {
+			return null;
+		}
 		Object principal = authentication.getPrincipal();
 		if (principal instanceof CustomUser) {
 			return (CustomUser) principal;
@@ -43,14 +58,10 @@ public class SecurityUtils {
 	}
 
 	/**
-	 * 获取当前认证用户
-	 * @return 当前认证用户对象，未认证时返回null
+	 * 获取用户
 	 */
 	public CustomUser getUser() {
 		Authentication authentication = getAuthentication();
-		if (authentication == null) {
-			return null;
-		}
 		return getUser(authentication);
 	}
 
@@ -58,7 +69,7 @@ public class SecurityUtils {
 	 * 获取用户角色信息
 	 * @return 角色集合
 	 */
-	public List<Long> getRoles() {
+	public List<Long> getRoleIds() {
 		Authentication authentication = getAuthentication();
 		Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
 

@@ -4,12 +4,13 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.bubblecloud.codegen.entity.GenTable;
+import org.anyline.metadata.Column;
 import org.anyline.metadata.Table;
 
 import java.util.List;
 
 /**
- * 代码生成表服务接口
+ * 列属性
  *
  * @author qinlei
  * @date 2025/05/31
@@ -33,6 +34,14 @@ public interface GenTableService extends IService<GenTable> {
 	GenTable queryOrBuildTable(String dsName, String tableName);
 
 	/**
+	 * 同步表和字段配置
+	 * @param dsName 数据源
+	 * @param tableName 表名
+	 * @return 同步后的表配置
+	 */
+	GenTable syncTable(String dsName, String tableName);
+
+	/**
 	 * 查询表ddl 语句
 	 * @param dsName 数据源名称
 	 * @param tableName 表名称
@@ -46,7 +55,7 @@ public interface GenTableService extends IService<GenTable> {
 	 * @param dsName 数据源名称
 	 * @return table
 	 */
-	List<String> queryTableList(String dsName);
+	List<Table> queryTableList(String dsName);
 
 	/**
 	 * 查询表的全部字段
@@ -54,6 +63,6 @@ public interface GenTableService extends IService<GenTable> {
 	 * @param tableName 表名称
 	 * @return column
 	 */
-	List<String> queryTableColumn(String dsName, String tableName);
+	List<Column> queryTableColumn(String dsName, String tableName);
 
 }

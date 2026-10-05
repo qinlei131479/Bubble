@@ -3,15 +3,15 @@
 	<div class="w-full upload-file">
 		<!-- 当禁用时只显示文件列表，不使用el-upload组件 -->
 		<div v-if="props.disabled">
-			<div v-if="fileList.length === 0" class="flex justify-center items-center px-4 text-gray-400 bg-gray-50 rounded-md p">
+			<div v-if="fileList.length === 0" class="flex items-center justify-center px-4 text-gray-400 rounded-md bg-gray-50 p">
 				<el-icon class="mr-2 text-lg"><Document /></el-icon>
-				<span class="text-sm">{{ t('excel.noFiles') }}</span>
+				<span class="text-sm">{{ $t('excel.noFiles') }}</span>
 			</div>
 			<div v-else>
 				<div
 					v-for="(file, index) in fileList"
 					:key="index"
-					class="flex items-center px-4 py-3 mb-1 rounded transition-colors duration-200 cursor-pointer group hover:bg-blue-50"
+					class="flex items-center px-4 py-3 mb-1 transition-colors duration-200 rounded cursor-pointer group hover:bg-blue-50"
 					@click="handlePreview(file)"
 				>
 					<el-icon class="mr-3 text-blue-500"><Document /></el-icon>
@@ -26,7 +26,7 @@
 		<el-upload
 			ref="fileUpload"
 			v-if="props.type === 'default' && !props.disabled"
-			:action="baseUrl + other.adaptationUrl(props.uploadFileUrl)"
+			:action="baseURL + other.adaptationUrl(props.uploadFileUrl)"
 			:before-upload="handleBeforeUpload"
 			:file-list="fileList"
 			:headers="headers"
@@ -45,19 +45,19 @@
 		>
 			<i class="el-icon-upload"></i>
 			<div class="el-upload__text">
-				{{ t('excel.operationNotice') }}
-				<em>{{ t('excel.clickUpload') }}</em>
+				{{ $t('excel.operationNotice') }}
+				<em>{{ $t('excel.clickUpload') }}</em>
 			</div>
 			<template #tip>
 				<div class="el-upload__tip" v-if="props.isShowTip">
-					{{ t('excel.pleaseUpload') }}
+					{{ $t('excel.pleaseUpload') }}
 					<template v-if="props.fileSize">
-						{{ t('excel.size') }} <b style="color: #f56c6c">{{ props.fileSize }}MB</b></template
+						{{ $t('excel.size') }} <b style="color: #f56c6c">{{ props.fileSize }}MB</b></template
 					>
 					<template v-if="props.fileType">
-						{{ t('excel.format') }} <b style="color: #f56c6c">{{ props.fileType.join('/') }}</b>
+						{{ $t('excel.format') }} <b style="color: #f56c6c">{{ props.fileType.join('/') }}</b>
 					</template>
-					{{ t('excel.file') }}
+					{{ $t('excel.file') }}
 				</div>
 			</template>
 		</el-upload>
@@ -65,7 +65,7 @@
 		<el-upload
 			ref="fileUpload"
 			v-if="props.type === 'simple' && !props.disabled"
-			:action="baseUrl + other.adaptationUrl(props.uploadFileUrl)"
+			:action="baseURL + other.adaptationUrl(props.uploadFileUrl)"
 			:before-upload="handleBeforeUpload"
 			:file-list="fileList"
 			:headers="headers"
@@ -80,17 +80,17 @@
 			class="upload-file-uploader"
 			multiple
 		>
-			<el-button type="primary" link>{{ t('excel.clickUpload') }}</el-button>
+			<el-button type="primary" link>{{ $t('excel.clickUpload') }}</el-button>
 			<template #tip>
 				<div class="el-upload__tip" v-if="props.isShowTip">
-					{{ t('excel.pleaseUpload') }}
+					{{ $t('excel.pleaseUpload') }}
 					<template v-if="props.fileSize">
-						{{ t('excel.size') }} <b style="color: #f56c6c">{{ props.fileSize }}MB</b></template
+						{{ $t('excel.size') }} <b style="color: #f56c6c">{{ props.fileSize }}MB</b></template
 					>
 					<template v-if="props.fileType">
-						{{ t('excel.format') }} <b style="color: #f56c6c">{{ props.fileType.join('/') }}</b>
+						{{ $t('excel.format') }} <b style="color: #f56c6c">{{ props.fileType.join('/') }}</b>
 					</template>
-					{{ t('excel.file') }}
+					{{ $t('excel.file') }}
 				</div>
 			</template>
 		</el-upload>
@@ -102,29 +102,20 @@ import { useMessage } from '/@/hooks/message';
 import { Session } from '/@/utils/storage';
 import other from '/@/utils/other';
 import { useI18n } from 'vue-i18n';
+import { ref, computed, watch } from 'vue';
 import { Document, Download } from '@element-plus/icons-vue';
-
-// 定义基础URL
-const baseUrl = import.meta.env.VITE_API_URL || '';
 
 // 获取文件名
 const getFileName = (file: any): string => {
-	return file.url ? other.getQueryString(file.url, 'fileName') || other.getQueryString(file.url, 'originalFileName') : 'File';
+	if (file?.name) return file.name;
+	if (!file?.url) return 'File';
+	return other.getQueryString(file.url, 'originalFileName') || other.getQueryString(file.url, 'fileName') || 'File';
 };
 
 // 根据文件类型生成accept属性值
 const fileAccept = computed(() => {
 	if (!props.fileType || props.fileType.length === 0) return '';
-
-	let acceptValues: string[] = [];
-
-	for (const ext of props.fileType) {
-		if (typeof ext === 'string') {
-			acceptValues.push(`.${ext}`);
-		}
-	}
-
-	return acceptValues.join(',');
+	return (props.fileType as string[]).map((ext) => `.${ext}`).join(',');
 });
 
 interface FileItem {
@@ -153,6 +144,11 @@ const props = defineProps({
 	fileSize: {
 		type: Number,
 		default: 5,
+	},
+	// 最小文件大小限制(KB)，低于此大小的文件视为无效文件
+	minFileSize: {
+		type: Number,
+		default: 0,
 	},
 	fileType: {
 		type: Array,
@@ -203,13 +199,13 @@ const { t } = useI18n();
 // 请求头处理
 const headers = computed(() => {
 	return {
-		Authorization: 'Bearer ' + Session.get('token')
+		Authorization: 'Bearer ' + Session.get('token'),
 	};
 });
 
 // 请求参数处理
 const formData = computed(() => {
-	return Object.assign(props.data, { dir: props.dir });
+	return { ...props.data, dir: props.dir };
 });
 
 // 上传前校检格式和大小
@@ -223,6 +219,11 @@ const handleBeforeUpload = (file: File) => {
 			useMessage().error(`${t('excel.typeErrorText')} ${props.fileType.join('/')}!`);
 			return false;
 		}
+	}
+	// 校检最小文件大小
+	if (props.minFileSize && file.size / 1024 < props.minFileSize) {
+		useMessage().error(`文件大小不能小于 ${props.minFileSize} KB，该文件可能已损坏!`);
+		return false;
 	}
 	// 校检文件大小
 	if (props.fileSize) {
@@ -270,7 +271,7 @@ const uploadedSuccessfully = () => {
 const handleRemove = (file: { name: string }) => {
 	fileList.value = fileList.value.filter((f) => f.name !== file.name);
 	emit('update:modelValue', listToString(fileList.value));
-	emit('change', listToString(fileList.value));
+	emit('change', listToString(fileList.value), fileList.value);
 };
 
 const handlePreview = (file: any) => {
@@ -289,14 +290,10 @@ const handleExceed = () => {
  * @returns {string} 返回转换后的字符串。
  */
 const listToString = (list: FileItem[], separator = ','): string => {
-	let strs = '';
-	separator = separator || ',';
-	for (let i in list) {
-		if (list[i].url) {
-			strs += list[i].url + separator;
-		}
-	}
-	return strs !== '' ? strs.substr(0, strs.length - 1) : '';
+	return list
+		.filter((item) => item.url)
+		.map((item) => item.url)
+		.join(separator);
 };
 
 const handleUploadError = () => {

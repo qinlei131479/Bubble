@@ -15,10 +15,10 @@
 						</el-select>
 					</el-form-item>
 					<el-form-item>
-						<el-button @click="getDataList" formDialogRef icon="search" type="primary">
+						<el-button @click="getDataList" icon="search" type="primary">
 							{{ t('common.queryBtn') }}
 						</el-button>
-						<el-button @click="resetQuery" formDialogRef icon="Refresh">{{ t('common.resetBtn') }} </el-button>
+						<el-button @click="resetQuery" icon="Refresh">{{ t('common.resetBtn') }}</el-button>
 					</el-form-item>
 				</el-form>
 			</el-row>
@@ -58,6 +58,7 @@
 				:data="state.dataList"
 				@selection-change="handleSelectionChange"
 				style="width: 100%"
+        row-key="publicId"
 				v-loading="state.loading"
 				border
 				:cell-style="tableStyle.cellStyle"
@@ -157,13 +158,16 @@ const handleSelectable = (row: any) => {
 
 // 导出excel
 const exportExcel = () => {
-	downBlobFile('/admin/param/export', state.queryForm, 'param.xlsx');
+	downBlobFile('/admin/param/export', { ...state.queryForm, ids: selectObjs.value }, 'param.xlsx');
 };
 
-const handleRefreshCache = () => {
-	refreshCache().then(() => {
-		useMessage().success('同步成功');
-	});
+const handleRefreshCache = async () => {
+	try {
+		await refreshCache();
+		useMessage().success(t('param.syncSuccess'));
+	} catch (err: any) {
+		useMessage().error(err.msg);
+	}
 };
 
 // 多选事件

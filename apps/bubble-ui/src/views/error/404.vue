@@ -5,16 +5,16 @@
 				<div class="left">
 					<div class="left-item">
 						<div class="left-item-animation left-item-num">404</div>
-						<div class="left-item-animation left-item-title">{{ t('notFound.foundTitle') }}</div>
-						<div class="left-item-animation left-item-msg">{{ t('notFound.foundMsg') }}</div>
+						<div class="left-item-animation left-item-title">{{ $t('notFound.foundTitle') }}</div>
+						<div class="left-item-animation left-item-msg">{{ $t('notFound.foundMsg') }}</div>
 						<div class="left-item-animation left-item-btn">
-							<el-button type="primary" round @click="onGoHome">{{ t('notFound.foundBtn') }}</el-button>
+							<el-button type="primary" round @click="onGoHome">{{ $t('notFound.foundBtn') }}</el-button>
 						</div>
 					</div>
 				</div>
 				<div class="right">
 					<img
-						src="https://img-blog.csdnimg.cn/9eb1d85a417f4ed1ba7107f149ce3da1.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBAbHl0LXRvcA==,size_16,color_FFFFFF,t_70,g_se,x_16"
+						:src="errorPng"
 					/>
 				</div>
 			</div>
@@ -23,11 +23,11 @@
 </template>
 
 <script setup lang="ts" name="notFound">
-// 定义变量内容
-import {useI18n} from "vue-i18n";
+import errorPng from '/@/assets/404.png';
 
+// 定义变量内容
 const router = useRouter();
-const { t } = useI18n();
+
 // 返回首页
 const onGoHome = () => {
 	router.push('/');

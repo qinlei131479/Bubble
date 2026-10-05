@@ -29,7 +29,6 @@ export function checkVersion() {
 	});
 }
 
-
 export function addObj(obj?: Object) {
 	return request({
 		url: '/gen/template',

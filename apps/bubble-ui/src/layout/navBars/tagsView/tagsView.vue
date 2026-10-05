@@ -50,7 +50,6 @@
 import Sortable from 'sortablejs';
 import { ElMessage } from 'element-plus';
 import { storeToRefs } from 'pinia';
-import pinia from '/@/stores/index';
 import { useTagsViewRoutes } from '/@/stores/tagsViewRoutes';
 import { useThemeConfig } from '/@/stores/themeConfig';
 import { useKeepALiveNames } from '/@/stores/keepAliveNames';
@@ -59,11 +58,10 @@ import { isObjectValueEqual } from '/@/utils/arrayOperation';
 import other from '/@/utils/other';
 import mittBus from '/@/utils/mitt';
 import { useMessage } from '/@/hooks/message';
+import { useEventListener } from '@vueuse/core';
 
-// 引入组件
 const Contextmenu = defineAsyncComponent(() => import('/@/layout/navBars/tagsView/contextmenu.vue'));
 
-// 定义变量内容
 const tagsRefs = ref<RefType>([]);
 const scrollbarRef = ref();
 const contextmenuRef = ref();
@@ -86,18 +84,12 @@ const state = reactive<TagsViewState>({
 	tagsViewRoutesList: [],
 });
 
-// 动态设置 tagsView 风格样式
-const setTagsStyle = computed(() => {
-	return themeConfig.value.tagsStyle;
-});
-// 获取布局配置信息
-const getThemeConfig = computed(() => {
-	return themeConfig.value;
-});
+const setTagsStyle = computed(() => themeConfig.value.tagsStyle);
+const getThemeConfig = computed(() => themeConfig.value);
 // 设置 自定义 tagsView 名称、 自定义 tagsView 名称国际化
 const setTagsViewNameI18n = computed(() => {
 	return (v: RouteItem) => {
-		return other.setMenuI18n(v);
+		return other.setTagsViewNameI18n(v);
 	};
 });
 // 设置 tagsView 高亮
@@ -110,7 +102,6 @@ const isActive = (v: RouteItem) => {
 			return v.url ? v.url === state.routeActive : v.path === state.routeActive;
 		} else {
 			// 通过 name 传参，params 取值，刷新页面参数消失
-			// 解决 query 传参，可能有多个 tag 同时被激活的问题
 			return v.path === state.routeActive;
 		}
 	}
@@ -525,10 +516,10 @@ const onSortableResize = async () => {
 	if (other.isMobile()) state.sortable.el && state.sortable.destroy();
 };
 // 页面加载前
+useEventListener(window, 'resize', onSortableResize);
 onBeforeMount(() => {
 	// 初始化，防止手机端直接访问时还可以拖拽
 	onSortableResize();
-	window.addEventListener('resize', onSortableResize);
 	// 监听非本页面调用 0 刷新当前，1 关闭当前，2 关闭其它，3 关闭全部 4 当前页全屏
 	mittBus.on('onCurrentContextmenuClick', (data: RouteItem) => {
 		// 通过方法点击关闭 tagsView
@@ -561,8 +552,6 @@ onUnmounted(() => {
 	mittBus.off('openOrCloseSortable', () => {});
 	// 取消监听布局配置开启 TagsView 共用
 	mittBus.off('openShareTagsView', () => {});
-	// 取消窗口 resize 监听
-	window.removeEventListener('resize', onSortableResize);
 });
 // 页面更新时
 onBeforeUpdate(() => {
@@ -581,15 +570,12 @@ onBeforeRouteUpdate(async (to) => {
 	await addTagsView(to.path, <RouteToFrom>to);
 	getTagsRefsIndex(getThemeConfig.value.isShareTagsView ? state.routePath : state.routeActive);
 });
-// 监听路由的变化，动态赋值给 tagsView
+// 监听 tagsViewRoutes 长度变化，动态赋值给 tagsView
 watch(
-	pinia.state,
-	(val) => {
-		if (val.tagsViewRoutes.tagsViewRoutes.length === state.tagsViewRoutesList.length) return false;
+	() => tagsViewRoutes.value.length,
+	(newLength) => {
+		if (newLength === state.tagsViewRoutesList.length) return;
 		getTagsViewRoutes();
-	},
-	{
-		deep: true,
 	}
 );
 </script>
@@ -693,14 +679,8 @@ watch(
 			-webkit-mask-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNzAiIGhlaWdodD0iNzAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgZmlsbD0ibm9uZSI+CgogPGc+CiAgPHRpdGxlPkxheWVyIDE8L3RpdGxlPgogIDxwYXRoIHRyYW5zZm9ybT0icm90YXRlKC0wLjEzMzUwNiA1MC4xMTkyIDUwKSIgaWQ9InN2Z18xIiBkPSJtMTAwLjExOTE5LDEwMGMtNTUuMjI4LDAgLTEwMCwtNDQuNzcyIC0xMDAsLTEwMGwwLDEwMGwxMDAsMHoiIG9wYWNpdHk9InVuZGVmaW5lZCIgc3Ryb2tlPSJudWxsIiBmaWxsPSIjRjhFQUU3Ii8+CiAgPHBhdGggZD0ibS0wLjYzNzY2LDcuMzEyMjhjMC4xMTkxOSwwIDAuMjE3MzcsMC4wNTc5NiAwLjQ3Njc2LDAuMTE5MTljMC4yMzIsMC4wNTQ3NyAwLjI3MzI5LDAuMDM0OTEgMC4zNTc1NywwLjExOTE5YzAuMDg0MjgsMC4wODQyOCAwLjM1NzU3LDAgMC40NzY3NiwwbDAuMTE5MTksMGwwLjIzODM4LDAiIGlkPSJzdmdfMiIgc3Ryb2tlPSJudWxsIiBmaWxsPSJub25lIi8+CiAgPHBhdGggZD0ibTI4LjkyMTM0LDY5LjA1MjQ0YzAsMC4xMTkxOSAwLDAuMjM4MzggMCwwLjM1NzU3bDAsMC4xMTkxOWwwLDAuMTE5MTkiIGlkPSJzdmdfMyIgc3Ryb2tlPSJudWxsIiBmaWxsPSJub25lIi8+CiAgPHJlY3QgaWQ9InN2Z180IiBoZWlnaHQ9IjAiIHdpZHRoPSIxLjMxMTA4IiB5PSI2LjgzNTUyIiB4PSItMC4wNDE3MSIgc3Ryb2tlPSJudWxsIiBmaWxsPSJub25lIi8+CiAgPHJlY3QgaWQ9InN2Z181IiBoZWlnaHQ9IjEuNzg3ODQiIHdpZHRoPSIwLjExOTE5IiB5PSI2OC40NTY1IiB4PSIyOC45MjEzNCIgc3Ryb2tlPSJudWxsIiBmaWxsPSJub25lIi8+CiAgPHJlY3QgaWQ9InN2Z182IiBoZWlnaHQ9IjQuODg2NzciIHdpZHRoPSIxOS4wNzAzMiIgeT0iNTEuMjkzMjEiIHg9IjM2LjY2ODY2IiBzdHJva2U9Im51bGwiIGZpbGw9Im5vbmUiLz4KIDwvZz4KPC9zdmc+'),
 				url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNzAiIGhlaWdodD0iNzAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgZmlsbD0ibm9uZSI+CiA8Zz4KICA8dGl0bGU+TGF5ZXIgMTwvdGl0bGU+CiAgPHBhdGggdHJhbnNmb3JtPSJyb3RhdGUoLTg5Ljc2MjQgNy4zMzAxNCA1NS4xMjUyKSIgc3Ryb2tlPSJudWxsIiBpZD0ic3ZnXzEiIGZpbGw9IiNGOEVBRTciIGQ9Im02Mi41NzQ0OSwxMTcuNTIwODZjLTU1LjIyOCwwIC0xMDAsLTQ0Ljc3MiAtMTAwLC0xMDBsMCwxMDBsMTAwLDB6IiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGZpbGwtcnVsZT0iZXZlbm9kZCIvPgogIDxwYXRoIGQ9Im0tMC42Mzc2Niw3LjMxMjI4YzAuMTE5MTksMCAwLjIxNzM3LDAuMDU3OTYgMC40NzY3NiwwLjExOTE5YzAuMjMyLDAuMDU0NzcgMC4yNzMyOSwwLjAzNDkxIDAuMzU3NTcsMC4xMTkxOWMwLjA4NDI4LDAuMDg0MjggMC4zNTc1NywwIDAuNDc2NzYsMGwwLjExOTE5LDBsMC4yMzgzOCwwIiBpZD0ic3ZnXzIiIHN0cm9rZT0ibnVsbCIgZmlsbD0ibm9uZSIvPgogIDxwYXRoIGQ9Im0yOC45MjEzNCw2OS4wNTI0NGMwLDAuMTE5MTkgMCwwLjIzODM4IDAsMC4zNTc1N2wwLDAuMTE5MTlsMCwwLjExOTE5IiBpZD0ic3ZnXzMiIHN0cm9rZT0ibnVsbCIgZmlsbD0ibm9uZSIvPgogIDxyZWN0IGlkPSJzdmdfNCIgaGVpZ2h0PSIwIiB3aWR0aD0iMS4zMTEwOCIgeT0iNi44MzU1MiIgeD0iLTAuMDQxNzEiIHN0cm9rZT0ibnVsbCIgZmlsbD0ibm9uZSIvPgogIDxyZWN0IGlkPSJzdmdfNSIgaGVpZ2h0PSIxLjc4Nzg0IiB3aWR0aD0iMC4xMTkxOSIgeT0iNjguNDU2NSIgeD0iMjguOTIxMzQiIHN0cm9rZT0ibnVsbCIgZmlsbD0ibm9uZSIvPgogIDxyZWN0IGlkPSJzdmdfNiIgaGVpZ2h0PSI0Ljg4Njc3IiB3aWR0aD0iMTkuMDcwMzIiIHk9IjUxLjI5MzIxIiB4PSIzNi42Njg2NiIgc3Ryb2tlPSJudWxsIiBmaWxsPSJub25lIi8+CiA8L2c+Cjwvc3ZnPg=='),
 				url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><rect rx='8' width='100%' height='100%' fill='%23F8EAE7'/></svg>");
-			-webkit-mask-size:
-				18px 30px,
-				20px 30px,
-				calc(100% - 30px) calc(100% + 17px);
-			-webkit-mask-position:
-				right bottom,
-				left bottom,
-				center top;
+			-webkit-mask-size: 18px 30px, 20px 30px, calc(100% - 30px) calc(100% + 17px);
+			-webkit-mask-position: right bottom, left bottom, center top;
 			-webkit-mask-repeat: no-repeat;
 		}
 		.layout-navbars-tagsview-ul-li {

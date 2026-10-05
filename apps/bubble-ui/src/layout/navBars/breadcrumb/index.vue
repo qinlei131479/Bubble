@@ -1,10 +1,15 @@
 <template>
-  <div class="layout-navbars-breadcrumb-index">
-    <Logo v-if="setIsShowLogo" />
-    <Breadcrumb />
-    <Horizontal :menuList="state.menuList" v-if="isLayoutTransverse" />
-    <User />
-  </div>
+	<div class="layout-navbars-breadcrumb-index">
+		<Logo v-if="setIsShowLogo" />
+		<Breadcrumb />
+		<Horizontal :menuList="state.menuList" v-if="isLayoutTransverse" />
+		<div class="layout-navbars-breadcrumb-actions">
+			<div class="more-menu-wrapper">
+				<More />
+			</div>
+			<User />
+		</div>
+	</div>
 </template>
 
 <script setup lang="ts" name="layoutBreadcrumbIndex">
@@ -12,49 +17,46 @@ import { useRoutesList } from '/@/stores/routesList';
 import { useThemeConfig } from '/@/stores/themeConfig';
 import mittBus from '/@/utils/mitt';
 
-// 引入组件
 const Breadcrumb = defineAsyncComponent(() => import('/@/layout/navBars/breadcrumb/breadcrumb.vue'));
+const More = defineAsyncComponent(() => import('/@/layout/navBars/breadcrumb/more.vue'));
 const User = defineAsyncComponent(() => import('/@/layout/navBars/breadcrumb/user.vue'));
 const Logo = defineAsyncComponent(() => import('/@/layout/logo/index.vue'));
 const Horizontal = defineAsyncComponent(() => import('/@/layout/navMenu/horizontal.vue'));
 
-// 定义变量内容
 const stores = useRoutesList();
-const storesThemeConfig = useThemeConfig();
-const { themeConfig } = storeToRefs(storesThemeConfig);
+const { themeConfig } = storeToRefs(useThemeConfig());
 const { routesList } = storeToRefs(stores);
 const route = useRoute();
 const state = reactive({
-  menuList: [] as RouteItems,
+	menuList: [] as RouteItems,
 });
 
-// 设置 logo 显示/隐藏
 const setIsShowLogo = computed(() => {
-  let { isShowLogo, layout } = themeConfig.value;
-  return (isShowLogo && layout === 'classic') || (isShowLogo && layout === 'transverse');
+	const { isShowLogo, layout } = themeConfig.value;
+	return isShowLogo && (layout === 'classic' || layout === 'transverse');
 });
-// 设置是否显示横向导航菜单
+
 const isLayoutTransverse = computed(() => {
-  let { layout, isClassicSplitMenu } = themeConfig.value;
-  return layout === 'transverse' || (isClassicSplitMenu && layout === 'classic');
+	const { layout, isClassicSplitMenu } = themeConfig.value;
+	return layout === 'transverse' || (isClassicSplitMenu && layout === 'classic');
 });
-// 设置/过滤路由（非静态路由/是否显示在菜单中）
+// 设置/过滤路由
 const setFilterRoutes = () => {
-  let { layout, isClassicSplitMenu } = themeConfig.value;
-  if (layout === 'classic' && isClassicSplitMenu) {
-    state.menuList = delClassicChildren(filterRoutesFun(routesList.value));
-    const resData = setSendClassicChildren(route.path);
-    mittBus.emit('setSendClassicChildren', resData);
-  } else {
-    state.menuList = filterRoutesFun(routesList.value);
-  }
+	const { layout, isClassicSplitMenu } = themeConfig.value;
+	if (layout === 'classic' && isClassicSplitMenu) {
+		state.menuList = delClassicChildren(filterRoutesFun(routesList.value));
+		const resData = setSendClassicChildren(route.path);
+		mittBus.emit('setSendClassicChildren', resData);
+	} else {
+		state.menuList = filterRoutesFun(routesList.value);
+	}
 };
-// 设置了分割菜单时，删除底下 children
+// 分割菜单时，删除底下 children
 const delClassicChildren = <T extends ChilType>(arr: T[]): T[] => {
-  arr.map((v: T) => {
-    if (v.children) delete v.children;
-  });
-  return arr;
+	arr.map((v: T) => {
+		if (v.children) delete v.children;
+	});
+	return arr;
 };
 
 // 路由过滤递归函数
@@ -71,7 +73,7 @@ const filterRoutesFun = <T extends RouteItem>(arr: T[]): T[] => {
 
 // 传送当前子级数据到菜单中
 const setSendClassicChildren = (path: string) => {
-  let currentData: MittMenu = { children: [] };
+  const currentData: MittMenu = { children: [] };
   const route = searchParent(routesList.value, path as string);
   if (route) {
     const filteredRoutes = filterRoutesFun(routesList.value);
@@ -84,7 +86,7 @@ const setSendClassicChildren = (path: string) => {
   return currentData;
 };
 
-// 使用递归查询对应的父级路由
+// 递归查询对应的父级路由
 const searchParent = (routesList: any, path: string) => {
   for (const item of routesList) {
     if (item.path === path) return item;
@@ -96,25 +98,41 @@ const searchParent = (routesList: any, path: string) => {
   return undefined;
 };
 
-// 页面加载时
 onMounted(() => {
-  setFilterRoutes();
-  mittBus.on('getBreadcrumbIndexSetFilterRoutes', () => {
-    setFilterRoutes();
-  });
+	setFilterRoutes();
+	mittBus.on('getBreadcrumbIndexSetFilterRoutes', () => {
+		setFilterRoutes();
+	});
 });
-// 页面卸载时
+
 onUnmounted(() => {
-  mittBus.off('getBreadcrumbIndexSetFilterRoutes', () => {});
+	mittBus.off('getBreadcrumbIndexSetFilterRoutes', () => {});
 });
 </script>
 
 <style scoped lang="scss">
 .layout-navbars-breadcrumb-index {
-  height: 50px;
-  display: flex;
-  align-items: center;
-  background: var(--next-bg-topBar);
-  border-bottom: 1px solid var(--next-border-color-light);
+	height: 50px;
+	display: flex;
+	align-items: center;
+	background: linear-gradient(135deg, var(--next-bg-topBar) 0%, color-mix(in srgb, var(--next-bg-topBar), #000 12%) 100%);
+	box-shadow: 0 2px 8px rgba(46, 92, 246, 0.15);
+	border-bottom: none;
+
+	.layout-navbars-breadcrumb-actions {
+		margin-left: auto;
+		display: flex;
+		align-items: center;
+	}
+
+	.more-menu-wrapper {
+		display: flex;
+		align-items: center;
+
+		// 响应式：小屏幕时隐藏More组件
+		@media (max-width: 768px) {
+			display: none;
+		}
+	}
 }
 </style>

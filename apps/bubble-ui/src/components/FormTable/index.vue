@@ -1,8 +1,42 @@
+<!--
+  FormTable 表单表格组件
+
+  功能：基于 el-table 封装的可编辑表格，支持行新增/删除和拖拽排序。
+  通过默认插槽传入 el-table-column 定义列，v-model 双向绑定表格数据。
+
+  用法示例：
+  <sc-form-table v-model="dataList" :add-template="{ name: '', value: '' }" drag-sort>
+    <el-table-column label="名称" prop="name">
+      <template #default="{ row }">
+        <el-input v-model="row.name" />
+      </template>
+    </el-table-column>
+  </sc-form-table>
+
+  通过 ref 调用暴露的方法：
+  - pushRow(row?)  : 新增一行（可传入自定义数据，默认使用 addTemplate）
+  - deleteRow(index): 根据索引删除一行
+
+  Props：
+  - modelValue  : Array   - 表格数据（v-model）
+  - addTemplate : Object  - 新增行模板对象
+  - addMethod   : Function - 自定义新增方法
+  - placeholder : string  - 空数据提示文本
+  - maxHeight   : string/number - 表格最大高度
+  - dragSort    : boolean - 是否启用拖拽排序
+  - showIndex   : boolean - 是否显示序号
+  - hideAdd     : boolean - 是否隐藏新增按钮
+  - hideDelete  : boolean - 是否隐藏删除按钮
+
+  Events：
+  - update:modelValue - 数据变化
+  - delete            - 行删除，参数为被删除行数据
+-->
 <template>
-	<div class="form-table" ref="scFormTable">
+	<div class="form-table" ref="scFormTableRef">
 		<el-table
 			:data="data"
-			ref="table"
+			ref="tableRef"
 			border
 			stripe
 			:cell-style="{ textAlign: 'center' }"
@@ -11,200 +45,200 @@
 				background: 'var(--el-table-row-hover-bg-color)',
 				color: 'var(--el-text-color-primary)',
 			}"
+			:max-height="maxHeight"
+			style="width: 100%"
+			table-layout="auto"
 		>
-			<el-table-column type="index" width="50" fixed="left">
+			<!-- 序号列：含新增/删除按钮 -->
+			<el-table-column type="index" width="60" fixed="left">
 				<template #header>
-					<el-button v-if="!hideAdd" type="primary" icon="el-icon-plus" size="small" circle @click="rowAdd"></el-button>
-					<el-tooltip v-else content="序号" placement="top"> # </el-tooltip>
+					<el-button v-if="!hideAdd" type="primary" icon="Plus" size="small" circle @click="rowAdd" />
+					<el-tooltip v-else-if="showIndex" :content="t('formTable.index')" placement="top"> # </el-tooltip>
+					<span v-else />
 				</template>
-				<template #default="scope">
+				<template #default="{ row, $index }">
 					<div :class="['form-table-handle', { 'form-table-handle-delete': !hideDelete }]">
-						<span>{{ scope.$index + 1 }}</span>
+						<span v-if="showIndex">{{ $index + 1 }}</span>
 						<el-button
 							v-if="!hideDelete"
 							type="danger"
-							icon="el-icon-delete"
+							icon="Delete"
 							size="small"
 							plain
 							circle
-							@click="rowDel(scope.row, scope.$index)"
-						></el-button>
+							@click="rowDel(row, $index)"
+						/>
 					</div>
 				</template>
 			</el-table-column>
-			<el-table-column label="" width="50" v-if="dragSort">
+			<!-- 拖拽排序列 -->
+			<el-table-column v-if="dragSort" label="" width="50">
 				<template #header>
 					<el-icon>
-						<el-tooltip content="拖动排序" placement="top">
+						<el-tooltip :content="t('formTable.dragSort')" placement="top">
 							<WarningFilled />
 						</el-tooltip>
 					</el-icon>
 				</template>
 				<template #default>
 					<div class="move" style="cursor: move">
-						<el-icon>
-							<Sort />
-						</el-icon>
+						<el-icon><Sort /></el-icon>
 					</div>
 				</template>
 			</el-table-column>
-			<slot></slot>
+			<!-- 用户自定义列 -->
+			<slot />
 			<template #empty>
-				{{ placeholder }}
+				{{ placeholder || t('formTable.noData') }}
 			</template>
 		</el-table>
 	</div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch, type PropType } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useVModel } from '@vueuse/core';
 import Sortable from 'sortablejs';
 
-export default {
-	props: {
-		/**
-		 * 表格数据
-		 */
-		modelValue: { type: Array, default: () => [] },
-		/**
-		 * 新增行模板
-		 */
-		addTemplate: { type: Object, default: () => {} },
-		/**
-		 * 无数据时的提示语
-		 */
-		placeholder: { type: String, default: '暂无数据' },
-		/**
-		 * 是否启用拖拽排序
-		 */
-		dragSort: { type: Boolean, default: false },
-		/**
-		 * 是否隐藏新增按钮
-		 */
-		hideAdd: { type: Boolean, default: false },
-		/**
-		 * 是否隐藏删除按钮
-		 */
-		hideDelete: { type: Boolean, default: false },
+const { t } = useI18n();
+
+const props = defineProps({
+	/** 表格数据（v-model） */
+	modelValue: {
+		type: Array as PropType<Record<string, any>[]>,
+		default: () => [],
 	},
-	data() {
-		return {
-			/**
-			 * 表格数据
-			 */
-			data: [],
-		};
+	/** 新增行模板，点击新增时深拷贝此对象作为新行 */
+	addTemplate: {
+		type: Object as PropType<Record<string, any>>,
+		default: () => ({}),
 	},
-	mounted() {
-		this.data = this.modelValue;
-		if (this.dragSort) {
-			this.rowDrop();
-		}
+	/** 自定义新增方法 */
+	addMethod: {
+		type: Function as PropType<() => void>,
+		default: undefined,
 	},
-	watch: {
-		modelValue() {
-			this.data = this.modelValue;
-		},
-		data: {
-			handler() {
-				/**
-				 * 更新表格数据
-				 * @event update:modelValue
-				 * @type {Array}
-				 */
-				this.$emit('update:modelValue', this.data);
-			},
-			deep: true,
-		},
+	/** 空数据提示语，默认使用 i18n */
+	placeholder: {
+		type: String,
+		default: '',
 	},
-	methods: {
-		/**
-		 * 启用表格行拖拽排序
-		 */
-		rowDrop() {
-			const _this = this;
-			const tbody = this.$refs.table.$el.querySelector('.el-table__body-wrapper tbody');
-			Sortable.create(tbody, {
-				handle: '.move',
-				animation: 300,
-				ghostClass: 'ghost',
-				onEnd({ newIndex, oldIndex }) {
-					_this.data.splice(newIndex, 0, _this.data.splice(oldIndex, 1)[0]);
-					const newArray = _this.data.slice(0);
-					const tmpHeight = _this.$refs.scFormTable.offsetHeight;
-					_this.$refs.scFormTable.style.setProperty('height', tmpHeight + 'px');
-					_this.data = [];
-					_this.$nextTick(() => {
-						_this.data = newArray;
-						_this.$nextTick(() => {
-							_this.$refs.scFormTable.style.removeProperty('height');
-						});
-					});
-				},
-			});
-		},
-		/**
-		 * 新增一行
-		 */
-		rowAdd() {
-			const temp = JSON.parse(JSON.stringify(this.addTemplate));
-			this.data.push(temp);
-		},
-		/**
-		 * 删除一行
-		 * @param {Object} row - 要删除的行数据
-		 * @param {number} index - 要删除的行的索引
-		 */
-		rowDel(row, index) {
-			this.data.splice(index, 1);
-			this.$emit('delete', row);
-		},
-		/**
-		 * 插入一行
-		 * @param {Object} row - 要插入的行数据，默认为新增行模板
-		 */
-		pushRow(row) {
-			const temp = row || JSON.parse(JSON.stringify(this.addTemplate));
-			this.data.push(temp);
-		},
-		/**
-		 * 根据索引删除一行
-		 * @param {number} index - 要删除的行的索引
-		 */
-		deleteRow(index) {
-			this.data.splice(index, 1);
-		},
+	/** 表格最大高度 */
+	maxHeight: {
+		type: [String, Number],
+		default: undefined,
 	},
+	/** 是否启用拖拽排序 */
+	dragSort: {
+		type: Boolean,
+		default: false,
+	},
+	/** 是否显示序号 */
+	showIndex: {
+		type: Boolean,
+		default: true,
+	},
+	/** 是否隐藏新增按钮 */
+	hideAdd: {
+		type: Boolean,
+		default: false,
+	},
+	/** 是否隐藏删除按钮 */
+	hideDelete: {
+		type: Boolean,
+		default: false,
+	},
+});
+
+const emit = defineEmits(['update:modelValue', 'delete']);
+
+/** 使用 useVModel 实现与父组件的数据双向绑定 */
+const data = useVModel(props, 'modelValue', emit, { deep: true });
+
+const scFormTableRef = ref<HTMLDivElement>();
+const tableRef = ref();
+const sortableRef = shallowRef<Sortable | null>(null);
+
+const destroyDragSort = () => {
+	sortableRef.value?.destroy();
+	sortableRef.value = null;
 };
+
+/**
+ * 初始化拖拽排序
+ * 通过 Sortable.js 实现表格行拖拽，拖拽结束后重新排列数组并刷新渲染
+ */
+const initDragSort = async () => {
+	destroyDragSort();
+	if (!props.dragSort) return;
+
+	await nextTick();
+	const tbody = tableRef.value?.$el.querySelector('.el-table__body-wrapper tbody');
+	if (!tbody) return;
+
+	sortableRef.value = Sortable.create(tbody, {
+		handle: '.move',
+		animation: 300,
+		ghostClass: 'ghost',
+		onEnd({ newIndex, oldIndex }) {
+			if (newIndex == null || oldIndex == null) return;
+			if (newIndex === oldIndex) return;
+			// 移动数组元素并就地更新，避免清空数组产生中间状态
+			const item = data.value.splice(oldIndex, 1)[0];
+			data.value.splice(newIndex, 0, item);
+		},
+	});
+};
+
+onMounted(() => {
+	initDragSort();
+});
+
+watch(
+	() => [props.dragSort, data.value.length],
+	() => {
+		initDragSort();
+	},
+	{ flush: 'post' }
+);
+
+onBeforeUnmount(() => {
+	destroyDragSort();
+});
+
+/** 通过 addTemplate 深拷贝新增一行 */
+const rowAdd = () => {
+	if (props.addMethod) {
+		props.addMethod();
+		return;
+	}
+
+	pushRow();
+};
+
+/** 删除指定行并触发 delete 事件 */
+const rowDel = (row: Record<string, any>, index: number) => {
+	data.value.splice(index, 1);
+	emit('delete', row);
+};
+
+/** 插入一行（供父组件通过 ref 调用） */
+const pushRow = (row?: Record<string, any>) => {
+	data.value.push(row || JSON.parse(JSON.stringify(props.addTemplate)));
+};
+
+/** 根据索引删除一行（供父组件通过 ref 调用） */
+const deleteRow = (index: number) => {
+	data.value.splice(index, 1);
+};
+
+defineExpose({ pushRow, deleteRow });
 </script>
 
 <style scoped>
 .form-table {
 	width: 100%;
-}
-
-.form-table .form-table-handle {
-	text-align: center;
-}
-
-.form-table .form-table-handle span {
-	display: inline-block;
-}
-
-.form-table .form-table-handle button {
-	display: none;
-}
-
-.form-table .hover-row .form-table-handle-delete span {
-	display: none;
-}
-
-.form-table .hover-row .form-table-handle-delete button {
-	display: inline-block;
-}
-
-.form-table .move {
-	text-align: center;
-	font-size: 14px;
-	margin-top: 3px;
+	overflow-x: auto;
 }
 </style>

@@ -38,8 +38,12 @@ export function putObj(obj?: Object) {
 	});
 }
 
-export const useSyncTableApi = (dsName: string, tableName: string) => {
-	return request.get('/gen/table/sync/' + dsName + '/' + tableName);
+export const useSyncTableApi = (dsName: string, tableName: string, isBatch?: boolean) => {
+	return request({
+		url: '/gen/table/sync/' + dsName + '/' + tableName,
+		method: 'get',
+		params: { isBatch: isBatch },
+	});
 };
 
 export const useTableApi = (dsName: string, tableName: string) => {
@@ -66,19 +70,11 @@ export const useGeneratorCodeApi = (tableIds: any) => {
 	});
 };
 
-export const useGeneratorVFormApi = (dsName: any, tableName: any) => {
+export const checkGeneratorPath = (path: string) => {
 	return request({
-		url: '/gen/generator/vform',
+		url: '/gen/generator/check-path',
 		method: 'get',
-		params: { dsName: dsName, tableName: tableName },
-	});
-};
-
-export const useGeneratorVFormSfcApi = (id: string) => {
-	return request({
-		url: '/gen/generator/vform/sfc',
-		method: 'get',
-		params: { formId: id },
+		params: { path },
 	});
 };
 
@@ -97,32 +93,9 @@ export function fetchDictList() {
 	});
 }
 
-export function useFormConfSaveApi(obj?: Object) {
+export function groupList() {
 	return request({
-		url: '/gen/form',
-		method: 'post',
-		data: obj,
-	});
-}
-
-export function fetchFormList(query?: Object) {
-	return request({
-		url: '/gen/form/page',
+		url: '/gen/group/list',
 		method: 'get',
-		params: query,
-	});
-}
-
-export function fetchFormById(id?: string) {
-	return request({
-		url: '/gen/form/' + id,
-		method: 'get',
-	});
-}
-
-export function delFormObj(id?: string) {
-	return request({
-		url: '/gen/form/' + id,
-		method: 'delete',
 	});
 }

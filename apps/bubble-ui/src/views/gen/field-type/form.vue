@@ -1,20 +1,30 @@
 <template>
-	<el-dialog :title="form.id ? t('common.editBtn') : t('common.addBtn')" v-model="visible" width="600" :close-on-click-modal="false" draggable>
+	<el-dialog :title="form.id ? $t('common.editBtn') : $t('common.addBtn')" v-model="visible" width="600" :close-on-click-modal="false" draggable>
 		<el-form ref="dataFormRef" :model="form" :rules="dataRules" formDialogRef label-width="90px" v-loading="loading">
-      <el-form-item :label="t('fieldtype.columnType')" prop="columnType">
-        <el-input v-model="form.columnType" :placeholder="t('fieldtype.inputcolumnTypeTip')" />
-      </el-form-item>
-      <el-form-item :label="t('fieldtype.attrType')" prop="attrType">
-        <el-input v-model="form.attrType" :placeholder="t('fieldtype.inputattrTypeTip')" />
-      </el-form-item>
-      <el-form-item :label="t('fieldtype.packageName')" prop="packageName">
-        <el-input v-model="form.packageName" :placeholder="t('fieldtype.inputpackageNameTip')" />
-      </el-form-item>
+			<el-form-item :label="t('fieldtype.columnType')" prop="columnType">
+				<el-input v-model="form.columnType" :placeholder="t('fieldtype.inputcolumnTypeTip')" />
+			</el-form-item>
+			<el-form-item :label="t('fieldtype.attrType')" prop="attrType">
+				<el-input v-model="form.attrType" :placeholder="t('fieldtype.inputattrTypeTip')" />
+			</el-form-item>
+			<el-form-item :label="t('fieldtype.packageName')" prop="packageName">
+				<el-input v-model="form.packageName" :placeholder="t('fieldtype.inputpackageNameTip')" />
+			</el-form-item>
+			<el-form-item :label="t('fieldtype.defaultFormType')" prop="defaultFormType">
+				<el-select v-model="form.defaultFormType" :placeholder="t('fieldtype.inputDefaultFormTypeTip')">
+					<el-option v-for="item in formTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
+				</el-select>
+			</el-form-item>
+			<el-form-item :label="t('fieldtype.defaultQueryFormType')" prop="defaultQueryFormType">
+				<el-select v-model="form.defaultQueryFormType" :placeholder="t('fieldtype.inputDefaultQueryFormTypeTip')">
+					<el-option v-for="item in queryFormTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
+				</el-select>
+			</el-form-item>
 		</el-form>
 		<template #footer>
 			<span class="dialog-footer">
-				<el-button @click="visible = false">{{ t('common.cancelButtonText') }}</el-button>
-				<el-button type="primary" @click="onSubmit" :disabled="loading">{{ t('common.confirmButtonText') }}</el-button>
+				<el-button @click="visible = false">{{ $t('common.cancelButtonText') }}</el-button>
+				<el-button type="primary" @click="onSubmit" :disabled="loading">{{ $t('common.confirmButtonText') }}</el-button>
 			</span>
 		</template>
 	</el-dialog>
@@ -24,15 +34,36 @@
 import { useMessage } from '/@/hooks/message';
 import { getObj, addObj, putObj, validateColumnType } from '/@/api/gen/fieldtype';
 import { useI18n } from 'vue-i18n';
-import {rule} from '/@/utils/validate';
-// 定义子组件向父组件传值/事件
 const emit = defineEmits(['refresh']);
 const { t } = useI18n();
-
-// 定义变量内容
 const dataFormRef = ref();
 const visible = ref(false);
 const loading = ref(false);
+const formTypeOptions = [
+	{ label: '单行文本', value: 'text' },
+	{ label: '多行文本', value: 'textarea' },
+	{ label: '数字', value: 'number' },
+	{ label: '富文本编辑器', value: 'editor' },
+	{ label: '下拉框', value: 'select' },
+	{ label: '单选按钮', value: 'radio' },
+	{ label: '复选框', value: 'checkbox' },
+	{ label: '日期', value: 'date' },
+	{ label: '日期时间', value: 'datetime' },
+	{ label: '文件上传', value: 'upload-file' },
+	{ label: '图片上传', value: 'upload-img' },
+];
+const queryFormTypeOptions = [
+	{ label: '单行文本', value: 'text' },
+	{ label: '多行文本', value: 'textarea' },
+	{ label: '数字', value: 'number' },
+	{ label: '下拉框', value: 'select' },
+	{ label: '单选按钮', value: 'radio' },
+	{ label: '复选框', value: 'checkbox' },
+	{ label: '日期', value: 'date' },
+	{ label: '日期范围', value: 'daterange' },
+	{ label: '日期时间', value: 'datetime' },
+	{ label: '日期时间范围', value: 'datetimerange' },
+];
 
 // 提交表单数据
 const form = reactive({
@@ -40,6 +71,8 @@ const form = reactive({
 	columnType: '',
 	attrType: '',
 	packageName: '',
+	defaultFormType: '',
+	defaultQueryFormType: '',
 	createTime: '',
 });
 
@@ -47,15 +80,15 @@ const form = reactive({
 const dataRules = ref({
 	columnType: [
 		{ required: true, message: '字段类型不能为空', trigger: 'blur' },
-		{validator: rule.overLength, trigger: 'blur'},
 		{
 			validator: (rule: any, value: any, callback: any) => {
 				validateColumnType(rule, value, callback, form.id !== '');
 			},
 		},
 	],
-	attrType: [{validator: rule.overLength, trigger: 'blur'},{ required: true, message: '属性类型不能为空', trigger: 'blur' }],
-  packageName: [{validator: rule.overLength, trigger: 'blur'}],
+	attrType: [{ required: true, message: '属性类型不能为空', trigger: 'blur' }],
+	defaultFormType: [{ required: true, message: '默认表单类型不能为空', trigger: 'change' }],
+	defaultQueryFormType: [{ required: true, message: '默认查询表单类型不能为空', trigger: 'change' }],
 });
 
 // 打开弹窗

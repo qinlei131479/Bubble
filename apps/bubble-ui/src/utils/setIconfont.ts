@@ -1,8 +1,5 @@
-// 字体图标 url
-const cssCdnUrlList: Array<string> = [
-	'//at.alicdn.com/t/c/font_2298093_rnp72ifj3ba.css', //
-	'/assets/styles/font-awesome.min.css',
-];
+// 字体图标 url (已移至 index.html 静态加载，避免首次登录时字体加载竞态问题)
+const cssCdnUrlList: Array<string> = [];
 // 第三方 js url
 const jsCdnUrlList: Array<string> = [];
 

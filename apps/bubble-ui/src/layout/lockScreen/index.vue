@@ -1,61 +1,59 @@
 <template>
 	<div v-show="state.isShowLockScreen">
 		<!-- 遮罩层 -->
-		<div class="fixed inset-0 w-full h-full bg-white z-[9999990]"></div>
+		<div class="fixed inset-0 z-[9999990] bg-white"></div>
 		<!-- 背景图 -->
-		<div class="lock-screen-bg fixed inset-0 w-full h-full bg-cover bg-center z-[9999991]"
-			:class="{ 'blur-[1px]': state.isShowLoockLogin }"></div>
+		<div class="lock-screen-bg fixed inset-0 z-[9999991] bg-cover" :class="{ 'blur-sm': state.isShowLoockLogin }">
+		</div>
 		<!-- 主容器 -->
-		<div class="fixed inset-0 w-full h-full z-[9999992]">
-			<!-- 日期时间区域 -->
-			<div class="absolute inset-0 w-full h-full text-white z-[9999993] select-none" ref="layoutLockScreenDateRef"
-				@mousedown="onDownPc" @mousemove="onMovePc" @mouseup="onEnd" @touchstart.stop="onDownApp"
-				@touchmove.stop="onMoveApp" @touchend.stop="onEnd">
-				<div class="absolute left-[30px] bottom-[50px]">
-					<div class="text-[100px] text-white leading-none">
+		<div class="fixed inset-0 z-[9999992]">
+			<!-- 时间显示区域 -->
+			<div ref="layoutLockScreenDateRef" class="absolute inset-0 z-[9999993] select-none text-white">
+				<!-- 时间信息 -->
+				<div class="absolute bottom-[50px] left-[30px]">
+					<div class="text-[100px] text-white">
 						{{ state.time.hm }}<span class="text-base">{{ state.time.s }}</span>
 					</div>
 					<div class="text-[40px] text-white">{{ state.time.mdq }}</div>
 				</div>
-				<!-- 上滑解锁按钮 -->
-				<div class="absolute right-[30px] bottom-[50px] flex flex-col items-center gap-2 text-white/80 hover:text-white cursor-pointer transition-all">
-					<div class="w-10 h-10 rounded-full border border-white/30 bg-white/10 flex items-center justify-center hover:bg-white/20 hover:border-white/50 transition-all">
-						<SvgIcon name="ele-Top" />
+				<!-- 滑动解锁提示 -->
+				<div
+					class="group absolute bottom-[50px] right-[30px] size-10 overflow-hidden rounded-full border border-white/30 bg-white/10 text-center leading-10 text-white opacity-80 transition-all duration-300 hover:border-white/50 hover:bg-white/20 hover:opacity-100 hover:shadow-[0_0_12px_rgba(255,255,255,0.5)]">
+					<SvgIcon name="ele-Top" class="transition-transform duration-300 group-hover:-translate-y-10" />
+					<div
+						class="pointer-events-none absolute left-1/2 top-[150%] w-9 -translate-x-1/2 -translate-y-1/2 text-xs leading-tight text-white opacity-0 transition-all duration-300 group-hover:top-1/2 group-hover:opacity-100">
+						{{ t('lockScreen.slideToUnlock') }}
 					</div>
-					<span class="text-xs">上滑解锁</span>
 				</div>
 			</div>
-			<!-- 登录区域 -->
+			<!-- 登录面板 -->
 			<transition name="el-zoom-in-center">
 				<div v-show="state.isShowLoockLogin"
-					class="relative z-[9999994] w-full h-full flex flex-col justify-center text-white">
-					<div class="text-center m-auto">
-						<div class="w-[180px] h-[180px] mx-auto">
-							<img :src="formData.avatar" class="w-full h-full rounded-full" />
+					class="relative z-[9999994] flex h-full w-full flex-col justify-center text-white">
+					<div class="m-auto text-center">
+						<!-- 头像 -->
+						<div class="mx-auto size-[180px]">
+							<img v-if="formData.avatar" :src="baseURL + formData.avatar" class="rounded-full size-full" />
+							<NameAvatar v-else :name="formData.username" :size="180" />
 						</div>
-						<div class="text-2xl mt-4 mb-8">{{ formData.username }}</div>
+						<!-- 用户名 -->
+						<div class="my-4 mb-8 text-2xl">{{ formData.username }}</div>
+						<!-- 密码输入 -->
 						<div>
-							<el-input placeholder="请输入密码" ref="layoutLockScreenInputRef"
-								v-model="state.lockScreenPassword" type="password"
+							<el-input ref="layoutLockScreenInputRef" v-model="state.lockScreenPassword"
+								:placeholder="t('lockScreen.enterPassword')" type="password"
 								@keyup.enter.native.stop="onLockScreenSubmit()">
 								<template #append>
-									<div class="flex gap-1">
-										<el-button @click="onLockScreenSubmit" title="解锁"
-											class="!m-0 !px-2 !text-blue-500 hover:!bg-blue-50">
-											<el-icon><ele-Right /></el-icon>
-										</el-button>
-										<el-button @click="onLogout" title="退出登录"
-											class="!m-0 !px-2 !text-red-500 hover:!bg-red-50">
-											<el-icon><ele-SwitchButton /></el-icon>
-										</el-button>
-									</div>
+									<el-button @click="onLockScreenSubmit">
+										<el-icon class="el-input__icon"><ele-Right /></el-icon>
+									</el-button>
 								</template>
 							</el-input>
-							<p class="text-red-500 mt-2">{{ mes }}</p>
+							<p class="text-red-500">{{ mes }}</p>
 						</div>
 					</div>
 					<!-- 底部图标 -->
-					<div class="absolute right-[30px] bottom-[30px] flex gap-4">
+					<div class="absolute bottom-[30px] right-[30px] flex gap-4">
 						<SvgIcon name="ele-Microphone" :size="20" class="cursor-pointer opacity-80 hover:opacity-100" />
 						<SvgIcon name="ele-AlarmClock" :size="20" class="cursor-pointer opacity-80 hover:opacity-100" />
 						<SvgIcon name="ele-SwitchButton" :size="20"
@@ -68,186 +66,168 @@
 </template>
 
 <script setup lang="ts" name="layoutLockScreen">
-import { nextTick, onMounted, reactive, ref } from 'vue';
-import { useIntervalFn, useTimeoutFn } from '@vueuse/core';
 import { formatDate } from '/@/utils/formatTime';
-import { Local, Session } from '/@/utils/storage';
+import { Local } from '/@/utils/storage';
 import { storeToRefs } from 'pinia';
 import { useThemeConfig } from '/@/stores/themeConfig';
 import { checkPassword } from '/@/api/admin/user';
 import { useUserInfo } from '/@/stores/userInfo';
-import { logout } from '/@/api/login';
+import { useI18n } from 'vue-i18n';
+import { useIntervalFn, usePointerSwipe } from '@vueuse/core';
+import NameAvatar from '/@/components/NameAvatar/index.vue';
 
-// 定义变量内容
-const mes = ref();
-const formData = reactive({ username: '', avatar: '' });
-const layoutLockScreenDateRef = ref<HtmlType>();
+const { t } = useI18n();
+const layoutLockScreenDateRef = ref<HTMLElement>();
 const layoutLockScreenInputRef = ref();
-const storesThemeConfig = useThemeConfig();
-const { themeConfig } = storeToRefs(storesThemeConfig);
+const { themeConfig } = storeToRefs(useThemeConfig());
+
+// 滑动解锁阈值（向上滑动超过此值触发解锁）
+const UNLOCK_THRESHOLD = 150;
+
 const state = reactive({
-	transparency: 1,
-	downClientY: 0,
-	moveDifference: 0,
 	isShowLoockLogin: false,
-	isFlags: false,
-	querySelectorEl: '' as HtmlType,
-	time: { hm: '', s: '', mdq: '' },
+	time: {
+		hm: '',
+		s: '',
+		mdq: '',
+	},
 	isShowLockScreen: false,
 	lockScreenPassword: '',
 });
 
-// 鼠标按下 pc
-const onDownPc = (down: MouseEvent) => {
-	state.isFlags = true;
-	state.downClientY = down.clientY;
-};
-// 鼠标按下 app
-const onDownApp = (down: TouchEvent) => {
-	state.isFlags = true;
-	state.downClientY = down.touches[0].clientY;
-};
-// 鼠标移动 pc
-const onMovePc = (move: MouseEvent) => {
-	state.moveDifference = move.clientY - state.downClientY;
-	onMove();
-};
-// 鼠标移动 app
-const onMoveApp = (move: TouchEvent) => {
-	state.moveDifference = move.touches[0].clientY - state.downClientY;
-	onMove();
-};
-// 延时移除元素
-const { start: startRemoveEl } = useTimeoutFn(() => {
-	const el = state.querySelectorEl as HTMLElement;
-	el?.parentNode?.removeChild(el);
-}, 300, { immediate: false });
+// 使用 usePointerSwipe 统一处理 PC/移动端的滑动事件
+const { distanceY } = usePointerSwipe(layoutLockScreenDateRef, {
+	threshold: 10,
+	onSwipe() {
+		const el = layoutLockScreenDateRef.value;
+		if (!el || distanceY.value <= 0) return; // 只处理向上滑动
 
-// 鼠标移动事件
-const onMove = () => {
-	if (!state.isFlags) return;
-	const el = <HTMLElement>state.querySelectorEl;
-	const opacitys = (state.transparency -= 1 / 200);
-	if (state.moveDifference >= 0) return;
-	el.setAttribute('style', `top:${state.moveDifference}px;cursor:pointer;opacity:${opacitys};`);
-	if (state.moveDifference < -400) {
-		el.setAttribute('style', `top:${-el.clientHeight}px;cursor:pointer;transition:all 0.3s ease;`);
-		state.moveDifference = -el.clientHeight;
-		startRemoveEl();
-	}
-	if (state.moveDifference === -el.clientHeight) {
-		state.isShowLoockLogin = true;
-		layoutLockScreenInputRef.value.focus();
-	}
-};
-// 鼠标松开
-const onEnd = () => {
-	state.isFlags = false;
-	state.transparency = 1;
-	if (state.moveDifference >= -400) {
-		(<HTMLElement>state.querySelectorEl).setAttribute('style', `top:0px;opacity:1;transition:all 0.3s ease;`);
-	}
-};
-// 获取要拖拽的初始元素
-const initGetElement = () => {
-	nextTick(() => {
-		state.querySelectorEl = layoutLockScreenDateRef.value;
-	});
-};
-// 时间更新
+		const offset = -distanceY.value;
+		const opacity = Math.max(0, 1 - distanceY.value / UNLOCK_THRESHOLD);
+		el.style.cssText = `top:${offset}px;cursor:pointer;opacity:${opacity};`;
+
+		// 超过阈值，触发解锁动画
+		if (distanceY.value > UNLOCK_THRESHOLD) {
+			el.style.cssText = `top:${-el.clientHeight}px;cursor:pointer;transition:all 0.3s ease;`;
+			setTimeout(() => {
+				el.style.display = 'none';
+				state.isShowLoockLogin = true;
+				layoutLockScreenInputRef.value?.focus();
+			}, 300);
+		}
+	},
+	onSwipeEnd() {
+		const el = layoutLockScreenDateRef.value;
+		if (!el) return;
+
+		// 未达到阈值，回弹到原位
+		if (distanceY.value <= UNLOCK_THRESHOLD && !state.isShowLoockLogin) {
+			el.style.cssText = `top:0px;opacity:1;transition:all 0.3s ease;`;
+		}
+	},
+});
+// 时间初始化
 const updateTime = () => {
 	state.time.hm = formatDate(new Date(), 'HH:MM');
 	state.time.s = formatDate(new Date(), 'SS');
 	state.time.mdq = formatDate(new Date(), 'mm月dd日，WWW');
 };
 
-// 时间定时器 - 每秒更新
-useIntervalFn(updateTime, 1000, { immediate: true });
+// 使用 VueUse 的 useIntervalFn 管理时间更新定时器（自动清理）
+updateTime();
+useIntervalFn(updateTime, 1000);
 
-// 锁屏倒计时
-const lockScreenCountdown = useIntervalFn(() => {
-	if (themeConfig.value.lockScreenTime <= 1) {
-		state.isShowLockScreen = true;
-		updateLockScreen(true);
-		lockScreenCountdown.pause();
-		return;
-	}
-	themeConfig.value.lockScreenTime--;
-}, 1000, { immediate: false });
-
-// 初始化锁屏
-const initLockScreen = () => {
-	if (!themeConfig.value.isLockScreen) {
-		lockScreenCountdown.pause();
-		return;
-	}
-	// 如果倒计时已结束，直接显示锁屏，否则继续倒计时
-	themeConfig.value.lockScreenTime <= 1
-		? (state.isShowLockScreen = true)
-		: lockScreenCountdown.resume();
-};
-
-// 默认锁屏倒计时（秒）
-const DEFAULT_LOCK_TIME = 60;
-
-// 更新锁屏状态并保存配置
-const updateLockScreen = (isLocked: boolean) => {
-	themeConfig.value.isLockScreen = isLocked;
+// 存储布局配置
+const setLocalThemeConfig = () => {
 	themeConfig.value.isDrawer = false;
-	// 解锁时重置界面状态和倒计时
-	if (!isLocked) {
-		state.isShowLockScreen = false;
-		state.isShowLoockLogin = false;
-		state.lockScreenPassword = '';
-		themeConfig.value.lockScreenTime = DEFAULT_LOCK_TIME;
-		lockScreenCountdown.pause();
-	}
 	Local.set('themeConfig', themeConfig.value);
 };
 
-// 验证密码解锁
-const onLockScreenSubmit = async () => {
-	try {
-		await checkPassword(state.lockScreenPassword);
-		updateLockScreen(false);
-	} catch (err: any) {
-		mes.value = err.msg;
+/**
+ * 初始化锁屏相关信息
+ */
+const handleLockScreenCountdown = () => {
+	if (!themeConfig.value.isLockScreen) return;
+
+	if (themeConfig.value.lockScreenTime <= 1) {
+		state.isShowLockScreen = true;
+		setLocalThemeConfig();
+		pauseLockScreenTimer();
+	} else {
+		themeConfig.value.lockScreenTime--;
 	}
 };
 
-// 退出登录
-const onLogout = async () => {
-	await logout();
-	Session.clear();
-	updateLockScreen(false);
-	window.location.reload();
+const { pause: pauseLockScreenTimer, resume: resumeLockScreenTimer } = useIntervalFn(
+	handleLockScreenCountdown,
+	1000,
+	{ immediate: false }
+);
+
+const initLockScreen = () => {
+	if (themeConfig.value.isLockScreen) {
+		resumeLockScreenTimer();
+	} else {
+		pauseLockScreenTimer();
+	}
 };
-// 页面加载时
+const mes = ref();
+
+const updateLockScreenState = (isLocked: boolean) => {
+	themeConfig.value.isLockScreen = isLocked;
+	themeConfig.value.lockScreenTime = 30;
+	setLocalThemeConfig();
+
+	// 解锁成功时清除锁屏显示状态
+	if (!isLocked) {
+		state.isShowLockScreen = false;
+	}
+};
+
+/**
+ * 处理密码输入，验证密码正确性并解锁
+ */
+const onLockScreenSubmit = async () => {
+	try {
+		const { data, msg } = await checkPassword(state.lockScreenPassword);
+		mes.value = msg;
+		// 根据验证结果更新锁屏状态
+		if (data) {
+			updateLockScreenState(false);
+		}
+	} catch (err: any) {
+		mes.value = err.msg;
+		// 异常时解锁，避免用户被锁住
+		updateLockScreenState(false);
+	}
+};
+
+const formData = reactive<{ avatar?: string; username?: string }>({});
+
 onMounted(() => {
 	const data = useUserInfo().userInfos;
 	Object.assign(formData, data.user);
-	initGetElement();
 	initLockScreen();
 });
-// VueUse 的 useIntervalFn/useTimeoutFn 会自动在组件卸载时清理
 </script>
 
-<style scoped lang="scss">
-/* 背景图 - Tailwind 无法处理动态路径 */
+<style scoped>
+/* 背景图片 */
 .lock-screen-bg {
 	background-image: url('/@/assets/lockScreen.png');
 }
 
-/* Element Plus 组件样式穿透 */
+/* Element Plus 输入框样式覆盖 */
 :deep(.el-input-group__append) {
-	@apply bg-white p-0 px-1;
+	background: white;
+	border-radius: 20%;
 }
 
 :deep(.el-input__inner) {
 	border-right-color: var(--el-border-color-extra-light);
+}
 
-	&:hover {
-		border-color: var(--el-border-color-extra-light);
-	}
+:deep(.el-input__inner:hover) {
+	border-color: var(--el-border-color-extra-light);
 }
 </style>

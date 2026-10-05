@@ -1,65 +1,56 @@
-import {nextTick, defineAsyncComponent} from 'vue';
-import type {App} from 'vue';
-import * as svg from '@element-plus/icons-vue';
+import {nextTick} from 'vue';
 import router from '/@/router/index';
 import pinia from '/@/stores/index';
 import {storeToRefs} from 'pinia';
 import {useThemeConfig} from '/@/stores/themeConfig';
+import {useSiteConfig} from '/@/stores/siteConfig';
 import {i18n} from '/@/i18n/index';
 import {Local} from '/@/utils/storage';
 import {verifyUrl} from '/@/utils/toolsValidate';
 import request from '/@/utils/request';
 import {useMessage} from '/@/hooks/message';
-// @ts-ignore
 import * as CryptoJS from 'crypto-js';
 import {sm4} from 'sm-crypto'
 import {validateNull} from './validate';
-import {RouteItem, RouteItems, RouteToFrom} from '/@/types/global';
 
-// 引入组件
-const SvgIcon = defineAsyncComponent(() => import('/@/components/SvgIcon/index.vue'));
-
-/**
- * 导出全局注册 element plus svg 图标
- * @param app vue 实例
- * @description 使用：https://element-plus.gitee.io/zh-CN/component/icon.html
- */
-export function elSvg(app: App) {
-    const icons = svg as any;
-    for (const i in icons) {
-        app.component(`ele-${icons[i].name}`, icons[i]);
-    }
-    app.component('SvgIcon', SvgIcon);
-}
 
 /**
  * 设置浏览器标题国际化
  * @method const title = useTitle(); ==> title()
  */
 export function useTitle() {
-    const stores = useThemeConfig(pinia);
-    const {themeConfig} = storeToRefs(stores);
+    const {siteConfig} = storeToRefs(useSiteConfig(pinia));
     nextTick(() => {
-        let globalTitle: string = themeConfig.value.globalTitle;
-        let webTitle = setMenuI18n(router.currentRoute.value);
+        const globalTitle: string = siteConfig.value.title;
+        const webTitle = setTagsViewNameI18n(router.currentRoute.value);
         document.title = `${webTitle} - ${globalTitle}` || globalTitle;
     });
 }
 
 /**
- * 设置菜单国际化
- * @param {object} item - 菜单项对象
- * @param {string} item.enName - 英文名称
- * @param {string} item.name - 名称
- * @returns {string} - 国际化后的名称
+ * 设置 自定义 tagsView 名称、 自定义 tagsView 名称国际化
+ * @param params 路由 query、params 中的 tagsViewName
+ * @returns 返回当前 tagsViewName 名称
  */
-export function setMenuI18n(item: any) {
-    let name = i18n.global.t(item.name);
-    if (name !== item.name) {
-        return name;
+export function setTagsViewNameI18n(item: any) {
+    let tagsViewName: string = '';
+    const {query, params} = item;
+    //修复tagsViewName匹配到其他含下列单词的路由
+    const pattern = /^\{("(zh-cn|en|zh-tw)":"[^,]+",?){1,3}}$/;
+    if (query?.tagsViewName || params?.tagsViewName) {
+        if (pattern.test(query?.tagsViewName) || pattern.test(params?.tagsViewName)) {
+            // 国际化
+            const urlTagsParams = (query?.tagsViewName && JSON.parse(query?.tagsViewName)) || (params?.tagsViewName && JSON.parse(params?.tagsViewName));
+            tagsViewName = urlTagsParams[i18n.global.locale.value];
+        } else {
+            // 非国际化
+            tagsViewName = query?.tagsViewName || params?.tagsViewName;
+        }
+    } else {
+        // 非自定义 tagsView 名称
+        tagsViewName = i18n.global.t(item.meta.title || item.name);
     }
-
-    return i18n.global.locale.value === 'en' ? item.meta.enName : item.meta.title;
+    return tagsViewName;
 }
 
 /**
@@ -196,7 +187,6 @@ export const openWindow = (url: string, title: string, w: number, h: number) => 
     );
 };
 
-
 /**
  *加密处理
  */
@@ -243,7 +233,6 @@ export function sm4Encryption(src: string, keyWord: string) {
 export function sm4Decryption(src: string, keyWord: string) {
     return sm4.decrypt(src, keyWord);
 }
-
 
 /**
  * Base64 加密
@@ -335,7 +324,6 @@ export function generateUUID() {
 
 /**
  * 统一批量导出
- * @method elSvg 导出全局注册 element plus svg 图标
  * @method useTitle 设置浏览器标题国际化
  * @method setTagsViewNameI18n 设置 自定义 tagsView 名称、 自定义 tagsView 名称国际化
  * @method lazyImg 图片懒加载
@@ -346,14 +334,11 @@ export function generateUUID() {
  * @method handleOpenLink 打开外部链接
  */
 const other = {
-    elSvg: (app: App) => {
-        elSvg(app);
-    },
     useTitle: () => {
         useTitle();
     },
-    setMenuI18n(item: RouteItems) {
-        return setMenuI18n(item);
+    setTagsViewNameI18n(route: RouteToFrom) {
+        return setTagsViewNameI18n(route);
     },
     lazyImg: (el: string, arr: EmptyArrayType) => {
         lazyImg(el, arr);
@@ -407,7 +392,21 @@ const other = {
     addUnit: (value: string | number, unit = 'px') => {
         return addUnit(value, unit);
     },
+    validateNull: (value: any) => {
+        return validateNull(value);
+    },
+    getNumberRadixNum: (input: Number) => {
+        return getNumberRadixNum(input);
+    }
 };
+
+export function getNumberRadixNum(input: Number) {
+    let strings = input.toString().split(".");
+    if (strings.length <= 1) {
+        return 0;
+    }
+    return strings[1].toString().length;
+}
 
 export function getQueryString(url: string, paraName: string) {
     const arrObj = url.split('?');

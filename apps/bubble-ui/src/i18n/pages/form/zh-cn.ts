@@ -1,7 +1,7 @@
 // 定义通用内容
 export default {
 	common: {
-		queryBtn: '查 询',
+		queryBtn: '查询',
 		addBtn: '新 增',
 		editBtn: '修 改',
 		expandBtn: '展开/折叠',
@@ -13,18 +13,20 @@ export default {
 		importBtn: '导入',
 		queryDeptTip: '请输入部门名称',
 		resetBtn: '重置',
+		copyBtn: '复制',
 		action: '操作',
 		optSuccessText: '操作成功',
+		optFailText: '操作失败',
 		editSuccessText: '修改成功',
 		addSuccessText: '添加成功',
 		delSuccessText: '删除成功',
 		delConfirmText: '此操作将永久删除',
 		optConfirmText: '是否确认本操作',
-		confirmButtonText: '确认',
-		cancelButtonText: '取消',
+		confirmButtonText: '确 认',
+		cancelButtonText: '取 消',
 		download: '下载',
-		updateTime: '更新时间',
-		createTime: '创建时间',
+		expand: '展开/折叠',
+		selectAll: '全选/不全选',
 	},
 	message: {
 		box: {

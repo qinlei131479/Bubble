@@ -1,176 +1,229 @@
 <template>
+	<!-- 注册页面标题 -->
+	<div class="text-center mb-9">
+		<h2 class="text-lg font-medium text-gray-900 dark:text-white">
+			{{ $t('register.title') }}
+		</h2>
+	</div>
+
 	<el-form size="large" class="login-content-form" :rules="dataRules" ref="dataFormRef" :model="state.ruleForm">
-		<el-form-item class="login-animation1" prop="username">
-			<el-input text :placeholder="t('password.accountPlaceholder1')" v-model="state.ruleForm.username" clearable autocomplete="off">
+		<!-- 用户名 -->
+		<el-form-item class="mb-6 login-animation1" prop="username">
+			<el-input text :placeholder="$t('password.accountPlaceholder1')" v-model="state.ruleForm.username" clearable
+				autocomplete="off" class="rounded-md h-11 bg-gray-50 dark:bg-slate-700 dark:text-slate-200">
 				<template #prefix>
-					<el-icon class="el-input__icon">
+					<el-icon class="text-gray-400 el-input__icon dark:text-slate-400">
 						<ele-User />
 					</el-icon>
 				</template>
 			</el-input>
 		</el-form-item>
-		<el-form-item class="login-animation2" prop="password">
-			<strength-meter
-				:placeholder="t('password.accountPlaceholder2')"
-				v-model="state.ruleForm.password"
-				autocomplete="off"
-				:maxLength="20"
-				:minLength="6"
-				@score="handlePassScore"
-				><template #prefix>
-					<el-icon class="el-input__icon">
+
+		<!-- 密码 -->
+		<el-form-item class="mb-6 login-animation2" prop="password">
+			<strength-meter :placeholder="$t('password.accountPlaceholder2')" v-model="state.ruleForm.password"
+				autocomplete="off" class="rounded-md h-11 bg-gray-50 dark:bg-slate-700 dark:text-slate-200"
+				:maxLength="12" :minLength="10">
+				<template #prefix>
+					<el-icon class="text-gray-400 el-input__icon dark:text-slate-400">
 						<ele-Unlock />
 					</el-icon>
 				</template>
 			</strength-meter>
 		</el-form-item>
-		<el-form-item class="login-animation3" prop="phone">
-			<el-input text :placeholder="t('password.phonePlaceholder4')" v-model="state.ruleForm.phone" clearable autocomplete="off">
+
+		<!-- 手机号 -->
+		<el-form-item class="mb-6 login-animation3" prop="phone">
+			<el-input text type="tel" :placeholder="$t('password.phonePlaceholder4')" v-model="state.ruleForm.phone"
+				clearable autocomplete="off" class="rounded-md h-11 bg-gray-50 dark:bg-slate-700 dark:text-slate-200">
 				<template #prefix>
-					<el-icon class="el-input__icon">
+					<el-icon class="text-gray-400 el-input__icon dark:text-slate-400">
 						<ele-Position />
 					</el-icon>
 				</template>
 			</el-input>
 		</el-form-item>
-		<el-form-item>
-			<el-checkbox v-model="state.ruleForm.checked">
-				{{ t('password.readAccept') }}
+
+		<!-- 验证码 -->
+		<el-form-item class="mb-6 login-animation3" prop="code">
+			<div class="flex w-full gap-3">
+				<el-input text maxlength="4" :placeholder="$t('register.codePlaceholder')" v-model="state.ruleForm.code"
+					clearable autocomplete="off"
+					class="flex-1 rounded-md h-11 bg-gray-50 dark:bg-slate-700 dark:text-slate-200">
+					<template #prefix>
+						<el-icon class="text-gray-400 el-input__icon dark:text-slate-400">
+							<ele-Message />
+						</el-icon>
+					</template>
+				</el-input>
+				<SmsCodeButton
+					:mobile="state.ruleForm.phone"
+					:registered="false"
+					:validate="() => dataFormRef?.validateField('phone')"
+					text-key="register"
+					class="w-[120px] h-11 text-[13px] rounded-md font-medium transition-all duration-200">
+				</SmsCodeButton>
+			</div>
+		</el-form-item>
+
+		<!-- 同意条款 -->
+		<el-form-item prop="checked" class="mb-6">
+			<el-checkbox v-model="state.ruleForm.checked" class="text-sm">
+				<span class="text-gray-500 dark:text-slate-400">{{ $t('password.readAccept') }}</span>
+				<a href="#" class="mx-1 text-blue-600 dark:text-blue-400 hover:underline">{{
+					$t('password.privacyPolicy') }}</a>
 			</el-checkbox>
-			<el-button link type="primary">
-				{{ t('password.privacyPolicy') }}
-			</el-button>
 		</el-form-item>
+
+		<!-- 注册按钮 -->
 		<el-form-item class="login-animation4">
-			<el-button type="primary" class="login-content-submit" v-waves @click="handleRegister" :loading="loading">
-				<span>{{ t('password.registerBtnText') }}</span>
+			<el-button type="primary"
+				class="w-full h-11 rounded-md bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 font-medium text-base transition-all duration-200 hover:-translate-y-[1px] active:scale-[0.98]"
+				v-waves @click="handleRegister" :loading="loading">
+				<span class="font-semibold tracking-wide">{{ $t('password.registerBtnText') }}</span>
 			</el-button>
 		</el-form-item>
+
+		<!-- 返回登录链接 -->
+		<div class="flex items-center justify-center mt-3 text-sm font-medium">
+			<a href="#" class="text-blue-600 cursor-pointer dark:text-blue-400 hover:underline"
+				@click.prevent="emit('change', LoginTypeEnum.PASSWORD)">
+				{{ $t('password.backToLogin') }}
+			</a>
+		</div>
 	</el-form>
 </template>
 
 <script setup lang="ts" name="register">
-import { registerUser, validateUsername, validatePhone } from '/@/api/admin/user';
+import { registerUser, validatePhone, validateUsername } from '/@/api/admin/user';
+import { LoginTypeEnum } from '/@/api/login';
+import SmsCodeButton from '/@/components/Verifition/SmsCodeButton.vue';
 import { useMessage } from '/@/hooks/message';
 import { useI18n } from 'vue-i18n';
 import { rule } from '/@/utils/validate';
+import type { FormInstance } from 'element-plus';
+import { useSiteConfig } from '/@/stores/siteConfig';
+import { createPasswordRuleValidator } from '/@/utils/passwordRule';
 
 // 注册生命周期事件
-const emit = defineEmits(['afterSuccess']);
+const emit = defineEmits(['afterSuccess', 'change']);
 
 // 按需加载组件
 const StrengthMeter = defineAsyncComponent(() => import('/@/components/StrengthMeter/index.vue'));
 
 // 使用i18n
 const { t } = useI18n();
+const { siteConfig } = storeToRefs(useSiteConfig());
 
 // 表单引用
-const dataFormRef = ref();
+const dataFormRef = ref<FormInstance>();
 
 // 加载中状态
 const loading = ref(false);
 
-// 密码强度得分
-const score = ref('0');
+interface RuleForm {
+	username: string;
+	password: string;
+	phone: string;
+	code: string;
+	checked: boolean;
+}
 
 // 组件内部状态
 const state = reactive({
 	// 是否显示密码
-	isShowPassword: false,
-	// 表单内容
-	ruleForm: {
-		username: '', // 用户名
-		password: '', // 密码
+		isShowPassword: false,
+		// 表单内容
+		ruleForm: {
+			username: '', // 用户名
+			password: '', // 密码
 		phone: '', // 手机号
-		checked: '', // 是否同意条款
-	},
+		code: '', // 验证码
+		checked: false, // 是否同意条款
+	} as RuleForm,
 });
+
+type ValidateCallback = (error?: string) => void;
+type ValidateRule = {
+	field: string;
+	fullField: string;
+};
+const passwordRuleValidator = createPasswordRuleValidator(() => siteConfig.value.passwordRule, t);
 
 // 表单验证规则
 const dataRules = reactive({
 	username: [
-		{ required: true, message: '用户名不能为空', trigger: 'blur' },
+		{ required: true, message: t('register.usernameEmpty'), trigger: 'blur' },
 		{
 			min: 5,
 			max: 20,
-			message: '用户名称长度必须介于 5 和 20 之间',
+			message: t('register.usernameLength'),
 			trigger: 'blur',
 		},
-		// 自定义方法验证用户名
 		{
-			validator: (rule, value, callback) => {
-				validateUsername(rule, value, callback, false);
+			validator: (rule: ValidateRule, value: string, callback: ValidateCallback) => {
+				validateUsername(rule, value, callback, false, t);
 			},
 			trigger: 'blur',
 		},
 	],
 	phone: [
-		{ required: true, message: '手机号不能为空', trigger: 'blur' },
-		// 手机号格式验证方法
+		{ required: true, message: t('register.phoneEmpty'), trigger: 'blur' },
+		{ validator: rule.validatePhone, trigger: 'blur' },
 		{
-			validator: rule.validatePhone,
-			trigger: 'blur',
-		},
-		// 自定义方法验证手机号是否重复
-		{
-			validator: (rule, value, callback) => {
-				validatePhone(rule, value, callback, false);
+			validator: (rule: ValidateRule, value: string, callback: ValidateCallback) => {
+				validatePhone(rule, value, callback, false, undefined, t);
 			},
 			trigger: 'blur',
 		},
 	],
+	code: [
+		{ required: true, message: t('register.codeRequired'), trigger: 'blur' },
+		{ min: 4, max: 4, message: t('register.codeLength'), trigger: 'blur' },
+	],
 	password: [
-		{ required: true, message: '密码不能为空', trigger: 'blur' },
+		{ required: true, message: t('register.passwordEmpty'), trigger: 'blur' },
+		{ validator: passwordRuleValidator, trigger: 'blur' },
+	],
+	checked: [
+		{ required: true, message: t('register.termsRequired'), trigger: 'change' },
 		{
-			min: 6,
-			max: 20,
-			message: '用户密码长度必须介于 6 和 20 之间',
-			trigger: 'blur',
-		},
-		// 判断密码强度是否达到要求
-		{
-			validator: (_rule, _value, callback) => {
-				if (Number(score.value) < 2) {
-					callback('密码强度太低');
+			validator: (_rule: ValidateRule, value: boolean, callback: ValidateCallback) => {
+				if (!value) {
+					callback(t('register.termsRequired'));
 				} else {
 					callback();
 				}
 			},
-			trigger: 'blur',
-		},
+			trigger: ['change', 'blur'],
+		}
 	],
-	checked: [{ required: true, message: '请阅读并同意条款', trigger: 'blur' }],
 });
 
-// 处理密码强度得分变化事件
-const handlePassScore = (e) => {
-	score.value = e;
-};
-
 /**
- * @name handleRegister
- * @description 注册事件，包括表单验证、注册、成功后的钩子函数触发
+ * 处理注册事件
+ * @description 包括表单验证、注册、成功后的钩子函数触发
+ * @returns 注册是否成功
  */
 const handleRegister = async () => {
 	// 验证表单是否符合规则
-	const valid = await dataFormRef.value.validate().catch(() => {});
-	if (!valid) return false;
+	const valid = await dataFormRef.value?.validate().catch(() => { });
+	if (!valid) {
+		return false;
+	}
 
 	try {
-		// 开始加载
 		loading.value = true;
-		// 调用注册API
 		await registerUser(state.ruleForm);
-		// 注册成功提示
-		useMessage().success(t('common.optSuccessText'));
-		// 触发注册成功后的钩子函数
+		useMessage().success(t('register.registerSuccess'));
 		emit('afterSuccess');
+		return true;
 	} catch (err: any) {
-		// 提示错误信息
-		useMessage().error(err.msg);
+		useMessage().error(err.msg || t('errors.networkError'));
+		return false;
 	} finally {
-		// 结束加载状态
 		loading.value = false;
 	}
 };
+
 </script>

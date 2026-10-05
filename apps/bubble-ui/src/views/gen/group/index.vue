@@ -3,21 +3,21 @@
 		<div class="layout-padding-auto layout-padding-view">
 			<el-row class="ml10" v-show="showSearch">
 				<el-form :inline="true" :model="state.queryForm" @keyup.enter="getDataList" ref="queryRef">
-					<el-form-item :label="t('group.groupName')" prop="groupName">
+					<el-form-item :label="$t('group.groupName')" prop="groupName">
 						<el-input :placeholder="t('group.inputGroupNameTip')" style="max-width: 180px" v-model="state.queryForm.groupName" />
 					</el-form-item>
 					<el-form-item>
 						<el-button @click="getDataList" formDialogRef icon="search" type="primary">
-							{{ t('common.queryBtn') }}
+							{{ $t('common.queryBtn') }}
 						</el-button>
-						<el-button @click="resetQuery" formDialogRef icon="Refresh">{{ t('common.resetBtn') }} </el-button>
+						<el-button @click="resetQuery" formDialogRef icon="Refresh">{{ $t('common.resetBtn') }} </el-button>
 					</el-form-item>
 				</el-form>
 			</el-row>
 			<el-row>
 				<div class="mb8" style="width: 100%">
 					<el-button @click="formDialogRef.openDialog()" class="ml10" formDialogRef icon="folder-add" type="primary" v-auth="'codegen_group_add'">
-						{{ t('common.addBtn') }}
+						{{ $t('common.addBtn') }}
 					</el-button>
 					<el-button
 						plain
@@ -29,7 +29,7 @@
 						type="primary"
 						v-auth="'codegen_group_del'"
 					>
-						{{ t('common.delBtn') }}
+						{{ $t('common.delBtn') }}
 					</el-button>
 					<right-toolbar
 						:export="'codegen_group_export'"
@@ -55,15 +55,14 @@
 				<el-table-column :label="t('group.index')" type="index" width="60" />
 				<el-table-column :label="t('group.groupName')" prop="groupName" show-overflow-tooltip />
 				<el-table-column :label="t('group.groupDesc')" prop="groupDesc" show-overflow-tooltip />
-        <el-table-column :label="t('common.updateTime')" prop="updateTime" show-overflow-tooltip />
-				<el-table-column :label="t('common.createTime')" prop="createTime" show-overflow-tooltip />
-				<el-table-column :label="t('common.action')" width="150">
+				<el-table-column :label="t('group.createTime')" prop="createTime" show-overflow-tooltip />
+				<el-table-column :label="$t('common.action')" width="200">
 					<template #default="scope">
 						<el-button icon="edit-pen" @click="formDialogRef.openDialog(scope.row.id)" text type="primary" v-auth="'codegen_group_edit'"
-							>{{ t('common.editBtn') }}
+							>{{ $t('common.editBtn') }}
 						</el-button>
 						<el-button icon="delete" @click="handleDelete([scope.row.id])" text type="primary" v-auth="'codegen_group_del'"
-							>{{ t('common.delBtn') }}
+							>{{ $t('common.delBtn') }}
 						</el-button>
 					</template>
 				</el-table-column>
@@ -82,50 +81,37 @@ import { delObjs, fetchList } from '/@/api/gen/group';
 import { useMessage, useMessageBox } from '/@/hooks/message';
 import { useI18n } from 'vue-i18n';
 
-// 引入组件
 const FormDialog = defineAsyncComponent(() => import('./form.vue'));
 const { t } = useI18n();
-// 定义查询字典
-
-// 定义变量内容
 const formDialogRef = ref();
-// 搜索变量
 const queryRef = ref();
 const showSearch = ref(true);
-// 多选变量
 const selectObjs = ref([]) as any;
 const multiple = ref(true);
 
 const state: BasicTableProps = reactive<BasicTableProps>({
 	queryForm: {},
 	pageList: fetchList,
-  ascs: ['create_time'],
+	descs: ['create_time'],
 });
 
-//  table hook
 const { getDataList, currentChangeHandle, sizeChangeHandle, sortChangeHandle, downBlobFile, tableStyle } = useTable(state);
 
-// 清空搜索条件
 const resetQuery = () => {
-	// 清空搜索条件
 	queryRef.value.resetFields();
-	// 清空多选
 	selectObjs.value = [];
 	getDataList();
 };
 
-// 导出excel
 const exportExcel = () => {
 	downBlobFile('/gen/group/export', state.queryForm, 'group.xlsx');
 };
 
-// 多选事件
 const handleSelectionChange = (objs: { id: string }[]) => {
 	selectObjs.value = objs.map(({ id }) => id);
 	multiple.value = !objs.length;
 };
 
-// 删除操作
 const handleDelete = async (ids: string[]) => {
 	try {
 		await useMessageBox().confirm(t('common.delConfirmText'));

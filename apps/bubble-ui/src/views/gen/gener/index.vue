@@ -1,99 +1,133 @@
 <template>
-  <div class="layout-padding">
-    <el-card class="layout-padding-auto" shadow="hover">
-      <el-steps :active="active" finish-status="success" simple>
-        <el-step title="基础信息" @click="go(0)"/>
-        <el-step title="数据修改" @click="go(1)"/>
-      </el-steps>
-    </el-card>
+	<div class="layout-padding">
+		<div class="layout-padding-auto layout-padding-view">
+			<!-- 主内容区：flex-1 撑满剩余高度，左右各自独立滚动 -->
+			<div class="flex flex-1 min-h-0">
+				<!-- 左侧：基础配置，可折叠 -->
+				<div class="flex flex-col flex-shrink-0 min-h-0 transition-all duration-300"
+					:class="collapsed ? 'w-10' : 'w-96'">
+					<el-card shadow="hover" class="gen-card flex flex-col flex-1 min-h-0 !overflow-hidden">
+						<template #header>
+							<div class="flex items-center" :class="collapsed ? 'justify-center' : 'justify-between'">
+								<div v-if="!collapsed" class="flex items-center flex-1 min-w-0 gap-2">
+									<span
+										class="flex-shrink-0 text-sm font-semibold text-gray-700 dark:text-gray-200">基础配置</span>
+									<span class="text-xs text-gray-400 truncate dark:text-gray-500">{{ tableNameStr
+									}}</span>
+								</div>
+								<el-tooltip :content="collapsed ? '展开配置' : '收起配置'" placement="right">
+									<el-button :icon="collapsed ? 'DArrowRight' : 'DArrowLeft'" circle size="small"
+										plain @click="collapsed = !collapsed" />
+								</el-tooltip>
+							</div>
+						</template>
+						<div v-show="!collapsed" class="h-full pr-1 overflow-y-auto">
+							<Generator ref="generatorRef" :tableName="tableName" :dsName="dsName" />
+						</div>
+					</el-card>
+				</div>
 
-    <el-card class="layout-padding-auto mt5" shadow="hover">
-      <!-- 生成基本信息设置 -->
-      <generator ref="generatorRef" :tableName="tableName" :dsName="dsName" v-if="active === 0"/>
-      <!-- 字段编辑设置 -->
-      <edit-table ref="editTableRef" :tableName="tableName" :dsName="dsName" v-if="active === 1"/>
+				<!-- 右侧：字段配置 -->
+				<div class="flex flex-col flex-1 min-w-0 min-h-0">
+					<el-card shadow="hover" class="gen-card flex flex-col flex-1 min-h-0 !overflow-hidden">
+						<div class="h-full overflow-y-auto">
+							<EditTable ref="editTableRef" :tableName="tableName" :dsName="dsName" />
+						</div>
+					</el-card>
+				</div>
+			</div>
 
-      <div style="text-align: center">
-        <el-button style="margin-top: 12px" @click="go(1)" v-if="active === 0">下一步</el-button>
-        <el-button style="margin-top: 12px" @click="go(0)" v-if="active === 1">上一步</el-button>
-        <el-button style="margin-top: 12px" @click="preview" v-if="active === 1">保存并预览</el-button>
-        <el-button style="margin-top: 12px" @click="generatorHandle" v-if="active === 1">保存并生成</el-button>
-      </div>
-    </el-card>
+			<!-- 吸底操作栏 -->
+			<ActionFooter :loading="isLoading" @back="handleBack" @preview="handlePreview" @generate="handleGenerate" />
 
-    <!-- 预览基本信息 -->
-    <preview-dialog ref="previewDialogRef"/>
-  </div>
+			<!-- 预览弹窗 -->
+			<PreviewDialog ref="previewDialogRef" />
+		</div>
+	</div>
 </template>
 
 <script lang="ts" setup>
-import {useI18n} from 'vue-i18n';
-import {useGeneratorCodeApi} from '/@/api/gen/table';
-import {useMessage} from '/@/hooks/message';
-import {downBlobFile} from '/@/utils/other';
+import { useAsyncState } from '@vueuse/core';
+import { useI18n } from 'vue-i18n';
+import { useGeneratorCodeApi } from '/@/api/gen/table';
+import { useMessage } from '/@/hooks/message';
+import mittBus from '/@/utils/mitt';
+import { downBlobFile } from '/@/utils/other';
+import Generator from '../table/generator.vue';
+import EditTable from '../table/edit.vue';
+import PreviewDialog from '../table/preview.vue';
+import ActionFooter from './components/ActionFooter.vue';
 
-const {t} = useI18n();
-const Generator = defineAsyncComponent(() => import('../table/generator.vue'));
-const EditTable = defineAsyncComponent(() => import('../table/edit.vue'));
-const PreviewDialog = defineAsyncComponent(() => import('../table/preview.vue'));
-const previewDialogRef = ref();
-const generatorRef = ref();
+const { t } = useI18n();
+const message = useMessage();
 
 const route = useRoute();
-const active = ref(0);
-const tableId = ref();
-const tableName = ref();
-const dsName = ref();
+const tableName = computed(() => String(route.query.tableName ?? ''));
+const dsName = computed(() => String(route.query.dsName ?? ''));
+
+const collapsed = ref(false);
+const tableNameStr = computed(() => tableName.value || dsName.value);
+const previewDialogRef = ref();
+const generatorRef = ref();
 const editTableRef = ref();
-const generatorType = ref();
+const tableId = ref('');
+const generatorType = ref('');
 
-// tab 跳转
-const go = async (activeNum: number) => {
-  try {
-    if (activeNum === 0) {
-      await editTableRef.value.submitHandle();
-    } else if (activeNum === 1) {
-      const dataform = await generatorRef.value.submitHandle();
-      tableId.value = dataform.id;
-      generatorType.value = dataform.generatorType;
-    }
-    if (active.value === activeNum) return;
-    active.value = activeNum;
-  } catch (e) {
-    console.error(e);
-  }
+const { isLoading, execute: submitAll } = useAsyncState(
+	async () => {
+		const data = await generatorRef.value.submitHandle();
+		tableId.value = data.id;
+		generatorType.value = data.generatorType;
+		await editTableRef.value.submitHandle();
+	},
+	undefined,
+	{ immediate: false, throwError: true }
+);
+
+const executeWithSubmit = async (action: () => void) => {
+	if (isLoading.value) return;
+	try {
+		await submitAll();
+		action();
+	} catch {
+		// Error already handled by useAsyncState
+	}
 };
 
-// 预览
-const preview = async () => {
-  await editTableRef.value.submitHandle();
-  previewDialogRef.value.openDialog(tableId.value);
+const handleBack = () => {
+	mittBus.emit('onCurrentContextmenuClick', { contextMenuClickId: 1, ...route });
 };
 
-// 生成
-const generatorHandle = async () => {
-  await editTableRef.value.submitHandle();
-  // 生成代码，zip压缩包
-  if (generatorType.value === '0') {
-    downBlobFile(`/gen/generator/download?tableIds=${[tableId.value].join(',')}`, {}, `${tableName.value}.zip`);
-  }
+const handlePreview = () => executeWithSubmit(() => {
+	previewDialogRef.value.openDialog(tableId.value);
+});
 
-  // 写入到指定目录
-  if (generatorType.value === '1') {
-    useGeneratorCodeApi([tableId.value].join(',')).then(() => {
-      useMessage().success(t('common.optSuccessText'));
-    });
-  }
-};
-
-onMounted(() => {
-  tableName.value = route.query.tableName;
-  dsName.value = route.query.dsName;
+const handleGenerate = () => executeWithSubmit(() => {
+	if (generatorType.value === '0') {
+		downBlobFile(`/gen/generator/download?tableIds=${tableId.value}`, {}, `${tableName.value}.zip`).catch((msg) => {
+			message.error(msg);
+		});
+	}
+	if (generatorType.value === '1') {
+		useGeneratorCodeApi(tableId.value)
+			.then(() => message.success(t('common.optSuccessText')))
+			.catch(({ msg }) => message.error(msg));
+	}
 });
 </script>
 
 <style scoped>
-.layout-padding {
-  height: auto !important;
+/* el-card 自身参与 flex 伸缩，body 区域独立滚动 */
+:deep(.gen-card.el-card) {
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+:deep(.gen-card .el-card__body) {
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
+	padding: 12px;
 }
 </style>

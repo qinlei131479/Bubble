@@ -2,32 +2,45 @@
 	<el-config-provider :size="getGlobalComponentSize" :locale="getGlobalI18n">
 		<router-view v-show="setLockScreen" />
 		<LockScreen v-if="themeConfig.isLockScreen" />
-		<Settings ref="settingRef" v-show="themeConfig.lockScreenTime > 1" />
+		<Settings ref="settingsRef" v-show="themeConfig.lockScreenTime > 1" />
 		<CloseFull v-if="!themeConfig.isLockScreen" />
 	</el-config-provider>
 </template>
 
 <script setup lang="ts" name="app">
+import { whenever, watchDeep } from '@vueuse/core';
 import { useI18n } from 'vue-i18n';
 import { useTagsViewRoutes } from '/@/stores/tagsViewRoutes';
 import { useThemeConfig } from '/@/stores/themeConfig';
+import { useSiteConfig } from '/@/stores/siteConfig';
 import other from '/@/utils/other';
 import { Local, Session } from '/@/utils/storage';
+import { ensureRemoteI18nLoaded } from '/@/i18n';
 import mittBus from '/@/utils/mitt';
 import setIntroduction from '/@/utils/setIconfont';
+import { initClarity } from '/@/utils/clarity';
+import { initAntiDebug } from '/@/utils/antiDebug';
 
 // 引入组件
 const LockScreen = defineAsyncComponent(() => import('/@/layout/lockScreen/index.vue'));
-const Settings = defineAsyncComponent(() => import('/@/layout/navBars/breadcrumb/settings.vue'));
+const Settings = defineAsyncComponent(() => import('./layout/navBars/breadcrumb/settings.vue'));
 const CloseFull = defineAsyncComponent(() => import('/@/layout/navBars/breadcrumb/closeFull.vue'));
 
 // 定义变量内容
 const { messages, locale } = useI18n();
-const settingRef = ref();
+const settingsRef = ref();
 const route = useRoute();
 const stores = useTagsViewRoutes();
 const storesThemeConfig = useThemeConfig();
 const { themeConfig } = storeToRefs(storesThemeConfig);
+const { siteConfig } = storeToRefs(useSiteConfig());
+
+// clarityId 变为 truthy 时立即初始化（whenever 默认 immediate，只在值非空时触发）
+whenever(() => siteConfig.value.clarityId, (id) => initClarity(id));
+
+// antiDebugEnable 开启时初始化反调试保护
+whenever(() => siteConfig.value.antiDebugEnable, () => initAntiDebug(siteConfig.value.antiDebugKey));
+
 
 // 设置锁屏时组件显示隐藏
 const setLockScreen = computed(() => {
@@ -46,6 +59,8 @@ const getGlobalI18n = computed(() => {
 });
 // 设置初始化，防止刷新时恢复默认
 onBeforeMount(() => {
+	// 预加载远程 i18n 词条（无需登录即可触发，有 token 时加载账号词条）
+	ensureRemoteI18nLoaded({ retry: 1 });
 	// 设置批量第三方 icon 图标
 	setIntroduction.cssCdn();
 	// 设置批量第三方 js
@@ -55,8 +70,8 @@ onBeforeMount(() => {
 onMounted(() => {
 	nextTick(() => {
 		// 监听布局配'置弹窗点击打开
-		mittBus.on('openSetingsDrawer', () => {
-			settingRef.value.openDrawer();
+		mittBus.on('openSettingsDrawer', () => {
+			settingsRef.value.openDrawer();
 		});
 		// 获取缓存中的布局配置
 		if (Local.get('themeConfig')) {
@@ -71,16 +86,8 @@ onMounted(() => {
 });
 // 页面销毁时，关闭监听布局配置/i18n监听
 onUnmounted(() => {
-	mittBus.off('openSetingsDrawer', () => {});
+	mittBus.off('openSettingsDrawer', () => {});
 });
 // 监听路由的变化，设置网站标题
-watch(
-	() => route.path,
-	() => {
-		other.useTitle();
-	},
-	{
-		deep: true,
-	}
-);
+watchDeep(() => route.path, () => other.useTitle());
 </script>

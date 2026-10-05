@@ -2,22 +2,50 @@
  * pinia 类型定义
  */
 
+// 角色信息
+declare interface RoleItem {
+	roleId: string;
+	roleName: string;
+	roleCode: string;
+	roleDesc: string;
+}
+
+// 部门信息
+declare interface DeptItem {
+	deptId: string;
+	name: string;
+	sortOrder: number;
+	parentId: string | null;
+}
+
+// 岗位信息
+declare interface PostItem {
+	postId: string;
+	postCode: string;
+	postName: string;
+	postSort: number;
+	remark: string;
+}
+
 // 用户信息
 declare interface UserInfosState<T = any> {
 	userInfos: {
 		authBtnList: string[];
 		photo: string;
-		roles: string[];
-		time: number;
-		userName: string;
-		[key: string]: T;
-	};
-}
+		roles: RoleItem[];
+			deptList: DeptItem[];
+			time: number;
+			userName: string;
+			[key: string]: T;
+		};
+	}
 
 // 路由缓存列表
 declare interface KeepAliveNamesState {
 	keepAliveNames: string[];
 	cachedViews: string[];
+	// 记录已关闭的路由路径，用于强制刷新
+	closedRoutes: Set<string>;
 }
 
 // 后端返回原始路由(未处理时)
@@ -74,9 +102,10 @@ declare interface ThemeConfigState {
 		isFooter: boolean;
 		isGrayscale: boolean;
 		isInvert: boolean;
-		isIsDark: boolean;
+		isDark: boolean;
 		isWartermark: boolean;
 		wartermarkText: string;
+		quickLinkNum: number;
 		tagsStyle: string;
 		animation: string;
 		columnsAsideStyle: string;
@@ -84,10 +113,10 @@ declare interface ThemeConfigState {
 		layout: string;
 		isRequestRoutes: boolean;
 		globalTitle: string;
-		globalViceTitle: string;
-		globalViceTitleMsg: string;
 		globalI18n: string;
 		globalComponentSize: string;
 		footerAuthor: string;
+		background: string;
+		miniQr: string;
 	};
 }

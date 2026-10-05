@@ -22,10 +22,10 @@
 			<template #footer>
 				<div class="dialog-footer">
 					<el-button @click="handleEvent('cancel')">
-						{{ t('common.cancelButtonText') }}
+						{{ $t('common.cancelButtonText') }}
 					</el-button>
 					<el-button type="primary" @click="handleEvent('confirm')">
-						{{ t('common.confirmButtonText') }}
+						{{ $t('common.confirmButtonText') }}
 					</el-button>
 				</div>
 			</template>

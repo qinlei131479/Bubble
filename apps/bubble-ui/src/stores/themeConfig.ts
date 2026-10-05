@@ -17,15 +17,15 @@ export const useThemeConfig = defineStore('themeConfig', {
 			// 默认 primary 主题颜色
 			primary: '#2E5CF6',
 			// 是否开启深色模式
-			isIsDark: false,
+			isDark: false,
 
 			/**
 			 * 顶栏设置
 			 */
 			// 默认顶栏导航背景颜色
-			topBar: '#ffffff',
+			topBar: '#2E5CF6',
 			// 默认顶栏导航字体颜色
-			topBarColor: '#606266',
+			topBarColor: '#FFFFFF',
 			// 是否开启顶栏背景颜色渐变
 			isTopBarColorGradual: false,
 
@@ -35,9 +35,9 @@ export const useThemeConfig = defineStore('themeConfig', {
 			// 默认菜单导航背景颜色
 			menuBar: '#FFFFFF',
 			// 默认菜单导航字体颜色
-			menuBarColor: '#505968',
+			menuBarColor: '#475569',
 			// 默认菜单高亮背景色
-			menuBarActiveColor: 'rgba(242, 243, 245, 1)',
+			menuBarActiveColor: '#eff6ff',
 			// 是否开启菜单背景颜色渐变
 			isMenuBarColorGradual: false,
 
@@ -65,7 +65,7 @@ export const useThemeConfig = defineStore('themeConfig', {
 			// 初始化变量，用于更新菜单 el-scrollbar 的高度，请勿删除
 			isFixedHeaderChange: false,
 			// 是否开启经典布局分割菜单（仅经典布局生效）
-			isClassicSplitMenu: false,
+			isClassicSplitMenu: true,
 			// 是否开启自动锁屏
 			isLockScreen: false,
 			// 开启自动锁屏倒计时(s/秒)
@@ -93,16 +93,17 @@ export const useThemeConfig = defineStore('themeConfig', {
 			// 是否开启 TagsView 共用
 			isShareTagsView: false,
 			// 是否开启 Footer 底部版权信息
-			isFooter: false,
+			isFooter: true,
 			// 是否开启灰色模式
 			isGrayscale: false,
 			// 是否开启色弱模式
 			isInvert: false,
 			// 是否开启水印
-			isWartermark: false,
+			isWartermark: true,
 			// 水印文案
 			wartermarkText: 'Bubble',
-
+			// 首页快捷导航上限
+			quickLinkNum: 12,
 			/**
 			 * 其它设置
 			 */
@@ -122,27 +123,20 @@ export const useThemeConfig = defineStore('themeConfig', {
 			 * 中的 `initSetLayoutChange(设置布局切换，重置主题样式)` 方法
 			 */
 			// 布局切换：可选值"<defaults|classic|transverse|columns>"，默认 defaults
-			layout: 'transverse',
+			layout: 'classic',
 
 			/**
 			 * 后端控制路由
 			 */
 			// 是否开启后端控制路由
 			isRequestRoutes: true,
-			/**
-			 * 全局网站标题 / 副标题
-			 */
-			// 网站主标题（菜单导航、浏览器当前网页标题、登录form顶部右侧）
-			globalTitle: 'Bubble-UI',
-			// 网站副标题（登录左侧底部页顶部文字）
-			globalViceTitle: '“泡泡”，象征轻量、灵动、可自由组合的智能单元',
-			// 网站副标题（登录页顶部文字）
-			globalViceTitleMsg: '每个“泡泡”都是一个智能体（Agent）。',
 			// 默认初始语言，可选值"<zh-cn|en|zh-tw>"，默认 zh-cn
 			globalI18n: 'zh-cn',
 			// 默认全局组件大小，可选值"<large|'default'|small>"，默认 'default'
 			globalComponentSize: 'default',
-			// footer 页面作者
+			// 网站主标题（菜单导航、浏览器当前网页标题、登录form顶部右侧）
+			globalTitle: 'Bubble-UI',
+			// footer 标题内容
 			footerAuthor: '©2025 BUBBLE CLOUD',
 		},
 	}),

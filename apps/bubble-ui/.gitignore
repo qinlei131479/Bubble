@@ -1,6 +1,8 @@
 .DS_Store
 node_modules
-dist
+/dist
+dist.zip
+docker/dist
 
 
 # local env files
@@ -14,15 +16,28 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Editor directories and files
-!.idea/icon.png
 .idea
+.vscode
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
 
-# lock files
-yarn.lock
-.vscode
+# lock
 package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# cursor review
+final_review_gate.py
+.claude/settings.local.json
+
+# planning docs
+docs
+
+# local brainstorm cache
+.superpowers
+
+### test
+*-aitest*

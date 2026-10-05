@@ -27,8 +27,8 @@
 					/>
 				</div>
 				<div class="flex-none popover-input__btns">
-					<el-button link @click="close">{{ t('common.cancelButtonText') }}</el-button>
-					<el-button type="primary" :size="size" @click="handleConfirm">{{ t('common.confirmButtonText') }}</el-button>
+					<el-button text @click="close">{{ $t('common.cancelButtonText') }}</el-button>
+					<el-button type="primary" :size="size" @click="handleConfirm">{{ $t('common.confirmButtonText') }}</el-button>
 				</div>
 			</div>
 			<template #reference>

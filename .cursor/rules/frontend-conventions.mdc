@@ -8,9 +8,9 @@ alwaysApply: false
 
 ## 技术栈
 
-- Vue 3.5 + `<script setup>` + TypeScript（strict 模式）
+- Vue 3.5 + `<script setup>` + TypeScript
 - Element Plus 2.13 + Tailwind CSS 3.4 + SCSS
-- Vite 5.4 构建，路径别名 `/@/*` → `src/*`
+- Vite 8 构建，路径别名 `/@/*` → `src/*`
 - Pinia 状态管理 + pinia-plugin-persist
 - Axios HTTP 客户端，封装于 `src/utils/request.ts`
 - vue-i18n 国际化，vue-router Hash 模式

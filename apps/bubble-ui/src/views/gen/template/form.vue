@@ -1,5 +1,5 @@
 <template>
-	<el-dialog fullscreen :title="form.id ? t('common.editBtn') : t('common.addBtn')" v-model="visible">
+	<el-dialog fullscreen :title="form.id ? $t('common.editBtn') : $t('common.addBtn')" v-model="visible">
 		<el-form :model="form" :rules="dataRules" formDialogRef ref="dataFormRef" v-loading="loading">
 			<el-container>
 				<el-aside width="80%">
@@ -23,8 +23,8 @@
 
 		<template #footer>
 			<span class="dialog-footer">
-				<el-button @click="visible = false">{{ t('common.cancelButtonText') }}</el-button>
-				<el-button @click="onSubmit" type="primary" :disabled="loading">{{ t('common.confirmButtonText') }}</el-button>
+				<el-button @click="visible = false">{{ $t('common.cancelButtonText') }}</el-button>
+				<el-button @click="onSubmit" type="primary" :disabled="loading">{{ $t('common.confirmButtonText') }}</el-button>
 			</span>
 		</template>
 	</el-dialog>
@@ -39,15 +39,10 @@ import {rule} from "/@/utils/validate";
 
 const CodeEditor = defineAsyncComponent(() => import('/@/components/CodeEditor/index.vue'));
 const emit = defineEmits(['refresh']);
-
 const { t } = useI18n();
-
-// 定义变量内容
 const dataFormRef = ref();
 const visible = ref(false);
 const loading = ref(false);
-
-// 定义字典
 
 // 提交表单数据
 const form = reactive({
@@ -86,8 +81,6 @@ const onSubmit = async () => {
 	const valid = await dataFormRef.value.validate().catch(() => {});
 	if (!valid) return false;
 
-	// 校验模板是否为空
-
 	try {
 		loading.value = true;
 		form.id ? await putObj(form) : await addObj(form);
@@ -113,14 +106,3 @@ defineExpose({
 	openDialog,
 });
 </script>
-
-<style scoped>
-.splitpanes__pane {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	font-family: Helvetica, Arial, sans-serif;
-	color: rgba(255, 255, 255, 0.6);
-	font-size: 5em;
-}
-</style>

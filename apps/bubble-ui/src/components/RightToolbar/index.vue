@@ -1,11 +1,14 @@
 <template>
 	<div class="top-right-btn" :style="style">
 		<el-row>
+			<!-- 搜索按钮前置操作 -->
+			<slot name="before-search"></slot>
+
 			<!-- 搜索框控制 -->
 			<el-tooltip
 				class="item"
 				effect="dark"
-				:content="showSearch ? t('queryTree.hideSearch') : t('queryTree.displayTheSearch')"
+				:content="showSearch ? $t('queryTree.hideSearch') : $t('queryTree.displayTheSearch')"
 				placement="top"
 				v-if="search"
 			>
@@ -13,12 +16,12 @@
 			</el-tooltip>
 
 			<!-- 导出 -->
-			<el-tooltip class="item" effect="dark" :content="t('common.exportBtn')" placement="top" v-if="isExport()">
+			<el-tooltip class="item" effect="dark" :content="$t('common.exportBtn')" placement="top" v-if="isExport()">
 				<el-button circle icon="Download" @click="handleExport()" />
 			</el-tooltip>
 
 			<!-- 刷新功能 -->
-			<el-tooltip class="item" effect="dark" :content="t('queryTree.refresh')" placement="top">
+			<el-tooltip class="item" effect="dark" :content="$t('queryTree.refresh')" placement="top">
 				<el-button circle icon="Refresh" @click="handleRefresh()" />
 			</el-tooltip>
 
@@ -30,9 +33,7 @@
 
 <script setup name="right-toolbar">
 import { auth } from '/@/utils/authFunction';
-import {useI18n} from "vue-i18n";
 
-const { t } = useI18n();
 /**
  * 通过 defineProps 函数定义组件 props
  */

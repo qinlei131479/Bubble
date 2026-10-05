@@ -5,10 +5,10 @@
 				<div class="left">
 					<div class="left-item">
 						<div class="left-item-animation left-item-num">401</div>
-						<div class="left-item-animation left-item-title">{{ t('noAccess.accessTitle') }}</div>
-						<div class="left-item-animation left-item-msg">{{ t('noAccess.accessMsg') }}</div>
+						<div class="left-item-animation left-item-title">{{ $t('noAccess.accessTitle') }}</div>
+						<div class="left-item-animation left-item-msg">{{ $t('noAccess.accessMsg') }}</div>
 						<div class="left-item-animation left-item-btn">
-							<el-button type="primary" round @click="onSetAuth">{{ t('noAccess.accessBtn') }}</el-button>
+							<el-button type="primary" round @click="onSetAuth">{{ $t('noAccess.accessBtn') }}</el-button>
 						</div>
 					</div>
 				</div>
@@ -24,9 +24,7 @@
 
 <script setup lang="ts" name="noPower">
 import { Session } from '/@/utils/storage';
-import {useI18n} from "vue-i18n";
 
-const { t } = useI18n();
 const onSetAuth = () => {
 	// 清除缓存/token等
 	Session.clear();

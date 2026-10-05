@@ -3,31 +3,31 @@
 		<div class="layout-padding-auto layout-padding-view">
 			<el-row class="ml10" v-show="showSearch">
 				<el-form :inline="true" :model="state.queryForm" @keyup.enter="getDataList" ref="queryRef">
-					<el-form-item :label="t('client.clientId')" prop="clientId">
-						<el-input :placeholder="t('client.clientId')" style="max-width: 180px" v-model="state.queryForm.clientId" />
+					<el-form-item :label="$t('client.clientId')" prop="clientId">
+						<el-input :placeholder="$t('client.clientId')" style="max-width: 180px" v-model="state.queryForm.clientId" />
 					</el-form-item>
-					<el-form-item :label="t('client.clientSecret')" prop="clientSecret">
-						<el-input :placeholder="t('client.clientSecret')" style="max-width: 180px" v-model="state.queryForm.clientSecret" />
+					<el-form-item :label="$t('client.clientSecret')" prop="clientSecret">
+						<el-input :placeholder="$t('client.clientSecret')" style="max-width: 180px" v-model="state.queryForm.clientSecret" />
 					</el-form-item>
 					<el-form-item>
 						<el-button @click="getDataList" icon="search" type="primary">
-							{{ t('common.queryBtn') }}
+							{{ $t('common.queryBtn') }}
 						</el-button>
-						<el-button @click="resetQuery" icon="Refresh">{{ t('common.resetBtn') }}</el-button>
+						<el-button @click="resetQuery" icon="Refresh">{{ $t('common.resetBtn') }}</el-button>
 					</el-form-item>
 				</el-form>
 			</el-row>
 			<el-row>
 				<div class="mb8" style="width: 100%">
 					<el-button v-auth="'sys_client_add'" @click="formDialogRef.openDialog()" class="ml10" icon="folder-add" type="primary">
-						{{ t('common.addBtn') }}
+						{{ $t('common.addBtn') }}
 					</el-button>
 					<el-button v-auth="'sys_client_del'" plain @click="handleRefreshCache()" class="ml10" icon="refresh-left" type="primary">
-						{{ t('common.refreshCacheBtn') }}
+						{{ $t('common.refreshCacheBtn') }}
 					</el-button>
 
 					<el-button plain :disabled="multiple" @click="handleDelete(selectObjs)" class="ml10" icon="Delete" type="primary" v-auth="'sys_client_del'">
-						{{ t('common.delBtn') }}
+						{{ $t('common.delBtn') }}
 					</el-button>
 
 					<right-toolbar
@@ -44,6 +44,7 @@
 				:data="state.dataList"
 				@selection-change="handleSelectionChange"
 				style="width: 100%"
+        row-key="id"
 				v-loading="state.loading"
 				border
 				:cell-style="tableStyle.cellStyle"
@@ -61,13 +62,13 @@
 				</el-table-column>
 				<el-table-column :label="t('client.accessTokenValidity')" prop="accessTokenValidity" show-overflow-tooltip />
 				<el-table-column :label="t('client.refreshTokenValidity')" prop="refreshTokenValidity" show-overflow-tooltip />
-				<el-table-column :label="t('common.action')" width="150">
+				<el-table-column :label="$t('common.action')" width="150">
 					<template #default="scope">
 						<el-button icon="edit-pen" @click="formDialogRef.openDialog(scope.row.clientId)" text type="primary" v-auth="'sys_client_add'"
-							>{{ t('common.editBtn') }}
+							>{{ $t('common.editBtn') }}
 						</el-button>
 						<el-button icon="delete" @click="handleDelete([scope.row.id])" text type="primary" v-auth="'sys_client_del'">
-							{{ t('common.delBtn') }}
+							{{ $t('common.delBtn') }}
 						</el-button>
 					</template>
 				</el-table-column>
@@ -111,22 +112,24 @@ const state: BasicTableProps = reactive<BasicTableProps>({
 const { getDataList, currentChangeHandle, sizeChangeHandle, downBlobFile, tableStyle } = useTable(state);
 
 // 删除缓存
-const handleRefreshCache = () => {
-	refreshCache().then(() => {
-		useMessage().success('同步成功');
-	});
+const handleRefreshCache = async () => {
+	try {
+		await refreshCache();
+		useMessage().success(t('client.syncSuccess'));
+	} catch (err: any) {
+		useMessage().error(err.msg);
+	}
 };
 
 const resetQuery = () => {
 	queryRef.value.resetFields();
-	// state.queryForm = {};
 	selectObjs.value = [];
 	getDataList();
 };
 
 // 导出excel
 const exportExcel = () => {
-	downBlobFile('/admin/client/export', state.queryForm, 'client.xlsx');
+	downBlobFile('/admin/client/export', { ...state.queryForm, ids: selectObjs.value }, 'client.xlsx');
 };
 
 // 多选事件

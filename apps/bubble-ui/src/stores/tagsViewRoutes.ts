@@ -1,5 +1,8 @@
 import { defineStore } from 'pinia';
 import { Session } from '/@/utils/storage';
+import { useMessage } from '/@/hooks/message';
+import { useThemeConfig } from '/@/stores/themeConfig';
+import { i18n } from '/@/i18n/index';
 
 /**
  * TagsView 路由列表
@@ -21,7 +24,14 @@ export const useTagsViewRoutes = defineStore('tagsViewRoutes', {
 			this.isTagsViewCurrenFull = bool;
 		},
 		async setFavoriteRoutes(item) {
-			this.favoriteRoutes.push(item);
+			const storesThemeConfig = useThemeConfig();
+			const { themeConfig } = storeToRefs(storesThemeConfig);
+			// 判断已经存储的长度,如果超过主题设置则警告
+			if (this.favoriteRoutes.length > themeConfig.value.quickLinkNum) {
+				useMessage().error(i18n.global.t('tagsView.favoriteMax'))
+				return
+			}
+			this.favoriteRoutes.unshift(item);
 		},
 		async delFavoriteRoutes(item) {
 			this.favoriteRoutes.splice(this.favoriteRoutes.indexOf(item), 1);

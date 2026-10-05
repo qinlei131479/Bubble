@@ -1,8 +1,11 @@
 <template>
-  <el-dialog :title="form.id ? t('common.editBtn') : t('common.addBtn')" v-model="visible"
-             :close-on-click-modal="false" draggable>
+  <el-dialog :title="form.id ? $t('common.editBtn') : $t('common.addBtn')" v-model="visible"
+    :close-on-click-modal="false" draggable>
     <el-form ref="dataFormRef" :model="form" :rules="dataRules" formDialogRef label-width="90px" v-loading="loading">
       <el-row :gutter="20">
+        <el-col :span="24" class="mb20" v-if="parserPluginMessage">
+          <el-alert :title="parserPluginMessage" type="warning" show-icon :closable="false" />
+        </el-col>
         <el-col :span="12" class="mb20">
           <el-form-item :label="t('datasourceconf.dsType')" prop="dsType">
             <el-select v-model="form.dsType" :placeholder="t('datasourceconf.inputdsTypeTip')">
@@ -12,17 +15,17 @@
         </el-col>
         <el-col :span="12" class="mb20">
           <el-form-item :label="t('datasourceconf.name')" prop="name">
-            <el-input v-model="form.name" :placeholder="t('datasourceconf.inputnameTip')"/>
+            <el-input v-model="form.name" :placeholder="t('datasourceconf.inputnameTip')" />
           </el-form-item>
         </el-col>
         <el-col :span="12" class="mb20">
           <el-form-item :label="t('datasourceconf.username')" prop="username">
-            <el-input v-model="form.username" :placeholder="t('datasourceconf.inputusernameTip')"/>
+            <el-input v-model="form.username" :placeholder="t('datasourceconf.inputusernameTip')" />
           </el-form-item>
         </el-col>
         <el-col :span="12" class="mb20">
           <el-form-item :label="t('datasourceconf.password')" prop="password">
-            <el-input v-model="form.password" :placeholder="t('datasourceconf.inputpasswordTip')"/>
+            <el-input v-model="form.password" :placeholder="t('datasourceconf.inputpasswordTip')" />
           </el-form-item>
         </el-col>
         <el-col :span="12" class="mb20">
@@ -36,58 +39,56 @@
         </el-col>
         <el-col :span="12" class="mb20" v-if="form.confType === 0 && form.dsType === 'mssql'">
           <el-form-item :label="t('datasourceconf.instance')" prop="instance">
-            <el-input v-model="form.instance" :placeholder="t('datasourceconf.inputinstanceTip')"/>
+            <el-input v-model="form.instance" :placeholder="t('datasourceconf.inputinstanceTip')" />
           </el-form-item>
         </el-col>
         <el-col :span="12" class="mb20" v-if="form.confType === 0">
           <el-form-item :label="t('datasourceconf.port')" prop="port">
-            <el-input-number v-model="form.port" :placeholder="t('datasourceconf.inputportTip')"/>
+            <el-input-number v-model="form.port" :placeholder="t('datasourceconf.inputportTip')" />
           </el-form-item>
         </el-col>
         <el-col :span="12" class="mb20" v-if="form.confType === 0">
           <el-form-item :label="t('datasourceconf.host')" prop="host">
-            <el-input v-model="form.host" :placeholder="t('datasourceconf.inputhostTip')"/>
+            <el-input v-model="form.host" :placeholder="t('datasourceconf.inputhostTip')" />
           </el-form-item>
         </el-col>
         <el-col :span="12" class="mb20" v-if="form.confType === 0">
           <el-form-item :label="t('datasourceconf.dsName')" prop="dsName">
-            <el-input v-model="form.dsName" :placeholder="t('datasourceconf.inputdsNameTip')"/>
+            <el-input v-model="form.dsName" :placeholder="t('datasourceconf.inputdsNameTip')" />
           </el-form-item>
         </el-col>
         <el-col :span="24" class="mb20" v-if="form.confType === 1">
           <el-form-item :label="t('datasourceconf.url')" prop="url">
-            <el-input v-model="form.url" type="textarea" :placeholder="t('datasourceconf.inputurlTip')"/>
+            <el-input v-model="form.url" type="textarea" :placeholder="t('datasourceconf.inputurlTip')" />
           </el-form-item>
         </el-col>
       </el-row>
     </el-form>
     <template #footer>
-			<span class="dialog-footer">
-				<el-button @click="visible = false">{{ t('common.cancelButtonText') }}</el-button>
-				<el-button type="primary" @click="onSubmit" :disabled="loading">{{ t('common.confirmButtonText') }}</el-button>
-			</span>
+      <span class="dialog-footer">
+        <el-button @click="visible = false">{{ $t('common.cancelButtonText') }}</el-button>
+        <el-button type="primary" @click="onSubmit" :disabled="loading || isParserPluginBlocked">{{
+          $t('common.confirmButtonText') }}</el-button>
+      </span>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts" name="systemDatasourceConfDialog">
-import {useMessage} from '/@/hooks/message';
-import {getObj, addObj, putObj} from '/@/api/gen/datasource';
-import {useI18n} from 'vue-i18n';
-import {useDict} from '/@/hooks/dict';
-import {rule} from "/@/utils/validate";
+import { useMessage } from '/@/hooks/message';
+import { getObj, addObj, putObj, getParserPlugins, type DatasourceParserPlugins } from '/@/api/gen/datasource';
+import { useI18n } from 'vue-i18n';
+import { useDict } from '/@/hooks/dict';
+import { rule, clearMaskedField } from "/@/utils/validate";
 
-// 定义子组件向父组件传值/事件
 const emit = defineEmits(['refresh']);
-const {t} = useI18n();
-
-// 定义变量内容
+const { t } = useI18n();
 const dataFormRef = ref();
 const visible = ref(false);
 const loading = ref(false);
-
-// 定义字典处理
-const {ds_config_type, ds_type} = useDict('ds_config_type', 'ds_type');
+const { ds_config_type, ds_type } = useDict('ds_config_type', 'ds_type');
+const parserPlugins = ref<DatasourceParserPlugins>({});
+const parserPluginsLoaded = ref(false);
 
 // 提交表单数据
 const form = reactive({
@@ -95,10 +96,10 @@ const form = reactive({
   name: '',
   url: '',
   username: '',
-  password: ('' as string) || undefined,
+  password: undefined as string | undefined,
   createTime: '',
   updateTime: '',
-  dsType: 'mysql',
+  dsType: '',
   confType: 0,
   dsName: '',
   instance: '',
@@ -113,7 +114,7 @@ const form = reactive({
  * @param {*} callback
  */
 const validateDsName = (_rule, value, callback) => {
-  var re = /(?=.*[a-z])(?=.*_)/;
+  const re = /(?=.*[a-z])(?=.*_)/;
   if (value && !re.test(value)) {
     callback(new Error('数据源名称不合法, 组名_数据源名形式'));
   } else {
@@ -124,30 +125,61 @@ const validateDsName = (_rule, value, callback) => {
 // 定义校验规则
 const dataRules = ref({
   name: [
-    {required: true, message: '别名不能为空', trigger: 'blur'},
-    {validator: rule.overLength, trigger: 'blur'},
-    {validator: validateDsName, trigger: 'blur'},
+    { required: true, message: '别名不能为空', trigger: 'blur' },
+    { validator: validateDsName, trigger: 'blur' },
   ],
-  url: [{required: true, message: 'jdbcurl不能为空', trigger: 'blur'}, {
+  url: [{ required: true, message: 'jdbcurl不能为空', trigger: 'blur' }, {
     min: 10,
     max: 500,
     message: 'URL长度必须介于 10 和 500 字符之间',
     trigger: 'blur'
   },],
-  username: [{ validator: rule.overLength, trigger: 'blur' },{required: true, message: '用户名不能为空', trigger: 'blur'}],
-  password: [{ validator: rule.overLength, trigger: 'blur' },{required: true, message: '密码不能为空', trigger: 'blur'}],
-  dsType: [{required: true, message: '数据库类型不能为空', trigger: 'blur'}],
-  confType: [{required: true, message: '配置类型不能为空', trigger: 'blur'}],
-  dsName: [{ validator: rule.overLength, trigger: 'blur' },{required: true, message: '数据库名称不能为空', trigger: 'blur'}],
-  instance: [{ validator: rule.overLength, trigger: 'blur' },{required: true, message: '实例不能为空', trigger: 'blur'}],
-  port: [{validator: rule.overLength, trigger: 'blur'},{required: true, message: '端口不能为空', trigger: 'blur'}],
-  host: [{ validator: rule.overLength, trigger: 'blur' },{required: true, message: '主机不能为空', trigger: 'blur'}],
+  username: [{ validator: rule.overLength, trigger: 'blur' }, { required: true, message: '用户名不能为空', trigger: 'blur' }],
+  password: [{ validator: rule.overLength, trigger: 'blur' }, { required: true, message: '密码不能为空', trigger: 'blur' }],
+  dsType: [{ required: true, message: '数据库类型不能为空', trigger: 'blur' }],
+  confType: [{ required: true, message: '配置类型不能为空', trigger: 'blur' }],
+  dsName: [{ validator: rule.overLength, trigger: 'blur' }, { required: true, message: '数据库名称不能为空', trigger: 'blur' }],
+  instance: [{ validator: rule.overLength, trigger: 'blur' }, { required: true, message: '实例不能为空', trigger: 'blur' }],
+  port: [{ required: true, message: '端口不能为空', trigger: 'blur' }],
+  host: [{ validator: rule.overLength, trigger: 'blur' }, { required: true, message: '主机不能为空', trigger: 'blur' }],
 });
+
+const requiresParserPlugin = computed(() => Object.prototype.hasOwnProperty.call(parserPlugins.value, form.dsType));
+const unsupportedParserPlugin = computed(() => requiresParserPlugin.value && parserPluginsLoaded.value && parserPlugins.value[form.dsType] === false);
+const parserPluginMessage = computed(() => {
+  if (unsupportedParserPlugin.value) {
+    return '后台未维护当前数据库解析插件，请添加对应 AnyLine 解析插件后再连接该数据库';
+  }
+  return '';
+});
+const isParserPluginBlocked = computed(() => unsupportedParserPlugin.value);
+
+const loadParserPlugins = async () => {
+  if (parserPluginsLoaded.value) {
+    return;
+  }
+  try {
+    const res = await getParserPlugins();
+    parserPlugins.value = res.data || {};
+    parserPluginsLoaded.value = true;
+  } catch {
+    parserPluginsLoaded.value = false;
+  }
+};
+
+const validateParserPlugin = () => {
+  if (isParserPluginBlocked.value) {
+    useMessage().error(parserPluginMessage.value);
+    return false;
+  }
+  return true;
+};
 
 // 打开弹窗
 const openDialog = async (id: string) => {
   visible.value = true;
   form.id = '';
+  await loadParserPlugins();
 
   // 重置表单数据
   nextTick(() => {
@@ -165,15 +197,19 @@ const openDialog = async (id: string) => {
 
 // 提交
 const onSubmit = async () => {
+  if (!validateParserPlugin()) return false;
+
   const valid = await dataFormRef.value.validate().catch(() => {
   });
   if (!valid) return false;
 
-  form.password = form.password?.includes('******') ? undefined : form.password;
+  // 清除脱敏字段（编辑时不提交星号占位符）
+  const payload = { ...form };
+  payload.password = clearMaskedField(payload.password);
 
   try {
     loading.value = true;
-    form.id ? await putObj(form) : await addObj(form);
+    form.id ? await putObj(payload) : await addObj(payload);
     useMessage().success(t(form.id ? 'common.editSuccessText' : 'common.addSuccessText'));
     visible.value = false;
     emit('refresh');

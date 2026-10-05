@@ -3,8 +3,8 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Vue-3.5-blue" alt="Vue 3">
   <img src="https://img.shields.io/badge/Element%20Plus-2.13-blue" alt="Element Plus">
-  <img src="https://img.shields.io/badge/Vite-5.4-purple" alt="Vite">
-  <img src="https://img.shields.io/badge/TypeScript-5.6-blue" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Vite-8.1-purple" alt="Vite">
+  <img src="https://img.shields.io/badge/TypeScript-4.9-blue" alt="TypeScript">
 </p>
 
 ## Bubble-UI（Vue 3 管理端）
@@ -13,7 +13,7 @@
 
 ### 环境要求
 
-- **Node.js**: >= 18.0
+- **Node.js**: >= 20.19.0
 - **npm**: >= 8.0（或 pnpm）
 
 ### 本地开发

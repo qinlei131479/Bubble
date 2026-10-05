@@ -5,8 +5,8 @@
 	<div v-else-if="isShowIconImg" :style="setIconImgOutStyle">
 		<img :src="getIconName" :style="setIconSvgInsStyle" />
 	</div>
-	<svg v-else-if="isShowLocalSvg" class="svg-icon icon" :style="setIconImgOutStyle">
-		<use :href="`#${getIconName}`" />
+	<svg v-else-if="isShowLocalSvg" :class="svgClass" :style="setIconImgOutStyle">
+		<use :href="`#${getIconName}`" :fill="color" />
 	</svg>
 	<i v-else :class="getIconName" :style="setIconSvgStyle" />
 </template>
@@ -29,27 +29,24 @@ const props = defineProps({
 	color: {
 		type: String,
 	},
+	// svg 自定义类名
+	className: {
+		type: String,
+		default: '',
+	},
 });
 
 // 在线链接、本地引入地址前缀
 const linesString = ['https', 'http', '/src', '/assets', 'data:image', import.meta.env.VITE_PUBLIC_PATH];
 
 // 获取 icon 图标名称
-const getIconName = computed(() => {
-	return props?.name;
-});
+const getIconName = computed(() => props.name);
 // 用于判断 element plus 自带 svg 图标的显示、隐藏
-const isShowIconSvg = computed(() => {
-	return props?.name?.startsWith('ele-');
-});
+const isShowIconSvg = computed(() => props.name?.startsWith('ele-'));
 // 用于判断在线链接、本地引入等图标显示、隐藏
-const isShowIconImg = computed(() => {
-	return linesString.find((str) => props.name?.startsWith(str));
-});
+const isShowIconImg = computed(() => linesString.find((str) => props.name?.startsWith(str)));
 
-const isShowLocalSvg = computed(() => {
-	return props?.name?.startsWith('local-');
-});
+const isShowLocalSvg = computed(() => props.name?.startsWith('local-'));
 // 设置图标样式
 const setIconSvgStyle = computed(() => {
 	return `font-size: ${props.size}px;color: ${props.color};`;
@@ -65,4 +62,16 @@ const setIconSvgInsStyle = computed(() => {
 	compatibles.forEach((j) => filterStyle.push(`${j}-filter: drop-shadow(${props.color} 30px 0);`));
 	return `width: ${props.size}px;height: ${props.size}px;position: relative;left: -${props.size}px;${filterStyle.join('')}`;
 });
+// 设置 svg 的 class
+const svgClass = computed(() => {
+	return props.className ? `svg-icon icon ${props.className}` : 'svg-icon icon';
+});
 </script>
+
+<style scoped>
+.svg-icon {
+	fill: currentColor;
+	overflow: hidden;
+	vertical-align: middle;
+}
+</style>

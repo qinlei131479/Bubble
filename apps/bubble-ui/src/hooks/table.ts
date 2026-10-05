@@ -1,3 +1,4 @@
+import { useToNumber } from '@vueuse/core';
 import { CellStyle, ElMessage } from 'element-plus';
 import other from '/@/utils/other';
 
@@ -22,7 +23,7 @@ export interface BasicTableProps {
 	// 数据列表查询接口api方法，接收任意数量参数，返回Promise
 	pageList?: (...arg: any) => Promise<any>;
 	// loading标志，默认为false
-	loading?: Boolean;
+	loading?: boolean;
 	// 多选结果数组
 	selectObjs?: any[];
 	// 排序字段数组
@@ -31,15 +32,12 @@ export interface BasicTableProps {
 	ascs?: string[];
 	// props属性对象，类型为any
 	props?: any;
-	// 合并行列，类型为函数
-	spanMethod?: Function
 }
 
 /**
  * 表格样式。
  */
 export interface TableStyle {
-	rowStyle: CellStyle<any>;
 	cellStyle: CellStyle<any>;
 	headerCellStyle: CellStyle<any>;
 }
@@ -57,11 +55,11 @@ export interface Pagination {
 	// 每页显示条数选择器的选项数组，默认为[10,20,30,40]
 	pageSizes?: any[];
 	// 分页组件布局方式，可选值有 total,sizes,prev,jump,next，默认为'total,sizes,prev,jump,next'
-	layout?: String;
+	layout?: string;
 }
 
 export function useTable(options?: BasicTableProps) {
-	const defaultOptions: { createdIsNeed: boolean; pagination: Pagination; queryForm: {}; loading: boolean; dataListSelections: any[]; ascs: any[]; props: { item: string; totalCount: string }; selectObjs: any[]; descs: any[]; dataListLoading: boolean; dataList: any[]; isPage: boolean } = {
+	const defaultOptions: BasicTableProps = {
 		// 列表数据是否正在加载中，默认为false
 		dataListLoading: false,
 		// 是否需要自动请求创建接口来获取表格数据，默认为true
@@ -79,7 +77,7 @@ export function useTable(options?: BasicTableProps) {
 			total: 0,
 			pageSizes: [1, 10, 20, 50, 100, 200],
 			layout: 'total, sizes, prev, pager, next, jumper',
-		} as Pagination,
+		},
 		// 当前选中的数据项，默认为空数组
 		dataListSelections: [],
 		// 是否正在从服务器加载数据，默认为false
@@ -124,12 +122,7 @@ export function useTable(options?: BasicTableProps) {
 			try {
 				// 开始加载数据，设置state.loading为true
 				state.loading = true;
-				// 参数排除空字段
-				for (let key in state.queryForm) {
-					if (state.queryForm[key] === "" || state.queryForm[key] === null) {
-						delete state.queryForm[key]
-					}
-				}
+
 				// 调用state.pageList方法发起分页查询
 				const res = await state.pageList({
 					...state.queryForm,
@@ -140,16 +133,22 @@ export function useTable(options?: BasicTableProps) {
 				});
 
 				// 设置表格展示的数据数组
-				state.dataList = state.isPage ? res.data[state.props.item] : res.data;
-				// 处理合并
-				if (state.spanMethod){
-					state.spanMethod()
+				if (res.data) {
+					state.dataList = state.isPage ? res.data[state.props.item] || [] : res.data;
+					// 设置分页信息中的总数据条数
+					state.pagination!.total = state.isPage
+						? useToNumber(String(res.data[state.props.totalCount] ?? 0), { method: 'parseFloat', nanToZero: true }).value
+						: 0;
+				} else {
+					// 如果 res.data 为 null，设置默认值
+					state.dataList = [];
+					state.pagination!.total = 0;
 				}
-				// 设置分页信息中的总数据条数
-				state.pagination!.total = state.isPage ? res.data[state.props.totalCount] : 0;
 			} catch (err: any) {
-				// 捕获异常并显示错误提示
-				ElMessage.error(err.msg || err.data.msg);
+				// 表格捕获异常并显示错误提示
+				if (err?.msg || err?.data) {
+					ElMessage.error(err.msg || err.data);
+				}
 			} finally {
 				// 结束加载数据，设置state.loading为false
 				state.loading = false;
@@ -188,24 +187,18 @@ export function useTable(options?: BasicTableProps) {
 	// 排序触发事件
 	const sortChangeHandle = (column: any) => {
 		const prop = other.toUnderline(column.prop);
+
+		// 先从两个数组中移除该属性，避免重复
+		state.ascs = state.ascs?.filter((item) => item !== prop) || [];
+		state.descs = state.descs?.filter((item) => item !== prop) || [];
+
+		// 根据排序方向添加到对应数组
 		if (column.order === 'descending') {
 			state.descs?.push(prop);
-			if (state.ascs!.indexOf(prop) >= 0) {
-				state.ascs?.splice(state.ascs.indexOf(prop), 1);
-			}
 		} else if (column.order === 'ascending') {
 			state.ascs?.push(prop);
-			if (state.descs!.indexOf(prop) >= 0) {
-				state.descs?.splice(state.descs.indexOf(prop), 1);
-			}
-		} else {
-			if (state.ascs!.indexOf(prop) >= 0) {
-				state.ascs?.splice(state.ascs.indexOf(prop), 1);
-			}
-			if (state.descs!.indexOf(prop) >= 0) {
-				state.descs?.splice(state.descs.indexOf(prop), 1);
-			}
 		}
+
 		query();
 	};
 
@@ -245,7 +238,6 @@ export function useTable(options?: BasicTableProps) {
 			background: 'var(--el-table-row-hover-bg-color)',
 			color: 'var(--el-text-color-primary)',
 		},
-		rowStyle: { textAlign: 'center' },
 	};
 
 	return {

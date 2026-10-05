@@ -3,7 +3,7 @@
 		<div class="layout-padding-auto layout-padding-view">
 			<div class="layout-link-warp">
 				<i class="layout-link-icon iconfont icon-xingqiu"></i>
-				<div class="layout-link-msg">页面 "{{ t(state.title) }}" 已在新窗口中打开</div>
+				<div class="layout-link-msg">页面 "{{ $t(state.title) }}" 已在新窗口中打开</div>
 				<el-button class="mt30" round @click="onGotoFullPage">
 					<i class="iconfont icon-lianjie"></i>
 					<span>立即前往体验</span>
@@ -13,33 +13,25 @@
 	</div>
 </template>
 
-<script setup lang="ts" name="layoutLinkView">
-import { verifyUrl } from '/@/utils/toolsValidate';
-import {useI18n} from "vue-i18n";
+	<script setup lang="ts" name="layoutLinkView">
 
-const { t } = useI18n();
-// 定义变量内容
 const route = useRoute();
 const state = reactive<LinkViewState>({
 	title: '',
 	isLink: '',
 });
 
-// 立即前往
 const onGotoFullPage = () => {
-	if (verifyUrl(<string>state.isLink)) window.open(state.isLink);
-	else window.open(`${state.isLink}`);
+	window.open(<string>state.isLink);
 };
-// 监听路由的变化，设置内容
+
 watch(
 	() => route.path,
 	() => {
 		state.title = <string>route.name;
 		state.isLink = <string>route.meta.isLink;
 	},
-	{
-		immediate: true,
-	}
+	{ immediate: true }
 );
 </script>
 

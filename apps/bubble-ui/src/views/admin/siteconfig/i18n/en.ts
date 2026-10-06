@@ -29,7 +29,7 @@ export default {
 		// Basic info
 		basicInfo: 'Basic Info',
 		basicInfoDesc: 'Configure the core display content of your website',
-		logoDesc: 'SVG / PNG, 256x256 recommended, transparent background; max 1 MB',
+		logoDesc: 'SVG / PNG / JPG, 256x256 recommended, transparent background; max 1 MB',
 		siteTitle: 'Site Title',
 		siteTitleDesc: 'Displayed in browser tabs and the login page',
 		siteTitlePlaceholder: 'Please enter site title',

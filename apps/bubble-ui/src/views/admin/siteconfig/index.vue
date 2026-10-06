@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n';
 import { getSiteConfig, refreshSiteConfig, updateSiteConfig } from '/@/api/admin/system';
 import type { SectionId, SectionMeta, SettingRowMeta, SiteConfigForm, Snapshot } from '/@/api/admin/system';
 import { getObj, putObj as putClientObj } from '/@/api/admin/client';
-import { getObjDetails, getValue, putObj } from '/@/api/admin/param';
+import { getValue } from '/@/api/admin/param';
 import { useMessage, useMessageBox } from '/@/hooks/message';
 import { CaptchaType, PasswordRule } from '/@/stores/siteConfig';
 import { getPasswordRuleOptions } from '/@/utils/passwordRule';
@@ -85,13 +85,13 @@ const sections = computed<SectionMeta[]>(() => [
 		desc: t('siteconfig.appearanceSectionDesc'),
 		tone: 'purple',
 	},
-	{
-		id: 'integration',
-		icon: 'Connection',
-		title: t('siteconfig.integrationSection'),
-		desc: t('siteconfig.integrationSectionDesc'),
-		tone: 'slate',
-	},
+	// {
+	// 	id: 'integration',
+	// 	icon: 'Connection',
+	// 	title: t('siteconfig.integrationSection'),
+	// 	desc: t('siteconfig.integrationSectionDesc'),
+	// 	tone: 'slate',
+	// },
 	{
 		id: 'maintenance',
 		icon: 'Refresh',
@@ -373,15 +373,12 @@ const handleSave = async () => {
 	saving.value = true;
 	try {
 		const { forceResetPwd, passwordExpireDays, loginFailureLock, loginErrorTimes, ...siteConfig } = form;
-		await updateSiteConfig({ ...siteConfig, forceResetPwd });
-
-		if (forceResetPwd) {
-			const { data: param } = await getObjDetails({ publicKey: 'PASSWORD_EXPIRE_DAYS' });
-			await putObj({ ...param, publicValue: String(passwordExpireDays) });
-		}
-
-		const { data: loginErrorTimesParam } = await getObjDetails({ publicKey: 'LOGIN_ERROR_TIMES' });
-		await putObj({ ...loginErrorTimesParam, publicValue: loginFailureLock ? String(loginErrorTimes) : '0' });
+		await updateSiteConfig({
+			...siteConfig,
+			forceResetPwd,
+			passwordExpireDays,
+			loginErrorTimes: loginFailureLock ? loginErrorTimes : 0,
+		});
 
 		savedSnapshot.value = buildSnapshot();
 		message.success(t('siteconfig.saveSuccess'));
@@ -492,7 +489,14 @@ onUnmounted(() => {
 											<div class="mt-1 text-xs leading-5 text-base-content/50">{{ rowMeta('logo')?.desc }}</div>
 										</div>
 										<div class="flex items-end gap-3">
-											<UploadImg v-model="form.logo" :limit="1" height="88px" width="88px" />
+											<UploadImg
+												v-model="form.logo"
+												:limit="1"
+												:file-size="1"
+												:file-type="['png', 'jpg', 'jpeg', 'svg']"
+												height="88px"
+												width="88px"
+											/>
 											<el-button v-if="form.logo" icon="Delete" @click="form.logo = ''">{{ $t('siteconfig.remove') }}</el-button>
 										</div>
 									</div>

@@ -836,7 +836,10 @@ const { ignoreUpdates: ignoreDraftPersist } = watchIgnorable(
 
 onMounted(() => {
 	genGroupList();
-	checkTemplateVersion();
+	// 没有选中表时不检查模板版本，避免从目录菜单进入时弹出「模板发现新版本」
+	if (props.dsName && props.tableName) {
+		checkTemplateVersion();
+	}
 	getAllMenuData();
 });
 

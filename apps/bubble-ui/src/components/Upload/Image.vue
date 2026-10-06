@@ -211,11 +211,13 @@ const handleBeforeUpload = (file: UploadRawFile) => {
 	if (props.fileType.length) {
 		let fileExtension = '';
 		if (file.name.lastIndexOf('.') > -1) {
-			fileExtension = file.name.slice(file.name.lastIndexOf('.') + 1);
+			fileExtension = file.name.slice(file.name.lastIndexOf('.') + 1).toLowerCase();
 		}
+		const mime = file.type.toLowerCase();
 		isImg = props.fileType.some((type: string) => {
-			if (file.type.indexOf(type) > -1) return true;
-			if (fileExtension && fileExtension.indexOf(type) > -1) return true;
+			const expected = type.toLowerCase();
+			if (mime.indexOf(expected) > -1) return true;
+			if (fileExtension && fileExtension.indexOf(expected) > -1) return true;
 			return false;
 		});
 	} else {
@@ -273,11 +275,22 @@ const handleDelete = (file: UploadFile) => {
 	}
 };
 
-// 上传失败
-const handleUploadError = () => {
+// 上传失败。服务端拒收（例如超过大小）时要收起全屏 loading，并拿掉这张卡片，避免停在上传中。
+const handleUploadError = (_error: Error, file: UploadFile) => {
+	number.value = Math.max(0, number.value - 1);
 	ElMessage.error(t('uploadFail'));
-	loadingInstance.value?.close();
-	loadingInstance.value = null;
+	if (file) {
+		imageUpload.value?.handleRemove(file);
+	}
+	if (number.value > 0 && uploadList.value.length === number.value) {
+		uploadedSuccessfully();
+		return;
+	}
+	if (number.value === 0) {
+		uploadList.value = [];
+		loadingInstance.value?.close();
+		loadingInstance.value = null;
+	}
 };
 
 // 上传结束处理

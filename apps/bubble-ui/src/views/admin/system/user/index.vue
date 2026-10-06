@@ -58,7 +58,8 @@
 							</right-toolbar>
 						</div>
 					</el-row>
-					<el-table v-loading="state.loading" :data="state.dataList" @selection-change="handleSelectionChange"
+					<!-- 列表已有数据时不再盖白色 loading 遮罩，避免编辑保存后整表闪白 -->
+					<el-table v-loading="state.loading && !state.dataList?.length" :data="state.dataList" @selection-change="handleSelectionChange"
 						row-key="userId" border :cell-style="tableStyle.cellStyle"
 						:header-cell-style="tableStyle.headerCellStyle">
 						<el-table-column :selectable="handleSelectable" type="selection" width="40" />

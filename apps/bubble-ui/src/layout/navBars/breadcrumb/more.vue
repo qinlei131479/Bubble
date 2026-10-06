@@ -1,5 +1,5 @@
 <template>
-	<el-dropdown :show-timeout="70" :hide-timeout="50" trigger="click" @command="onMoreCommand">
+	<el-dropdown :show-timeout="70" :hide-timeout="150" trigger="hover" @command="onMoreCommand">
 		<div class="px-2 md:px-[6px] lg:px-2 cursor-pointer text-[var(--next-bg-topBarColor)] h-[50px] leading-[50px] flex items-center transition-colors duration-300 hover:bg-[var(--next-color-user-hover)]">
 			<el-icon :title="$t('user.more')" :size="18">
 				<ele-MoreFilled />

@@ -18,16 +18,17 @@ const props = defineProps<{
 const CJK_REGEX = /[\u4e00-\u9fff\u3400-\u4dbf]/;
 
 const size = computed(() => props.size || 40);
-const fontSize = computed(() => Math.max(12, Math.round(size.value * 0.35)));
 
 const text = computed(() => {
 	const name = props.name?.trim();
 	if (!name) return '';
-	if (CJK_REGEX.test(name)) return name.slice(-2);
+	if (CJK_REGEX.test(name)) return name.slice(0, 1);
 	const parts = name.split(/\s+/).filter(Boolean);
 	return parts
 		.map((p) => p[0].toUpperCase())
 		.slice(0, 2)
 		.join('');
 });
+
+const fontSize = computed(() => Math.max(12, Math.round(size.value * (text.value.length > 1 ? 0.32 : 0.42))));
 </script>

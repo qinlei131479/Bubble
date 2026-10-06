@@ -302,9 +302,12 @@ const openDialog = (dName: string, tName: string) => {
 };
 
 onMounted(() => {
-	tableName.value = String(props.tableName);
-	dsName.value = String(props.dsName);
+	tableName.value = String(props.tableName || '');
+	dsName.value = String(props.dsName || '');
 	activeName.value = 'field';
+	if (!dsName.value || !tableName.value) {
+		return;
+	}
 	rowDrop();
 	getTable(dsName.value, tableName.value);
 	getFieldTypeList();

@@ -158,8 +158,10 @@ export function backEndComponent(routes: any) {
 			item.component = dynamicImport(dynamicViewsModules, item.path);
 		}
 		item.children && backEndComponent(item.children);
-		if (item.children) {
-			item.redirect = item.children[0].path;
+		if (item.children?.length) {
+			// 隐藏页（如代码生成的「生成页面」）不能作为目录的默认落点，否则一点父菜单就会打出无效请求
+			const visibleChild = item.children.find((child: any) => !child.meta?.isHide);
+			item.redirect = (visibleChild ?? item.children[0]).path;
 		}
 		// 设置 name (使用ID，避免 name 重复造成 404)
 		item.name = item.id || item.name;

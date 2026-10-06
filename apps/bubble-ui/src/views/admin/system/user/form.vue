@@ -1,7 +1,14 @@
 <template>
-	<div class="system-user-dialog-container">
-		<el-dialog :close-on-click-modal="false" :title="dataForm.userId ? $t('common.editBtn') : $t('common.addBtn')" draggable v-model="visible">
-			<el-form :model="dataForm" :rules="dataRules" label-width="90px" ref="dataFormRef" v-loading="loading">
+	<el-dialog
+		:close-on-click-modal="false"
+		:title="dataForm.userId ? $t('common.editBtn') : $t('common.addBtn')"
+		width="800"
+		append-to-body
+		destroy-on-close
+		draggable
+		v-model="visible"
+	>
+		<el-form :model="dataForm" :rules="dataRules" label-width="90px" ref="dataFormRef" v-loading="loading">
 				<el-row :gutter="20">
 					<el-col :span="12" class="mb20">
 						<el-form-item :label="$t('sysuser.username')" prop="username">
@@ -66,7 +73,7 @@
 					<el-col :span="12" class="mb20">
 						<el-form-item :label="$t('sysuser.lockFlag')" prop="lockFlag">
 							<el-radio-group v-model="dataForm.lockFlag">
-								<el-radio :key="index" :label="item.value" border v-for="(item, index) in lock_flag">{{ item.label }} </el-radio>
+								<el-radio :key="index" :value="item.value" border v-for="(item, index) in lock_flag">{{ item.label }} </el-radio>
 							</el-radio-group>
 						</el-form-item>
 					</el-col>
@@ -79,7 +86,6 @@
 				</span>
 			</template>
 		</el-dialog>
-	</div>
 </template>
 
 <script lang="ts" name="systemUserDialog" setup>
@@ -257,6 +263,8 @@ const onSubmit = async () => {
 			useMessage().success(t('common.addSuccessText'));
 		}
 
+		// 先去掉表单上的白色 loading 遮罩，再关弹窗，避免关闭动画里露出一块白底
+		loading.value = false;
 		visible.value = false;
 		emit('refresh');
 	} catch (error: any) {

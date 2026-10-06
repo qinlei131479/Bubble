@@ -621,7 +621,7 @@
 
 		.el-dialog {
 			margin: 0 auto !important;
-			position: absolute;
+			position: relative;
 			border-radius: var(--border-radius-lg);
 			box-shadow: var(--shadow-xl);
 			overflow: hidden;

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="372" height="96" viewBox="0 0 372.00 96.00" role="img" aria-label="泡泡智能体 Bubble Agent">
+  <title>泡泡智能体 Bubble Agent</title>
+  <g transform="translate(-7.320 -7.320) scale(1.72874)">
+    <line x1="32.0" y1="32.0" x2="48.000" y2="32.000" stroke="#0F1C2F" stroke-width="2.0" stroke-linecap="round"/>
+    <line x1="32.0" y1="32.0" x2="36.944" y2="47.217" stroke="#0F1C2F" stroke-width="2.0" stroke-linecap="round"/>
+    <line x1="32.0" y1="32.0" x2="19.056" y2="41.405" stroke="#0F1C2F" stroke-width="2.0" stroke-linecap="round"/>
+    <line x1="32.0" y1="32.0" x2="19.056" y2="22.595" stroke="#0F1C2F" stroke-width="2.0" stroke-linecap="round"/>
+    <line x1="32.0" y1="32.0" x2="36.944" y2="16.783" stroke="#0F1C2F" stroke-width="2.0" stroke-linecap="round"/>
+    <line x1="32.0" y1="32.0" x2="48.059" y2="14.165" stroke="#0F1C2F" stroke-width="2.0" stroke-linecap="round"/>
+    <path d="M 53.194 22.564 A 23.2 23.2 0 0 1 17.400 50.030" fill="none" stroke="#0F1C2F" stroke-width="5.8" stroke-linecap="round"/>
+    <path d="M 12.543 44.636 A 23.2 23.2 0 0 1 39.169 9.935" fill="none" stroke="#0F1C2F" stroke-width="5.8" stroke-linecap="round"/>
+    <circle cx="48.000" cy="32.000" r="3.0" fill="#0F1C2F"/>
+    <circle cx="36.944" cy="47.217" r="3.0" fill="#0F1C2F"/>
+    <circle cx="19.056" cy="41.405" r="3.0" fill="#0F1C2F"/>
+    <circle cx="19.056" cy="22.595" r="3.0" fill="#0F1C2F"/>
+    <circle cx="36.944" cy="16.783" r="3.0" fill="#0F1C2F"/>
+    <circle cx="32.0" cy="32.0" r="4.6" fill="#05D1DD"/>
+    <circle cx="48.059" cy="14.165" r="4.0" fill="#05D1DD"/>
+  </g>
+  <g fill="#0F1C2F">
+    <text x="122.00" y="52.75" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, Noto Sans SC, sans-serif" font-size="50" font-weight="700" letter-spacing="0">泡泡智能体</text>
+    <text x="122.00" y="86.00" font-family="Inter, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="16" font-weight="400" letter-spacing="7.5">BUBBLE AGENT</text>
+  </g>
+</svg>

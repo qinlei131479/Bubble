@@ -42,9 +42,6 @@
 			</div>
 		</div>
 
-		<!-- 小程序二维码 -->
-		<Qrcode />
-
 		<!-- Footer 组件 -->
 		<Footer />
 	</div>
@@ -75,7 +72,6 @@ const Register = defineAsyncComponent(() => import('./component/register.vue'));
 const Expire = defineAsyncComponent(() => import('./component/expire.vue'));
 const Forget = defineAsyncComponent(() => import('./component/forget.vue'));
 const Control = defineAsyncComponent(() => import('./component/control.vue'));
-const Qrcode = defineAsyncComponent(() => import('./component/qrcode.vue'));
 const Footer = defineAsyncComponent(() => import('./component/footer.vue'));
 
 // 定义变量内容

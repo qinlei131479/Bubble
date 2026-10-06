@@ -29,7 +29,7 @@ export default {
 		// 基本信息
 		basicInfo: '基本信息',
 		basicInfoDesc: '设置网站对外的核心展示内容',
-		logoDesc: 'SVG / PNG，建议 256×256，透明背景；最大 1 MB',
+		logoDesc: 'SVG / PNG / JPG，建议 256×256，透明背景；最大 1 MB',
 		siteTitle: '网站标题',
 		siteTitleDesc: '浏览器标签页与登录页显示',
 		siteTitlePlaceholder: '请输入网站标题',

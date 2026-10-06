@@ -142,28 +142,43 @@ public class SysSiteConfigServiceImpl implements SysSiteConfigService {
 			else {
 				publicValue = fieldValue.toString();
 			}
+			upsertParam(paramKey, publicValue);
+		}
 
-			SysPublicParam existing = sysPublicParamService
-				.getOne(Wrappers.<SysPublicParam>lambdaQuery().eq(SysPublicParam::getPublicKey, paramKey));
-			if (Objects.nonNull(existing)) {
-				existing.setPublicValue(publicValue);
-				sysPublicParamService.updateById(existing);
-			}
-			else {
-				SysPublicParam newParam = new SysPublicParam();
-				newParam.setPublicKey(paramKey);
-				newParam.setPublicValue(publicValue);
-				newParam.setPublicName(paramKey);
-				newParam.setStatus(YesNoEnum.NO.getCode());
-				newParam.setSystemFlag(DictTypeEnum.SYSTEM.getType());
-				sysPublicParamService.save(newParam);
-			}
+		// 这两个键不在 SITE_ 前缀下，保存时一并写入，避免前端再按 id 更新一条不存在的参数
+		if (dto.getPasswordExpireDays() != null) {
+			upsertParam("PASSWORD_EXPIRE_DAYS", String.valueOf(dto.getPasswordExpireDays()));
+		}
+		if (dto.getLoginErrorTimes() != null) {
+			upsertParam("LOGIN_ERROR_TIMES", String.valueOf(dto.getLoginErrorTimes()));
 		}
 
 		// 同步 captcha_flag 到 OAuth 客户端扩展信息
 		if (dto.getCaptchaType() != null) {
 			syncCaptchaFlagToClients(!"none".equals(dto.getCaptchaType()));
 		}
+	}
+
+	/**
+	 * 按键新增或更新公共参数。已有记录直接改值，不走「禁止修改系统内置参数」的更新接口。
+	 * @param paramKey 参数键
+	 * @param publicValue 参数值
+	 */
+	private void upsertParam(String paramKey, String publicValue) {
+		SysPublicParam existing = sysPublicParamService
+			.getOne(Wrappers.<SysPublicParam>lambdaQuery().eq(SysPublicParam::getPublicKey, paramKey));
+		if (Objects.nonNull(existing)) {
+			existing.setPublicValue(publicValue);
+			sysPublicParamService.updateById(existing);
+			return;
+		}
+		SysPublicParam newParam = new SysPublicParam();
+		newParam.setPublicKey(paramKey);
+		newParam.setPublicValue(publicValue);
+		newParam.setPublicName(paramKey);
+		newParam.setStatus(YesNoEnum.NO.getCode());
+		newParam.setSystemFlag(DictTypeEnum.SYSTEM.getType());
+		sysPublicParamService.save(newParam);
 	}
 
 	/**

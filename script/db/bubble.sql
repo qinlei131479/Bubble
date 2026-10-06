@@ -446,7 +446,7 @@ CREATE TABLE `sys_public_param` (
                                     `public_id` bigint NOT NULL COMMENT '编号',
                                     `public_name` varchar(128)  DEFAULT NULL COMMENT '名称',
                                     `public_key` varchar(128)  DEFAULT NULL COMMENT '键',
-                                    `public_value` varchar(128)  DEFAULT NULL COMMENT '值',
+                                    `public_value` varchar(2000) DEFAULT NULL COMMENT '值',
                                     `status` char(1)  DEFAULT '0' COMMENT '状态，0禁用，1启用',
                                     `validate_code` varchar(64)  DEFAULT NULL COMMENT '校验码',
                                     `create_by` varchar(64) DEFAULT NULL COMMENT '创建人',

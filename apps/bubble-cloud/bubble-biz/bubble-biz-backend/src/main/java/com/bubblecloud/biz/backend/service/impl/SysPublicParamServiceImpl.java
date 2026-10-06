@@ -83,6 +83,9 @@ public class SysPublicParamServiceImpl extends ServiceImpl<SysPublicParamMapper,
 	@CacheEvict(value = CacheConstants.PARAMS_DETAILS, key = "#sysPublicParam.publicKey")
 	public R updateParam(SysPublicParam sysPublicParam) {
 		SysPublicParam param = this.getById(sysPublicParam.getPublicId());
+		if (param == null) {
+			return R.failed(MsgUtils.getMessage(UpmsErrorCodes.SYS_PARAM_ILLEGAL));
+		}
 		// 系统内置
 		if (DictTypeEnum.SYSTEM.getType().equals(param.getSystemFlag())) {
 			return R.failed(MsgUtils.getMessage(UpmsErrorCodes.SYS_PARAM_DELETE_SYSTEM));

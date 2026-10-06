@@ -4,6 +4,10 @@ server:
 spring:
   application:
     name: @artifactId@
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
   cloud:
     nacos:
       username: @nacos.username@

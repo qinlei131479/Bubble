@@ -1316,3 +1316,20 @@ INSERT INTO sys_i18n (id, name, zh_cn, en, create_by, create_time, update_by, de
 SELECT
   1104, 'router.auditLog', '审计日志', 'Audit Log', 'admin', CURRENT_TIMESTAMP, 'admin', '0'
 WHERE NOT EXISTS (SELECT 1 FROM sys_i18n WHERE id = 1104 OR name = 'router.auditLog');
+
+-- Site config values (footer HTML, privacy tip, logo path) exceed varchar(128).
+ALTER TABLE `sys_public_param`
+  MODIFY COLUMN `public_value` varchar(2000) DEFAULT NULL COMMENT '值';
+
+INSERT INTO sys_public_param (
+  public_id, public_name, public_key, public_value, status, public_type, system_flag, del_flag, create_by, create_time
+)
+SELECT 30, '密码过期天数', 'PASSWORD_EXPIRE_DAYS', '90', '0', '0', '1', '0', 'admin', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM sys_public_param WHERE public_key = 'PASSWORD_EXPIRE_DAYS' AND del_flag = '0');
+
+INSERT INTO sys_public_param (
+  public_id, public_name, public_key, public_value, status, public_type, system_flag, del_flag, create_by, create_time
+)
+SELECT 31, '登录失败锁定次数', 'LOGIN_ERROR_TIMES', '5', '0', '0', '1', '0', 'admin', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM sys_public_param WHERE public_key = 'LOGIN_ERROR_TIMES' AND del_flag = '0');
+

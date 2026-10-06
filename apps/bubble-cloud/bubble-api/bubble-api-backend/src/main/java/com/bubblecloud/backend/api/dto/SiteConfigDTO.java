@@ -42,6 +42,12 @@ public class SiteConfigDTO {
 	@Schema(description = "是否强制重置密码")
 	private Boolean forceResetPwd;
 
+	@Schema(description = "密码过期天数，对应公共参数 PASSWORD_EXPIRE_DAYS")
+	private Integer passwordExpireDays;
+
+	@Schema(description = "登录失败锁定次数，0 表示关闭，对应公共参数 LOGIN_ERROR_TIMES")
+	private Integer loginErrorTimes;
+
 	@Schema(description = "是否强制下线")
 	private Boolean forceLogout;
 

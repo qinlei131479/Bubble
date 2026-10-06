@@ -42,7 +42,9 @@
 
 ## 服务清单
 
-详见 [端口与服务](/architecture/ports)、[模块职责](/architecture/modules)。
+当前后端是 Spring Boot 4.1.1、Spring Cloud 2025.1.3。`bubble-biz-oa` 已暂停，只保留启动类，也不在默认 Docker 编排里。
+
+详见 [端口与服务](/wiki/architecture/ports)、[模块职责](/wiki/architecture/modules)。
 
 ## 部署架构
 

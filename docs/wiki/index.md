@@ -13,7 +13,7 @@ hero:
       link: /wiki/architecture/overview
 features:
   - title: 微服务后端
-    details: Spring Cloud 2025 + Spring Boot 3.5，模块化可插拔
+    details: Spring Cloud 2025.1 + Spring Boot 4.1，模块化可插拔
     link: /wiki/development/backend
   - title: Vue 3 前端
     details: Element Plus + Vite + TypeScript，响应式管理界面

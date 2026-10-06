@@ -7,7 +7,7 @@
 | bubble | 业务主库 | `script/db/bubble.sql` |
 | bubble_config | Nacos 配置中心持久化 | `script/db/bubble_config.sql` |
 
-## 业务库 (pig) 核心表
+## 业务库核心表
 
 ### 系统管理
 
@@ -21,7 +21,7 @@
 | sys_user_role | 用户-角色关联 |
 | sys_role_menu | 角色-菜单关联 |
 | sys_dict / sys_dict_item | 数据字典 |
-| sys_public_param | 系统公共参数 |
+| sys_public_param | 系统公共参数。`public_value` 为 `varchar(2000)`。网站配置里的登录失败锁定次数（`LOGIN_ERROR_TIMES`）和密码过期天数（`PASSWORD_EXPIRE_DAYS`）也写在这张表 |
 | sys_log | 操作日志 |
 | sys_file | 文件上传元数据 |
 | sys_oauth_client_details | OAuth2 客户端配置 |
@@ -42,9 +42,9 @@
 | gen_table / gen_table_column | 待生成表及列元数据 |
 | gen_template / gen_group | 模板与分组 |
 
-### OA 业务（`eb_*` 前缀）
+### OA 业务表（已暂停）
 
-OA 模块使用 `eb_` 前缀的表，共约 219 张，实体通过 `@TableName("eb_xxx")` 映射。
+陀螺匠 OA 迁移已暂停，当前 Java 代码不再映射 `eb_*` 表。系统菜单中的 OA 目录（根路径 `/oa` 及其下级）已逻辑删除，对应的角色菜单关联也已去掉。`AI大模型`（`/agi`）不属于这棵菜单，仍然保留。
 
 ## 表设计约定
 

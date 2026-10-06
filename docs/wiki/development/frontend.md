@@ -4,7 +4,8 @@
 
 - Vue 3.5 + `<script setup>` + TypeScript（strict 模式）
 - Element Plus 2.13 + Tailwind CSS 3.4 + SCSS
-- Vite 5.4 构建，路径别名 `/@/*` → `src/*`
+- Vite 8.1 构建，路径别名 `/@/*` → `src/*`
+- Node.js >= 20.19
 - Pinia 状态管理 + vue-router Hash 模式
 
 ## 目录职责

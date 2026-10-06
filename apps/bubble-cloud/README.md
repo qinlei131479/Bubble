@@ -1,6 +1,6 @@
 ## Bubble-Cloud（Java 微服务后端）
 
-Spring Cloud 2025 + Spring Boot 3.5 + MyBatis-Plus 聚合工程。
+Spring Cloud 2025.1 + Spring Boot 4.1 + MyBatis-Plus 聚合工程。当前开发分支是 `JDK17_master_4.1`。
 
 ### 模块概览
 
@@ -16,7 +16,7 @@ bubble-cloud/
 ├── bubble-biz/              # 业务服务（可独立部署）
 │   ├── bubble-biz-backend   # 用户权限 (:8801)
 │   ├── bubble-biz-agi       # AI 智能体 (:8805)
-│   ├── bubble-biz-oa        # OA 办公（迁移中）(:8803)
+│   ├── bubble-biz-oa        # OA（已暂停，仅启动类）(:8803)
 │   └── bubble-biz-flow      # 工作流（占位）(:8802)
 ├── bubble-common/           # 跨模块公共组件（各子模块为 jar，供业务引用）
 │   ├── bubble-common-bom         # Maven BOM，统一依赖版本
@@ -68,4 +68,4 @@ bubble-cloud/
 
 - 开发规范：`.cursor/rules/backend-conventions.mdc`
 - 端口清单：[`docs/wiki/architecture/ports.md`](../../docs/wiki/architecture/ports.md)（单一事实源）
-- OA 迁移计划：[`docs/wiki/plans/oa-migration-plan.md`](../../docs/wiki/plans/oa-migration-plan.md)
+- OA 迁移计划已暂停，仅供查阅：[`docs/wiki/plans/oa-migration-plan.md`](../../docs/wiki/plans/oa-migration-plan.md)

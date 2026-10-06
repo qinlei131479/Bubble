@@ -23,7 +23,7 @@ export default defineConfig({
                 items: [
                     {text: '变更日志', link: '/wiki/changelog/index'},
                     {text: '参考手册', link: '/wiki/reference/env-variables'},
-                    {text: 'OA 迁移计划', link: '/wiki/plans/oa-migration-plan'},
+                    {text: 'OA 迁移计划（已暂停）', link: '/wiki/plans/oa-migration-plan'},
                 ],
             },
         ],
@@ -91,7 +91,7 @@ export default defineConfig({
 
             '/wiki/plans/': [
                 {
-                    text: 'OA 迁移计划',
+                    text: 'OA 迁移计划（已暂停）',
                     items: [
                         {text: '迁移主计划', link: '/wiki/plans/oa-migration-plan'},
                         {text: '阶段 1: 用户与组织', link: '/wiki/plans/phase-01-user-org'},

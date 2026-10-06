@@ -8,18 +8,18 @@
 |------|------|------|------|
 | 单元测试 | Service / 工具类 | JUnit 5 + Mockito | 部分覆盖 |
 | 集成测试 | Controller + DB | Spring Boot Test + Testcontainers | 规划中 |
-| API 对比测试 | PHP vs Java 接口 | 脚本对比响应结构 | OA 迁移验收用 |
+| API 对比测试 | PHP vs Java 接口 | 脚本对比响应结构 | 已暂停，原用于 OA 迁移验收 |
 | E2E 测试 | 前端页面流程 | Playwright / Cypress | 规划中 |
 
-## OA 迁移验收标准
+## OA 迁移验收标准（已暂停）
 
-每阶段完成后需通过：
+2026-10-06 起不再按下面的标准推进 OA。记录留在这里，是为了以后如果恢复迁移时还能对上当时的验收口径。
 
 1. PHP 与 Java 同路径抽样请求对比（路径、关键字段、HTTP 状态、`data` 结构）
 2. 前端对应页面可正常操作（登录 → 导航 → CRUD → 关联功能）
 3. 该阶段范围内的所有占位桩已被真实逻辑替换
 
-详见 [OA 迁移计划](/docs/wiki/plans/oa-migration-plan)。
+历史计划见 [OA 迁移计划](/wiki/plans/oa-migration-plan)。
 
 ## 后续规划
 

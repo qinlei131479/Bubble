@@ -38,8 +38,9 @@ bubble-visual-{feature}  → 可视化管理服务
 ## 统一返回
 
 - `R<T>`：成功 `R.ok(data)`，失败 `R.failed(msg)`
-- OA 模块：`R.phpOk(data)` / `R.phpFailed(msg)`（兼容 PHP 前端）
+
+陀螺匠 OA 迁移已暂停，不再新增 `R.phpOk` / `R.phpFailed` 这一类 PHP 兼容返回。
 
 ## 编码规范
 
-详见 `.cursor/rules/backend-conventions.mdc`，包含 Controller / ServiceImpl CRUD 模板、OA 迁移规范、Javadoc 要求等。
+详见 `.cursor/rules/backend-conventions.mdc`，包含 Controller / ServiceImpl CRUD 模板和 Javadoc 要求。某个业务模块自己的实施计划写在 `docs/wiki/plans/`，不放进通用规范。

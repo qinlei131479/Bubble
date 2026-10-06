@@ -6,7 +6,7 @@
 |------|------|
 | JDK | 17+ |
 | Maven | 3.9+ |
-| Node.js | 18+ |
+| Node.js | >= 20.19（前端 Vite 8 要求） |
 | Docker & Compose | 最新稳定版 |
 | MySQL | 8.0 |
 | Redis | 6+ |
@@ -36,6 +36,8 @@ docker compose -f docker/docker-compose.yml up -d mysql redis register
 mysql -u root -p < script/db/bubble.sql
 mysql -u root -p < script/db/bubble_config.sql
 ```
+
+已有 `bubble` 库不要重复导入全量脚本，改为执行增量脚本 `script/db/upgrade-4.2.sql`。
 
 ### 3. 启动后端
 

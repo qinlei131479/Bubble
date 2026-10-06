@@ -5,7 +5,7 @@
 所有服务通过 `docker/docker-compose.yml` 统一编排，包括：
 
 - **基础设施**：MySQL、Redis、Nacos
-- **后端微服务**：Gateway、Auth、biz-backend、monitor、codegen、quartz
+- **后端微服务**：Gateway、Auth、biz-backend、monitor、codegen、quartz。默认编排不包含 AGI、已暂停的 OA，以及只剩启动类的 flow
 - **前端**：Nginx 静态服务
 
 ## 快速启动

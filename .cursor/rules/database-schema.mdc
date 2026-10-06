@@ -10,10 +10,10 @@ alwaysApply: false
 
 | 库名 | 用途 | 初始化脚本 |
 |------|------|-----------|
-| pig | 业务主库 | docs/db/bubble.sql |
-| pig_config | Nacos 配置中心持久化 | docs/db/bubble_config.sql |
+| bubble | 业务主库 | script/db/bubble.sql |
+| bubble_config | Nacos 配置中心持久化 | script/db/bubble_config.sql |
 
-## 业务库 (pig) 核心表
+## 业务库 (bubble) 核心表
 
 ### 系统管理
 
@@ -50,7 +50,7 @@ alwaysApply: false
 | gen_template / gen_group / gen_template_group | 模板与分组 |
 | gen_field_type | SQL 到 Java 类型映射 |
 
-## 配置库 (pig_config) 核心表
+## 配置库 (bubble_config) 核心表
 
 | 表名 | 用途 |
 |------|------|

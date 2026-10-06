@@ -1,22 +1,8 @@
 <p align="center" style="font-family: '楷体'; font-size: 30px;">智能如泡，聚变未来</p>
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Vue-3.5-blue" alt="Vue 3">
-  <img src="https://img.shields.io/badge/Element%20Plus-2.13-blue" alt="Element Plus">
-  <img src="https://img.shields.io/badge/Vite-8.1-purple" alt="Vite">
-  <img src="https://img.shields.io/badge/TypeScript-4.9-blue" alt="TypeScript">
-</p>
+## Bubble-UI
 
-## Bubble-UI（Vue 3 管理端）
-
-基于 Vue 3 + Element Plus + Vite + TypeScript 的管理后台前端。
-
-### 环境要求
-
-- **Node.js**: >= 20.19.0
-- **npm**: >= 8.0（或 pnpm）
-
-### 本地开发
+Vue 3.5 + Element Plus 2.13 + Vite 8 + TypeScript 的管理端。Node.js 需要 >= 20.19。
 
 ```bash
 cd apps/bubble-ui
@@ -24,27 +10,22 @@ npm install
 npm run dev
 ```
 
-默认开发服务器端口由 `VITE_PORT` 控制，API 代理到后端网关。
+开发地址是 `http://localhost:8888`。`.env.development` 里的 `VITE_PORT` 可以改端口。改任何 `VITE_` 变量之后都要重启 `npm run dev`。
 
-### 与后端联调
+## 接口代理
 
-- 确保后端 Gateway 已启动（默认 `:8666`）
-- `.env.development` 配置 `VITE_API_URL` 指向网关地址
-- Docker 部署时 Nginx 自动反代 `/api/*` → `bubble-gateway:8666`
+页面里的 URL 不带主机名，也不重复写 `/api`。前缀、代理目标和 Nginx 反代见 [网关](../../docs/wiki/architecture/index.md#gateway)。网关未启动时，登录和菜单请求失败。
 
-### 关键环境变量
+## 认证配置
 
-| 变量 | 用途 |
-|------|------|
-| `VITE_API_URL` | API 基础地址 |
-| `VITE_PORT` | 开发服务器端口 |
-| `VITE_IS_MICRO` | 是否微服务模式 |
-| `VITE_PWD_ENC_KEY` | 密码加密密钥 |
+客户端、加密密钥和种子账号见 [账号与客户端](../../docs/wiki/guide/index.md#accounts)。修改 `VITE_` 变量后需重启开发服务器。
 
-### 浏览器支持
+## 目录
 
-现代浏览器最近两个版本，不支持 IE。
+- `src/api`：接口函数，按 `/admin`、`/gen`、`/job`、`/agi` 分目录
+- `src/views`：页面。菜单的组件路径要能匹配到这里
+- `src/router/backEnd.ts`：后端菜单转成路由
+- `src/components`：上传、表格、权限
+- `src/theme`：全局样式
 
-### 关键约束
-
-- 开发规范：`.cursor/rules/frontend-conventions.mdc`
+更完整的说明在知识库 [前端开发](../../docs/wiki/development/frontend.md)。编码约束是 `.cursor/rules/frontend-conventions.mdc`。

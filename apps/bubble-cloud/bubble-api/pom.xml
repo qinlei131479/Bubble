@@ -14,8 +14,6 @@
 
 	<modules>
 		<module>bubble-api-backend</module>
-		<module>bubble-api-flow</module>
-		<module>bubble-api-oa</module>
 		<module>bubble-api-agi</module>
 	</modules>
 </project>

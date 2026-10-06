@@ -1,71 +1,55 @@
-## Bubble-Cloud（Java 微服务后端）
+## Bubble-Cloud
 
-Spring Cloud 2025.1 + Spring Boot 4.1 + MyBatis-Plus 聚合工程。当前开发分支是 `JDK17_master_4.1`。
+Java 17 + Spring Boot 4.1.1 + Spring Cloud 2025.1.3 的微服务聚合工程。当前开发分支是 `JDK17_master_4.1`，`${revision}` 为 `4.0.0`。
 
-### 模块概览
+### 模块
 
 ```text
 bubble-cloud/
-├── bubble-gateway/          # Spring Cloud Gateway 网关 (:8666)
+├── bubble-gateway/          # Spring Cloud Gateway (:8666)
 ├── bubble-auth/             # OAuth2 认证中心 (:8766)
-├── bubble-api/              # 公共 API（实体/DTO/Feign，jar 库）
+├── bubble-api/              # 实体、DTO、Feign，jar，不单独启动
 │   ├── bubble-api-backend
-│   ├── bubble-api-agi
-│   ├── bubble-api-oa
-│   └── bubble-api-flow
-├── bubble-biz/              # 业务服务（可独立部署）
-│   ├── bubble-biz-backend   # 用户权限 (:8801)
-│   ├── bubble-biz-agi       # AI 智能体 (:8805)
-│   ├── bubble-biz-oa        # OA（已暂停，仅启动类）(:8803)
-│   └── bubble-biz-flow      # 工作流（占位）(:8802)
-├── bubble-common/           # 跨模块公共组件（各子模块为 jar，供业务引用）
-│   ├── bubble-common-bom         # Maven BOM，统一依赖版本
-│   ├── bubble-common-core        # 公共工具类与核心包
-│   ├── bubble-common-datasource  # 动态数据源切换
-│   ├── bubble-common-log         # 日志服务
-│   ├── bubble-common-mybatis     # MyBatis 封装
-│   ├── bubble-common-oss         # 对象存储（OSS）集成
-│   ├── bubble-common-seata       # Seata 分布式事务
-│   ├── bubble-common-security    # 安全工具类与相关能力
-│   ├── bubble-common-feign       # Feign + Sentinel 降级、熔断、限流
-│   ├── bubble-common-swagger     # OpenAPI / Swagger 接口文档
-│   ├── bubble-common-websocket   # WebSocket
-│   ├── bubble-common-xss         # XSS 安全过滤（基于 JSoup）
-│   └── bubble-common-excel       # Excel 导入导出
-└── bubble-visual/           # 可视化管理
+│   └── bubble-api-agi
+├── bubble-biz/
+│   ├── bubble-biz-backend   # 用户权限与系统配置 (:8801)
+│   └── bubble-biz-agi       # 模型、知识库、对话 (:8805)
+├── bubble-common/           # 跨模块组件，见下方清单
+└── bubble-visual/
     ├── bubble-codegen       # 代码生成 (:8901)
     ├── bubble-monitor       # Spring Boot Admin (:8902)
     └── bubble-quartz        # 定时任务 (:8903)
 ```
 
-### 环境要求
+`bubble-common` 子模块都是 jar：
 
-- **JDK**: 17+
-- **Maven**: 3.9+
-- **基础设施**: MySQL 8.0、Redis、Nacos
+| 模块 | 作用 |
+|------|------|
+| bubble-common-bom | 依赖版本 |
+| bubble-common-core | 工具、`R`、缓存键、错误码 |
+| bubble-common-data | 数据源与多租户基础 |
+| bubble-common-datasource | 动态数据源 |
+| bubble-common-mybatis | MyBatis-Plus 封装 |
+| bubble-common-security | 资源服务器、`@Inner`、`@HasPermission` |
+| bubble-common-feign | Feign 与 Sentinel |
+| bubble-common-log | `@SysLog` |
+| bubble-common-oss | 文件与对象存储 |
+| bubble-common-swagger | SpringDoc |
+| bubble-common-xss | XSS 过滤 |
+| bubble-common-excel | Excel 导入导出 |
+| bubble-common-websocket | WebSocket |
+| bubble-common-seata | Seata 封装 |
+| bubble-common-sentinel | 限流熔断 |
 
-### 本地开发
+### 本地启动
 
-1. 启动基础设施（任选其一）：
-   - Docker 方式：`docker compose -f docker/docker-compose.yml up mysql redis register -d`
-   - 本地安装：自行启动 MySQL(3306)、Redis(6379)、Nacos(8848)
+环境、数据库脚本和启动顺序见 [快速开始](../../docs/wiki/guide/index.md#quick-start)。在本目录执行 `mvn clean install -DskipTests` 后，按网关、认证、系统业务的顺序启动，其余服务按需启动。
 
-2. 导入数据库：
-   ```bash
-   mysql -u root -p < script/db/bubble.sql
-   mysql -u root -p < script/db/bubble_config.sql
-   ```
+`application.yml` 只声明端口、应用名和 Nacos 地址。业务配置在 Nacos，见 [注册与配置](../../docs/wiki/architecture/index.md#nacos)。
 
-3. Maven 构建：
-   ```bash
-   cd apps/bubble-cloud
-   mvn clean install -DskipTests
-   ```
+### 相关文档
 
-4. 按顺序启动服务：Nacos → Gateway → Auth → biz-backend → 其他
-
-### 关键约束
-
-- 开发规范：`.cursor/rules/backend-conventions.mdc`
-- 端口清单：[`docs/wiki/architecture/ports.md`](../../docs/wiki/architecture/ports.md)（单一事实源）
-- OA 迁移计划已暂停，仅供查阅：[`docs/wiki/plans/oa-migration-plan.md`](../../docs/wiki/plans/oa-migration-plan.md)
+- 端口：[docs/wiki/architecture/index.md#ports](../../docs/wiki/architecture/index.md#ports)
+- 职责：[docs/wiki/architecture/index.md#modules](../../docs/wiki/architecture/index.md#modules)
+- 开发约定：`.cursor/rules/backend-conventions.mdc`
+- 网关与登录：[docs/wiki/architecture/index.md#gateway](../../docs/wiki/architecture/index.md#gateway)、[docs/wiki/architecture/index.md#auth](../../docs/wiki/architecture/index.md#auth)

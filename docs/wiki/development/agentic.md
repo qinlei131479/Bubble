@@ -1,25 +1,24 @@
-# 智能体开发
+# 智能体
 
-> **状态：规划中** — 本页内容将在 `apps/agentic` 正式启动后补充。
+Java 侧已经有 `bubble-biz-agi`：模型供应商、知识库、对话、MCP、评测。管理端页面在 `apps/bubble-ui/src/views/agi`，接口前缀 `/agi`，进程端口 8805。
 
-## 定位
+`apps/agentic` 是另外一个进程，打算用 Python 做编排和工具调用。它还没有实现，compose 里的服务块也是注释。不要把 Python 代码放进 `bubble-biz-agi`。
 
-Python 侧的智能体运行时服务，负责 Agent 编排、工具调用、RAG 检索增强。
+## 已有实现
 
-## 技术选型（规划）
+启动 `bubble-biz-agi`，并确认网关把 `/agi/**` 转到该服务。菜单「AI大模型」指向 `/agi`。默认 Docker 编排不包含这个进程，只启动 compose 时，这个菜单会 503。
 
-- Python 3.11+
-- FastAPI / gRPC
-- LangChain / LangGraph
-- 依赖管理：uv + pyproject.toml
-- 代码风格：Ruff + mypy
+数据在业务库 `bubble`。实体和 Feign 在 `bubble-api-agi`。其它 Java 服务要调用时依赖这个 jar，不复制实体。
 
-## 与 Java 侧的交互
+## 接入约束
 
-- 通过 HTTP API 调用 `bubble-gateway`，不直接依赖 Java 模块
-- 共享数据库表仅读取，写入通过 Java API
-- 异步任务通过 Redis Pub/Sub 或消息队列
+接入时按仓库对 `apps/<name>` 的要求补齐 README、依赖文件和启动命令，并更新 [模块职责](/wiki/architecture/#modules)。
 
-## 编码规范
+约束：
 
-详见 `.cursor/rules/python-conventions.mdc`。
+- 只通过 `http://bubble-gateway:8666` 访问 Java 能力，本地则是 `http://127.0.0.1:8666`。
+- 不连接 Java 进程的内部端口，不共享 Feign。
+- 写业务数据走已有 HTTP 接口。只读场景再考虑直接读库。
+- 调用带用户身份的接口时，使用认证中心签发的令牌，并遵守 `@Inner` 的边界。
+
+编码约定在 `.cursor/rules/python-conventions.mdc`。在模块真正创建之前，不在这里写虚构的目录和命令。

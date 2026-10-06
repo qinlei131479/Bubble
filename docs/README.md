@@ -1,44 +1,39 @@
 # Bubble 知识库
 
-本目录使用 [VitePress](https://vitepress.dev/) 搭建项目知识库。正文 Markdown 位于 `wiki/`，通过 `.vitepress/config.ts` 中的 `rewrites` 将 `wiki/index.md` 映射为站点根路径 `/`，便于在仓库内用统一前缀组织文档。
+正文在 `wiki/`，用 [VitePress](https://vitepress.dev/) 发布。`.vitepress/config.ts` 把 `wiki/index.md` 重写成站点根路径 `/`，其余文章仍以 `/wiki/...` 访问。
 
-## 目录结构
+阅读顺序是：版本与启动、架构与网关、认证、开发、部署与排错。同一事实只在一页维护，其它页面用链接指向它。
+
+## 目录
 
 ```text
 docs/
-├── .vitepress/
-│   └── config.ts              # 导航、侧边栏、rewrites（首页映射等）
-├── package.json               # vitepress 脚本与依赖
-├── README.md                  # 本说明（仓库内入口）
+├── .vitepress/config.ts
+├── package.json
 └── wiki/
-    ├── index.md               # 站点首页（rewrites → /）
-    ├── guide/                 # 入门指南（介绍、快速开始、目录结构）
-    ├── architecture/          # 架构设计（总览、端口、模块、数据库、测试策略）
-    ├── development/           # 开发指南（后端、前端、智能体）
-    ├── ops/                   # 运维部署（Docker、脚本、监控）
-    ├── changelog/             # 版本变更日志
-    ├── plans/                 # 迁移与规划（OA 10 阶段计划已暂停，仅作历史查阅）
-    └── reference/             # 参考手册（环境变量、错误码、API 约定）
+    ├── index.md                 # 首页
+    ├── guide/index.md           # 技术栈、结构、启动、账号
+    ├── architecture/index.md    # 端口、模块、库表、网关、认证、同步
+    ├── development/             # 后端、前端、平台能力、智能体
+    ├── ops/index.md             # 容器、脚本、监控、常见问题
+    ├── changelog/
+    └── reference/index.md       # 环境变量、错误码、API 约定
 ```
 
-## 文档生命周期
-
-```text
-需求/规划 → 架构设计 → 开发指南 → 测试策略 → 运维部署 → 版本迭代 → 参考手册
-wiki/plans/  wiki/architecture/  wiki/development/  wiki/architecture/strategy.md  wiki/ops/  wiki/changelog/  wiki/reference/
-```
-
-（测试策略文档为 `wiki/architecture/strategy.md`，在侧边栏中归入「架构设计 → 测试」。）
+端口与模块边界维护在 `wiki/architecture/index.md`。`.cursor/rules/` 只放通用开发约束，不承载某个业务的实施计划。
 
 ## 本地预览
 
 ```bash
 cd docs
-npm install   # 首次
-npm run dev   # 或 npx vitepress dev --port 5176（见 package.json）
+npm install
+npm run dev
 ```
 
-## 写作约定
+默认端口见 `package.json`（`vitepress dev --port 5176`）。
 
-- **避免重复**：本 README 只做入口说明；端口/模块等事实只在 `wiki/architecture/` 等处维护一份
-- **事实与规范分离**：`docs/wiki/` 面向读者的知识库；`.cursor/rules/` 面向 AI 的开发约束
+## 写作
+
+- 一篇文章讲清一件事：背景、本仓库里的真实入口、操作步骤、失败时去哪一页。
+- 命令、端口、客户端、分支以代码和脚本为准，改代码时同步改对应文章。
+- 链接使用 `/wiki/...`，不要写成去掉 `wiki` 的短路径。

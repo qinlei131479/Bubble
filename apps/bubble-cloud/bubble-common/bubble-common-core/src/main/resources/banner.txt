@@ -1,14 +1,4 @@
 ${AnsiColor.BRIGHT_YELLOW}
-
-.______    __    _______   ______  __        ______    __    __   _______
-|   _  \  |  |  /  _____| /      ||  |      /  __  \  |  |  |  | |       \
-|  |_)  | |  | |  |  __  |  ,----'|  |     |  |  |  | |  |  |  | |  .--.  |
-|   ___/  |  | |  | |_ | |  |     |  |     |  |  |  | |  |  |  | |  |  |  |
-|  |      |  | |  |__| | |  `----.|  `----.|  `--'  | |  `--'  | |  '--'  |
-| _|      |__|  \______|  \______||_______| \______/   \______/  |_______/
-
-
-                       www.pig4cloud.com
-
-                PIGCLOUD Microservice Architecture
+${spring.application.name}${application.formatted-version}
+Bubble 微服务正在启动。
 ${AnsiColor.DEFAULT}

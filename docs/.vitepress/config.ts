@@ -14,16 +14,16 @@ export default defineConfig({
         siteTitle: 'Bubble Docs',
 
         nav: [
-            {text: '指南', link: '/wiki/guide/introduction'},
-            {text: '架构', link: '/wiki/architecture/overview'},
+            {text: '指南', link: '/wiki/guide/#stack'},
+            {text: '架构', link: '/wiki/architecture/#overview'},
             {text: '开发', link: '/wiki/development/backend'},
-            {text: '运维', link: '/wiki/ops/docker'},
+            {text: '运维', link: '/wiki/ops/#docker'},
             {
                 text: '版本',
                 items: [
                     {text: '变更日志', link: '/wiki/changelog/index'},
-                    {text: '参考手册', link: '/wiki/reference/env-variables'},
-                    {text: 'OA 迁移计划（已暂停）', link: '/wiki/plans/oa-migration-plan'},
+                    {text: '上游同步', link: '/wiki/architecture/#upstream'},
+                    {text: '参考手册', link: '/wiki/reference/#env'},
                 ],
             },
         ],
@@ -31,103 +31,83 @@ export default defineConfig({
         sidebar: {
             '/wiki/guide/': [
                 {
-                    text: '入门指南',
+                    text: '入门',
                     items: [
-                        {text: '项目介绍', link: '/wiki/guide/introduction'},
-                        {text: '快速开始', link: '/wiki/guide/quick-start'},
-                        {text: '目录结构', link: '/wiki/guide/project-structure'},
+                        {text: '项目介绍', link: '/wiki/guide/#stack'},
+                        {text: '快速开始', link: '/wiki/guide/#quick-start'},
+                        {text: '目录结构', link: '/wiki/guide/#layout'},
+                        {text: '账号与客户端', link: '/wiki/guide/#accounts'},
                     ],
                 },
             ],
 
             '/wiki/architecture/': [
                 {
-                    text: '架构设计',
+                    text: '架构',
                     items: [
-                        {text: '架构总览', link: '/wiki/architecture/overview'},
-                        {text: '端口与服务', link: '/wiki/architecture/ports'},
-                        {text: '模块职责', link: '/wiki/architecture/modules'},
-                        {text: '数据库设计', link: '/wiki/architecture/database'},
+                        {text: '架构总览', link: '/wiki/architecture/#overview'},
+                        {text: '端口与服务', link: '/wiki/architecture/#ports'},
+                        {text: '模块职责', link: '/wiki/architecture/#modules'},
+                        {text: '数据库', link: '/wiki/architecture/#database'},
+                        {text: '注册与配置', link: '/wiki/architecture/#nacos'},
+                        {text: '网关', link: '/wiki/architecture/#gateway'},
+                        {text: '认证与鉴权', link: '/wiki/architecture/#auth'},
                     ],
                 },
                 {
-                    text: '测试',
+                    text: '演进',
                     items: [
-                        {text: '测试策略', link: '/wiki/architecture/strategy'},
+                        {text: '上游同步基线', link: '/wiki/architecture/#upstream'},
+                        {text: '测试策略', link: '/wiki/architecture/#testing'},
                     ],
                 },
             ],
 
             '/wiki/development/': [
                 {
-                    text: '开发指南',
+                    text: '开发',
                     items: [
                         {text: '后端开发', link: '/wiki/development/backend'},
                         {text: '前端开发', link: '/wiki/development/frontend'},
-                        {text: '智能体开发', link: '/wiki/development/agentic'},
+                        {text: '平台能力', link: '/wiki/development/platform'},
+                        {text: '智能体', link: '/wiki/development/agentic'},
                     ],
                 },
             ],
 
             '/wiki/ops/': [
                 {
-                    text: '运维部署',
+                    text: '运维',
                     items: [
-                        {text: 'Docker 部署', link: '/wiki/ops/docker'},
-                        {text: '脚本部署', link: '/wiki/ops/deploy-script'},
-                        {text: '监控与告警', link: '/wiki/ops/monitoring'},
+                        {text: 'Docker 部署', link: '/wiki/ops/#docker'},
+                        {text: '脚本部署', link: '/wiki/ops/#script'},
+                        {text: '监控与日志', link: '/wiki/ops/#monitoring'},
+                        {text: '常见问题', link: '/wiki/ops/#troubleshooting'},
                     ],
                 },
             ],
 
             '/wiki/changelog/': [
                 {
-                    text: '版本与迭代',
+                    text: '版本',
                     items: [
                         {text: '变更日志', link: '/wiki/changelog/index'},
                     ],
                 },
             ],
 
-            '/wiki/plans/': [
-                {
-                    text: 'OA 迁移计划（已暂停）',
-                    items: [
-                        {text: '迁移主计划', link: '/wiki/plans/oa-migration-plan'},
-                        {text: '阶段 1: 用户与组织', link: '/wiki/plans/phase-01-user-org'},
-                        {text: '阶段 2: 配置与系统', link: '/wiki/plans/phase-02-system-config'},
-                        {text: '阶段 3: HR/人事', link: '/wiki/plans/phase-03-hr'},
-                        {text: '阶段 4: OA 与工作流', link: '/wiki/plans/phase-04-oa-workflow'},
-                        {text: '阶段 5: CRM 客户', link: '/wiki/plans/phase-05-crm'},
-                        {text: '阶段 6: 财务', link: '/wiki/plans/phase-06-finance'},
-                        {text: '阶段 7: 项目管理', link: '/wiki/plans/phase-07-project'},
-                        {text: '阶段 8: 低代码', link: '/wiki/plans/phase-08-lowcode'},
-                        {text: '阶段 9: 辅助功能', link: '/wiki/plans/phase-09-auxiliary'},
-                        {text: '阶段 10: 开放 API', link: '/wiki/plans/phase-10-openapi'},
-                    ],
-                },
-            ],
-
             '/wiki/reference/': [
                 {
-                    text: '参考手册',
+                    text: '参考',
                     items: [
-                        {text: '环境变量', link: '/wiki/reference/env-variables'},
-                        {text: '错误码', link: '/wiki/reference/error-codes'},
-                        {text: 'API约定', link: '/wiki/reference/api-conventions'},
+                        {text: '环境变量', link: '/wiki/reference/#env'},
+                        {text: '错误码', link: '/wiki/reference/#errors'},
+                        {text: 'API 约定', link: '/wiki/reference/#api'},
                     ],
                 },
             ],
         },
 
-        // socialLinks: [
-        //   { icon: 'github', link: 'https://github.com/your-org/Bubble' },
-        // ],
-        // editLink: {
-        //   pattern: 'https://github.com/your-org/Bubble/edit/JDK17_master/docs/:path',
-        //   text: '在 GitHub 上编辑此页',
-        // },
-        // outline: false,
         outlineTitle: '大纲',
 
         footer: {

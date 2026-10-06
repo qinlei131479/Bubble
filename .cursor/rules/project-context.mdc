@@ -35,14 +35,12 @@ Bubble 是智能体原生平台 Monorepo，包含：
 
 - groupId: `com.bubblecloud`
 - artifactId: `Bubble-Cloud`
-- version (revision): `3.9.2`
+- version (revision): `4.0.0`
 - 分支: `JDK17_master_4.1`（当前开发），`JDK17_master`（Spring Boot 3.5），`JDK8_master`（兼容）
 
 ## 单一事实源约定
 
-- **端口与服务清单** → `docs/wiki/architecture/ports.md`
-- **模块职责与边界** → `docs/wiki/architecture/modules.md`
-- **上游同步基线** → `docs/wiki/architecture/upstream-sync.md`
+- **端口、模块、上游同步** → `docs/wiki/architecture/index.md`（锚点 `#ports`、`#modules`、`#upstream`）
 - **后端开发规范** → `.cursor/rules/backend-conventions.mdc`
 - **前端开发规范** → `.cursor/rules/frontend-conventions.mdc`
 
@@ -62,8 +60,8 @@ Browser → Nginx(:80) → bubble-gateway(:8666)
 
 ## 当前开发重点
 
-- 单个业务模块的实施计划写在 `docs/wiki/plans/`，不写入本规则
-- **占位模块**：`bubble-biz-flow`（仅启动类）、`apps/agentic`（待实现）
+- 单个业务模块的实施计划单独成文，不写入本规则
+- **规划中**：`apps/agentic`（Python 智能体，待实现）
 
 ## AI 协作约定
 

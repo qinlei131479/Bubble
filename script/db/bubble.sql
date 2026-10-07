@@ -13,15 +13,15 @@ USE `bubble`;
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_dept`;
 CREATE TABLE `sys_dept` (
-                            `dept_id` bigint NOT NULL COMMENT '部门ID',
+                            `dept_id`  bigint NOT NULL COMMENT '部门编号',
                             `name` varchar(50)  DEFAULT NULL COMMENT '部门名称',
                             `sort_order` int NOT NULL DEFAULT '0' COMMENT '排序',
                             `create_by` varchar(64) DEFAULT NULL COMMENT '创建人',
                             `update_by` varchar(64) DEFAULT NULL COMMENT '修改人',
                             `create_time` datetime DEFAULT NULL COMMENT '创建时间',
                             `update_time` datetime DEFAULT NULL COMMENT '修改时间',
-                            `del_flag` char(1)  DEFAULT '0' COMMENT '删除标志',
-                            `parent_id` bigint DEFAULT NULL COMMENT '父级部门ID',
+                            `del_flag`  char(1)  DEFAULT '0' COMMENT '删除标记，1已删除，0正常',
+                            `parent_id`  bigint DEFAULT NULL COMMENT '上级部门',
                             PRIMARY KEY (`dept_id`) USING BTREE
 ) ENGINE=InnoDB  COMMENT='部门管理';
 
@@ -59,7 +59,7 @@ CREATE TABLE `sys_dict` (
                             `update_time` datetime DEFAULT NULL COMMENT '更新时间',
                             `remarks` varchar(255)  DEFAULT NULL COMMENT '备注信息',
                             `system_flag` char(1)  DEFAULT '0' COMMENT '系统标志',
-                            `del_flag` char(1)  DEFAULT '0' COMMENT '删除标志',
+                            `del_flag`  char(1)  DEFAULT '0' COMMENT '删除标记，1已删除，0正常',
                             PRIMARY KEY (`id`) USING BTREE,
                             KEY `sys_dict_del_flag` (`del_flag`) USING BTREE
 ) ENGINE=InnoDB  COMMENT='字典表';
@@ -103,7 +103,7 @@ COMMIT;
 DROP TABLE IF EXISTS `sys_dict_item`;
 CREATE TABLE `sys_dict_item` (
                                  `id` bigint NOT NULL COMMENT '编号',
-                                 `dict_id` bigint NOT NULL COMMENT '字典ID',
+                                 `dict_id`  bigint NOT NULL COMMENT '字典编号',
                                  `item_value` varchar(100)  DEFAULT NULL COMMENT '字典项值',
                                  `label` varchar(100)  DEFAULT NULL COMMENT '字典项名称',
                                  `dict_type` varchar(100)  DEFAULT NULL COMMENT '字典类型',
@@ -114,7 +114,7 @@ CREATE TABLE `sys_dict_item` (
                                  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
                                  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
                                  `remarks` varchar(255)  DEFAULT NULL COMMENT '备注信息',
-                                 `del_flag` char(1)  DEFAULT '0' COMMENT '删除标志',
+                                 `del_flag`  char(1)  DEFAULT '0' COMMENT '删除标记，1已删除，0正常',
                                  PRIMARY KEY (`id`) USING BTREE,
                                  KEY `sys_dict_value` (`item_value`) USING BTREE,
                                  KEY `sys_dict_label` (`label`) USING BTREE,
@@ -227,7 +227,7 @@ CREATE TABLE `sys_file` (
                             `update_by` varchar(64) DEFAULT NULL COMMENT '修改人',
                             `create_time` datetime DEFAULT NULL COMMENT '上传时间',
                             `update_time` datetime DEFAULT NULL COMMENT '更新时间',
-                            `del_flag` char(1)  DEFAULT '0' COMMENT '删除标志',
+                            `del_flag`  char(1)  DEFAULT '0' COMMENT '删除标记，1已删除，0正常',
                             PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB  COMMENT='文件管理表';
 
@@ -245,18 +245,18 @@ CREATE TABLE `sys_log` (
                            `id` bigint NOT NULL COMMENT '编号',
                            `log_type` char(1)  DEFAULT '0' COMMENT '日志类型',
                            `title` varchar(255)  DEFAULT NULL COMMENT '日志标题',
-                           `service_id` varchar(32)  DEFAULT NULL COMMENT '服务ID',
+                           `service_id`  varchar(32)  DEFAULT NULL COMMENT '服务编号',
                            `create_by` varchar(64) DEFAULT NULL COMMENT '创建人',
                            `update_by` varchar(64) DEFAULT NULL COMMENT '修改人',
                            `create_time` datetime DEFAULT NULL COMMENT '创建时间',
                            `update_time` datetime DEFAULT NULL COMMENT '更新时间',
                            `remote_addr` varchar(255)  DEFAULT NULL COMMENT '远程地址',
                            `user_agent` varchar(1000)  DEFAULT NULL COMMENT '用户代理',
-                           `request_uri` varchar(255)  DEFAULT NULL COMMENT '请求URI',
+                           `request_uri`  varchar(255)  DEFAULT NULL COMMENT '请求路径',
                            `method` varchar(10)  DEFAULT NULL COMMENT '请求方法',
                            `params` text  COMMENT '请求参数',
                            `time` bigint DEFAULT NULL COMMENT '执行时间',
-                           `del_flag` char(1)  DEFAULT '0' COMMENT '删除标志',
+                           `del_flag`  char(1)  DEFAULT '0' COMMENT '删除标记，1已删除，0正常',
                            `exception` text  COMMENT '异常信息',
                            PRIMARY KEY (`id`) USING BTREE,
                            KEY `sys_log_request_uri` (`request_uri`) USING BTREE,
@@ -270,12 +270,12 @@ CREATE TABLE `sys_log` (
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_menu`;
 CREATE TABLE `sys_menu` (
-                            `menu_id` bigint NOT NULL COMMENT '菜单ID',
+                            `menu_id`  bigint NOT NULL COMMENT '菜单编号',
                             `name` varchar(32)  DEFAULT NULL COMMENT '菜单名称',
                             `en_name` varchar(128)  DEFAULT NULL COMMENT '英文名称',
                             `permission` varchar(32)  DEFAULT NULL COMMENT '权限标识',
                             `path` varchar(128)  DEFAULT NULL COMMENT '路由路径',
-                            `parent_id` bigint DEFAULT NULL COMMENT '父菜单ID',
+                            `parent_id`  bigint DEFAULT NULL COMMENT '上级菜单',
                             `icon` varchar(64)  DEFAULT NULL COMMENT '菜单图标',
                             `visible` char(1)  DEFAULT '1' COMMENT '是否可见，0隐藏，1显示',
                             `sort_order` int DEFAULT '1' COMMENT '排序值，越小越靠前',
@@ -380,9 +380,9 @@ COMMIT;
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_oauth_client_details`;
 CREATE TABLE `sys_oauth_client_details` (
-                                            `id` bigint NOT NULL COMMENT 'ID',
-                                            `client_id` varchar(32)  NOT NULL COMMENT '客户端ID',
-                                            `resource_ids` varchar(256)  DEFAULT NULL COMMENT '资源ID集合',
+                                            `id`  bigint NOT NULL COMMENT '主键',
+                                            `client_id`  varchar(32)  NOT NULL COMMENT '客户端编号',
+                                            `resource_ids`  varchar(256)  DEFAULT NULL COMMENT '资源编号集',
                                             `client_secret` varchar(256)  DEFAULT NULL COMMENT '客户端秘钥',
                                             `scope` varchar(256)  DEFAULT NULL COMMENT '授权范围',
                                             `authorized_grant_types` varchar(256)  DEFAULT NULL COMMENT '授权类型',
@@ -418,7 +418,7 @@ COMMIT;
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_post`;
 CREATE TABLE `sys_post` (
-                            `post_id` bigint NOT NULL COMMENT '岗位ID',
+                            `post_id`  bigint NOT NULL COMMENT '岗位编号',
                             `post_code` varchar(64)  NOT NULL COMMENT '岗位编码',
                             `post_name` varchar(50)  NOT NULL COMMENT '岗位名称',
                             `post_sort` int NOT NULL COMMENT '岗位排序',
@@ -479,7 +479,7 @@ COMMIT;
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_role`;
 CREATE TABLE `sys_role` (
-                            `role_id` bigint NOT NULL COMMENT '角色ID',
+                            `role_id`  bigint NOT NULL COMMENT '角色编号',
                             `role_name` varchar(64)  DEFAULT NULL COMMENT '角色名称',
                             `role_code` varchar(64)  DEFAULT NULL COMMENT '角色编码',
                             `role_desc` varchar(255)  DEFAULT NULL COMMENT '角色描述',
@@ -505,8 +505,8 @@ COMMIT;
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_role_menu`;
 CREATE TABLE `sys_role_menu` (
-                                 `role_id` bigint NOT NULL COMMENT '角色ID',
-                                 `menu_id` bigint NOT NULL COMMENT '菜单ID',
+                                 `role_id`  bigint NOT NULL COMMENT '角色编号',
+                                 `menu_id`  bigint NOT NULL COMMENT '菜单编号',
                                  PRIMARY KEY (`role_id`,`menu_id`) USING BTREE
 ) ENGINE=InnoDB  COMMENT='角色菜单表';
 
@@ -603,7 +603,7 @@ COMMIT;
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_user`;
 CREATE TABLE `sys_user` (
-                            `user_id` bigint NOT NULL COMMENT '用户ID',
+                            `user_id`  bigint NOT NULL COMMENT '用户编号',
                             `username` varchar(64)  DEFAULT NULL COMMENT '用户名',
                             `password` varchar(255)  DEFAULT NULL COMMENT '密码',
                             `salt` varchar(255)  DEFAULT NULL COMMENT '盐值',
@@ -612,16 +612,16 @@ CREATE TABLE `sys_user` (
                             `nickname` varchar(64)  DEFAULT NULL COMMENT '昵称',
                             `name` varchar(64)  DEFAULT NULL COMMENT '姓名',
                             `email` varchar(128)  DEFAULT NULL COMMENT '邮箱地址',
-                            `dept_id` bigint DEFAULT NULL COMMENT '所属部门ID',
+                            `dept_id`  bigint DEFAULT NULL COMMENT '所属部门',
                             `create_by` varchar(64) DEFAULT NULL COMMENT '创建人',
                             `update_by` varchar(64) DEFAULT NULL COMMENT '修改人',
                             `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                             `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
                             `lock_flag` char(1)  DEFAULT '0' COMMENT '锁定标记，0未锁定，9已锁定',
                             `del_flag` char(1)  DEFAULT '0' COMMENT '删除标记，0未删除，1已删除',
-                            `wx_openid` varchar(32)  DEFAULT NULL COMMENT '微信登录openId',
-                            `mini_openid` varchar(32)  DEFAULT NULL COMMENT '小程序openId',
-                            `qq_openid` varchar(32)  DEFAULT NULL COMMENT 'QQ openId',
+                            `wx_openid`  varchar(32)  DEFAULT NULL COMMENT '微信标识',
+                            `mini_openid`  varchar(32)  DEFAULT NULL COMMENT '小程序标识',
+                            `qq_openid`  varchar(32)  DEFAULT NULL COMMENT '企鹅标识',
                             `gitee_login` varchar(100)  DEFAULT NULL COMMENT '码云标识',
                             `osc_id` varchar(100)  DEFAULT NULL COMMENT '开源中国标识',
                             PRIMARY KEY (`user_id`) USING BTREE,
@@ -642,8 +642,8 @@ COMMIT;
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_user_post`;
 CREATE TABLE `sys_user_post` (
-                                 `user_id` bigint NOT NULL COMMENT '用户ID',
-                                 `post_id` bigint NOT NULL COMMENT '岗位ID',
+                                 `user_id`  bigint NOT NULL COMMENT '用户编号',
+                                 `post_id`  bigint NOT NULL COMMENT '岗位编号',
                                  PRIMARY KEY (`user_id`,`post_id`) USING BTREE
 ) ENGINE=InnoDB  ROW_FORMAT=DYNAMIC COMMENT='用户与岗位关联表';
 
@@ -659,8 +659,8 @@ COMMIT;
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_user_role`;
 CREATE TABLE `sys_user_role` (
-                                 `user_id` bigint NOT NULL COMMENT '用户ID',
-                                 `role_id` bigint NOT NULL COMMENT '角色ID',
+                                 `user_id`  bigint NOT NULL COMMENT '用户编号',
+                                 `role_id`  bigint NOT NULL COMMENT '角色编号',
                                  PRIMARY KEY (`user_id`,`role_id`) USING BTREE
 ) ENGINE=InnoDB  COMMENT='用户角色表';
 
@@ -677,19 +677,19 @@ COMMIT;
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_job`;
 CREATE TABLE `sys_job` (
-                           `job_id` bigint NOT NULL COMMENT '任务id',
+                           `job_id`  bigint NOT NULL COMMENT '任务编号',
                            `job_name` varchar(64) NOT NULL COMMENT '任务名称',
                            `job_group` varchar(64) NOT NULL COMMENT '任务组名',
-                           `job_order` char(1) DEFAULT '1' COMMENT '组内执行顺利，值越大执行优先级越高，最大值9，最小值1',
-                           `job_type` char(1) NOT NULL DEFAULT '1' COMMENT '1、java类;2、spring bean名称;3、rest调用;4、jar调用;9其他',
-                           `execute_path` varchar(500) DEFAULT NULL COMMENT 'job_type=3时，rest调用地址，仅支持rest get协议,需要增加String返回值，0成功，1失败;job_type=4时，jar路径;其它值为空',
-                           `class_name` varchar(500) DEFAULT NULL COMMENT 'job_type=1时，类完整路径;job_type=2时，spring bean名称;其它值为空',
+                           `job_order`   char(1) DEFAULT '1' COMMENT '组内顺序，值越大优先级越高，最大9，最小1',
+                           `job_type`   char(1) NOT NULL DEFAULT '1' COMMENT '1、类;2、组件名称;3、接口调用;4、包调用;9其他',
+                           `execute_path`   varchar(500) DEFAULT NULL COMMENT '类型3为接口地址，仅支持获取，返回0成功、1失败;类型4为包路径;其他为空',
+                           `class_name`   varchar(500) DEFAULT NULL COMMENT '类型1为类完整路径;类型2为组件名称;其他为空',
                            `method_name` varchar(500) DEFAULT NULL COMMENT '任务方法',
                            `method_params_value` varchar(2000) DEFAULT NULL COMMENT '参数值',
-                           `cron_expression` varchar(255) DEFAULT NULL COMMENT 'cron执行表达式',
-                           `misfire_policy` varchar(20) DEFAULT '3' COMMENT '错失执行策略（1错失周期立即执行 2错失周期执行一次 3下周期执行）',
+                           `cron_expression`  varchar(255) DEFAULT NULL COMMENT '定时表达式',
+                           `misfire_policy`   varchar(20) DEFAULT '3' COMMENT '错失策略，0默认，1立即执行，2执行一次，3下周期执行',
                            `job_tenant_type` char(1) DEFAULT '1' COMMENT '1、多租户任务;2、非多租户任务',
-                           `job_status` char(1) DEFAULT '0' COMMENT '状态（1、未发布;2、运行中;3、暂停;4、删除;）',
+                           `job_status`   char(1) DEFAULT '0' COMMENT '任务状态，0未发布，1已发布，2运行中，3暂停，4删除',
                            `job_execute_status` char(1) DEFAULT '0' COMMENT '状态（0正常 1异常）',
                            `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
                            `create_time` datetime DEFAULT NULL COMMENT '创建时间',
@@ -706,17 +706,17 @@ CREATE TABLE `sys_job` (
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_job_log`;
 CREATE TABLE `sys_job_log` (
-                               `job_log_id` bigint NOT NULL COMMENT '任务日志ID',
-                               `job_id` bigint NOT NULL COMMENT '任务id',
+                               `job_log_id`  bigint NOT NULL COMMENT '日志编号',
+                               `job_id`  bigint NOT NULL COMMENT '任务编号',
                                `job_name` varchar(64)  DEFAULT NULL COMMENT '任务名称',
                                `job_group` varchar(64)  DEFAULT NULL COMMENT '任务组名',
-                               `job_order` char(1)  DEFAULT NULL COMMENT '组内执行顺利，值越大执行优先级越高，最大值9，最小值1',
-                               `job_type` char(1)  NOT NULL DEFAULT '1' COMMENT '1、java类;2、spring bean名称;3、rest调用;4、jar调用;9其他',
-                               `execute_path` varchar(500)  DEFAULT NULL COMMENT 'job_type=3时，rest调用地址，仅支持post协议;job_type=4时，jar路径;其它值为空',
-                               `class_name` varchar(500)  DEFAULT NULL COMMENT 'job_type=1时，类完整路径;job_type=2时，spring bean名称;其它值为空',
+                               `job_order`   char(1)  DEFAULT NULL COMMENT '组内顺序，值越大优先级越高，最大9，最小1',
+                               `job_type`   char(1)  NOT NULL DEFAULT '1' COMMENT '1、类;2、组件名称;3、接口调用;4、包调用;9其他',
+                               `execute_path`   varchar(500)  DEFAULT NULL COMMENT '类型3为接口地址，仅支持提交;类型4为包路径;其他为空',
+                               `class_name`   varchar(500)  DEFAULT NULL COMMENT '类型1为类完整路径;类型2为组件名称;其他为空',
                                `method_name` varchar(500)  DEFAULT NULL COMMENT '任务方法',
                                `method_params_value` varchar(2000)  DEFAULT NULL COMMENT '参数值',
-                               `cron_expression` varchar(255)  DEFAULT NULL COMMENT 'cron执行表达式',
+                               `cron_expression`  varchar(255)  DEFAULT NULL COMMENT '定时表达式',
                                `job_message` varchar(500)  DEFAULT NULL COMMENT '日志信息',
                                `job_log_status` char(1)  DEFAULT '0' COMMENT '执行状态（0正常 1失败）',
                                `execute_time` varchar(30)  DEFAULT NULL COMMENT '执行时间',
@@ -899,14 +899,14 @@ DROP TABLE IF EXISTS `gen_datasource_conf`;
 CREATE TABLE `gen_datasource_conf` (
   `id` bigint NOT NULL COMMENT '主键',
   `name` varchar(64)  DEFAULT NULL COMMENT '别名',
-  `url` varchar(255)  DEFAULT NULL COMMENT 'jdbcurl',
+  `url`  varchar(255)  DEFAULT NULL COMMENT '连接地址',
   `username` varchar(64)  DEFAULT NULL COMMENT '用户名',
   `password` varchar(64)  DEFAULT NULL COMMENT '密码',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新',
-  `del_flag` char(1)  DEFAULT '0' COMMENT '删除标记',
+  `del_flag`  char(1)  DEFAULT '0' COMMENT '删除标记，0正常，1删除',
   `ds_type` varchar(64)  DEFAULT NULL COMMENT '数据库类型',
-  `conf_type` char(1)  DEFAULT NULL COMMENT '配置类型',
+  `conf_type`  char(1)  DEFAULT NULL COMMENT '配置类型，0主机形式，1连接地址',
   `ds_name` varchar(64)  DEFAULT NULL COMMENT '数据库名称',
   `instance` varchar(64)  DEFAULT NULL COMMENT '实例',
   `port` int DEFAULT NULL COMMENT '端口',
@@ -933,7 +933,7 @@ CREATE TABLE `gen_field_type` (
   `create_by` varchar(64)  DEFAULT NULL COMMENT '创建人',
   `update_time` datetime DEFAULT NULL COMMENT '修改时间',
   `update_by` varchar(64)  DEFAULT NULL COMMENT '修改人',
-  `del_flag` char(1)  DEFAULT '0' COMMENT '删除标记',
+  `del_flag`  char(1)  DEFAULT '0' COMMENT '删除标记，1已删除，0正常',
   PRIMARY KEY (`id`),
   UNIQUE KEY `column_type` (`column_type`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1634915190321451010  COMMENT='字段类型管理';
@@ -981,14 +981,14 @@ COMMIT;
 -- ----------------------------
 DROP TABLE IF EXISTS `gen_group`;
 CREATE TABLE `gen_group` (
-  `id` bigint NOT NULL,
+  `id`  bigint NOT NULL COMMENT '主键',
   `group_name` varchar(255)  DEFAULT NULL COMMENT '分组名称',
   `group_desc` varchar(255)  DEFAULT NULL COMMENT '分组描述',
   `create_by` varchar(64) DEFAULT NULL COMMENT '创建人',
   `update_by` varchar(64) DEFAULT NULL COMMENT '修改人',
   `create_time` datetime DEFAULT NULL COMMENT '创建人',
   `update_time` datetime DEFAULT NULL COMMENT '修改人',
-  `del_flag` char(1)  DEFAULT '0' COMMENT '删除标记',
+  `del_flag`  char(1)  DEFAULT '0' COMMENT '删除标记，1已删除，0正常',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB  COMMENT='模板分组';
 
@@ -998,7 +998,7 @@ CREATE TABLE `gen_group` (
 -- ----------------------------
 DROP TABLE IF EXISTS `gen_table`;
 CREATE TABLE `gen_table` (
-  `id` bigint NOT NULL,
+  `id`  bigint NOT NULL COMMENT '主键',
   `table_name` varchar(200)  DEFAULT NULL COMMENT '表名',
   `class_name` varchar(200)  DEFAULT NULL COMMENT '类名',
   `db_type` varchar(200)  DEFAULT NULL COMMENT '数据库类型',
@@ -1007,19 +1007,19 @@ CREATE TABLE `gen_table` (
   `email` varchar(200)  DEFAULT NULL COMMENT '邮箱',
   `package_name` varchar(200)  DEFAULT NULL COMMENT '项目包名',
   `version` varchar(200)  DEFAULT NULL COMMENT '项目版本号',
-  `i18n` char(1)  DEFAULT '0' COMMENT '是否生成带有i18n 0 不带有 1带有',
+  `i18n`   char(1)  DEFAULT '0' COMMENT '是否国际化，0否，1是',
   `style`  bigint DEFAULT NULL COMMENT '代码风格',
   `child_table_name` varchar(200)  DEFAULT NULL COMMENT '子表名称',
   `main_field` varchar(200)  DEFAULT NULL COMMENT '主表关联键',
   `child_field` varchar(200)  DEFAULT NULL COMMENT '子表关联键',
-  `generator_type` char(1)  DEFAULT '0' COMMENT '生成方式  0：zip压缩包   1：自定义目录',
+  `generator_type`   char(1)  DEFAULT '0' COMMENT '生成方式，0压缩包，1自定义目录',
   `backend_path` varchar(500)  DEFAULT NULL COMMENT '后端生成路径',
   `frontend_path` varchar(500)  DEFAULT NULL COMMENT '前端生成路径',
   `module_name` varchar(200)  DEFAULT NULL COMMENT '模块名',
   `function_name` varchar(200)  DEFAULT NULL COMMENT '功能名',
   `form_layout` tinyint DEFAULT NULL COMMENT '表单布局  1：一列   2：两列',
-  `ds_name` varchar(200)  DEFAULT NULL COMMENT '数据源ID',
-  `baseclass_id` bigint DEFAULT NULL COMMENT '基类ID',
+  `ds_name`  varchar(200)  DEFAULT NULL COMMENT '数据源名',
+  `baseclass_id`  bigint DEFAULT NULL COMMENT '基类编号',
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `table_name` (`table_name`,`ds_name`) USING BTREE
@@ -1036,7 +1036,7 @@ COMMIT;
 -- ----------------------------
 DROP TABLE IF EXISTS `gen_table_column`;
 CREATE TABLE `gen_table_column` (
-  `id` bigint NOT NULL,
+  `id`  bigint NOT NULL COMMENT '主键',
   `ds_name` varchar(200)  DEFAULT NULL COMMENT '数据源名称',
   `table_name` varchar(200)  DEFAULT NULL COMMENT '表名称',
   `field_name` varchar(200)  DEFAULT NULL COMMENT '字段名称',
@@ -1046,7 +1046,7 @@ CREATE TABLE `gen_table_column` (
   `attr_type` varchar(200)  DEFAULT NULL COMMENT '属性类型',
   `package_name` varchar(200)  DEFAULT NULL COMMENT '属性包名',
   `sort` int DEFAULT NULL COMMENT '排序',
-  `auto_fill` varchar(20)  DEFAULT NULL COMMENT '自动填充  DEFAULT、INSERT、UPDATE、INSERT_UPDATE',
+  `auto_fill`   varchar(20)  DEFAULT NULL COMMENT '自动填充，默认、插入、更新、插入并更新',
   `primary_pk` char(1)  DEFAULT '0' COMMENT '主键 0：否  1：是',
   `base_field` char(1)  DEFAULT '0' COMMENT '基类字段 0：否  1：是',
   `form_item` char(1)  DEFAULT '0' COMMENT '表单项 0：否  1：是',
@@ -1080,7 +1080,7 @@ CREATE TABLE `gen_template` (
   `template_code` text  NOT NULL COMMENT '模板代码',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新',
-  `del_flag` char(1)  NOT NULL DEFAULT '0' COMMENT '删除标记',
+  `del_flag`  char(1)  NOT NULL DEFAULT '0' COMMENT '删除标记，1已删除，0正常',
   `create_by` varchar(64) DEFAULT NULL COMMENT '创建人',
   `update_by` varchar(64) DEFAULT NULL COMMENT '修改人',
   PRIMARY KEY (`id`)
@@ -1092,8 +1092,8 @@ CREATE TABLE `gen_template` (
 -- ----------------------------
 DROP TABLE IF EXISTS `gen_template_group`;
 CREATE TABLE `gen_template_group` (
-  `group_id` bigint NOT NULL COMMENT '分组id',
-  `template_id` bigint NOT NULL COMMENT '模板id',
+  `group_id`  bigint NOT NULL COMMENT '分组编号',
+  `template_id`  bigint NOT NULL COMMENT '模板编号',
   PRIMARY KEY (`group_id`,`template_id`)
 ) ENGINE=InnoDB  COMMENT='模板分组关联表';
 
@@ -1106,217 +1106,220 @@ SET FOREIGN_KEY_CHECKS = 1;
 SET NAMES utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `sys_api_key` (
-  `id` bigint NOT NULL COMMENT 'API key id',
-  `user_id` bigint NOT NULL COMMENT 'Owner user id',
-  `username` varchar(64) NOT NULL COMMENT 'Owner username',
-  `name` varchar(64) NOT NULL COMMENT 'Key name',
-  `api_key_hash` varchar(64) NOT NULL COMMENT 'SHA-256 hash',
-  `allowed_ips` varchar(512) DEFAULT NULL COMMENT 'Comma-separated IP whitelist',
-  `expires_at` datetime DEFAULT NULL COMMENT 'Expiration time',
-  `status` char(1) NOT NULL DEFAULT '0' COMMENT '0 enabled, 1 disabled',
-  `last_used_at` datetime DEFAULT NULL COMMENT 'Last used time',
-  `del_flag` char(1) NOT NULL DEFAULT '0' COMMENT 'Logical delete flag',
-  `create_by` varchar(64) DEFAULT NULL COMMENT 'Creator',
-  `update_by` varchar(64) DEFAULT NULL COMMENT 'Updater',
-  `create_time` datetime DEFAULT NULL COMMENT 'Creation time',
-  `update_time` datetime DEFAULT NULL COMMENT 'Update time',
+  `id`  bigint NOT NULL COMMENT '主键',
+  `user_id`  bigint NOT NULL COMMENT '用户编号',
+  `username`  varchar(64) NOT NULL COMMENT '所属用户',
+  `name`  varchar(64) NOT NULL COMMENT '密钥名称',
+  `api_key_hash`  varchar(64) NOT NULL COMMENT '密钥摘要',
+  `allowed_ips`  varchar(512) DEFAULT NULL COMMENT '地址白名单',
+  `expires_at`  datetime DEFAULT NULL COMMENT '过期时间',
+  `status`   char(1) NOT NULL DEFAULT '0' COMMENT '状态，0正常，1禁用',
+  `last_used_at`  datetime DEFAULT NULL COMMENT '最近使用',
+  `del_flag`   char(1) NOT NULL DEFAULT '0' COMMENT '删除标记，1已删除，0正常',
+  `create_by`  varchar(64) DEFAULT NULL COMMENT '创建人',
+  `update_by`  varchar(64) DEFAULT NULL COMMENT '修改人',
+  `create_time`  datetime DEFAULT NULL COMMENT '创建时间',
+  `update_time`  datetime DEFAULT NULL COMMENT '修改时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_api_key_hash` (`api_key_hash`),
   KEY `idx_user_id` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='API key';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='接口密钥';
 
 CREATE TABLE IF NOT EXISTS `sys_area` (
-  `id` bigint unsigned NOT NULL COMMENT 'Area id',
-  `pid` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Parent id',
-  `name` varchar(255) NOT NULL DEFAULT '' COMMENT 'Area name',
-  `letter` varchar(255) DEFAULT '' COMMENT 'Area letter',
-  `adcode` bigint NOT NULL COMMENT 'Amap area code',
-  `location` varchar(255) DEFAULT '' COMMENT 'Longitude and latitude',
-  `area_sort` bigint DEFAULT NULL COMMENT 'Sort value',
-  `area_status` char(1) NOT NULL DEFAULT '1' COMMENT '0 disabled, 1 enabled',
-  `area_type` char(1) NOT NULL DEFAULT '0' COMMENT '0 country, 1 province, 2 city, 3 district',
-  `hot` char(1) NOT NULL DEFAULT '0' COMMENT '0 normal, 1 hot',
-  `city_code` varchar(30) DEFAULT '' COMMENT 'City code',
-  `create_by` varchar(64) DEFAULT NULL COMMENT 'Creator',
-  `create_time` datetime DEFAULT NULL COMMENT 'Creation time',
-  `update_by` varchar(64) DEFAULT NULL COMMENT 'Updater',
-  `update_time` datetime DEFAULT NULL COMMENT 'Update time',
-  `del_flag` char(1) DEFAULT '0' COMMENT 'Logical delete flag',
+  `id`  bigint unsigned NOT NULL COMMENT '主键',
+  `pid`  bigint unsigned NOT NULL DEFAULT '0' COMMENT '上级区划',
+  `name`  varchar(255) NOT NULL DEFAULT '' COMMENT '区划名称',
+  `short_name` varchar(32) NOT NULL DEFAULT '' COMMENT '简称',
+  `deep` tinyint DEFAULT NULL COMMENT '层级深度，0省，1市，2区，3镇',
+  `letter`  varchar(255) DEFAULT '' COMMENT '首字母',
+  `pinyin` varchar(64) NOT NULL DEFAULT '' COMMENT '完整拼音',
+  `adcode`  bigint NOT NULL COMMENT '区划编码',
+  `location`  varchar(255) DEFAULT '' COMMENT '经纬度',
+  `area_sort`  bigint DEFAULT NULL COMMENT '排序值',
+  `area_status`   char(1) NOT NULL DEFAULT '1' COMMENT '区划状态，0未生效，1生效',
+  `area_type`   char(1) NOT NULL DEFAULT '0' COMMENT '区划类型，0国家，1省，2城市，3区县，4街道',
+  `hot`   char(1) NOT NULL DEFAULT '0' COMMENT '是否热门，0否，1是',
+  `city_code`  varchar(30) DEFAULT '' COMMENT '城市编码',
+  `create_by`  varchar(64) DEFAULT NULL COMMENT '创建人',
+  `create_time`  datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by`  varchar(64) DEFAULT NULL COMMENT '修改人',
+  `update_time`  datetime DEFAULT NULL COMMENT '修改时间',
+  `del_flag`  char(1) DEFAULT '0' COMMENT '删除标记',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Administrative area';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='行政区划';
 
 CREATE TABLE IF NOT EXISTS `sys_clarity_data` (
-  `id` bigint NOT NULL COMMENT 'Primary key',
-  `data_date` date NOT NULL COMMENT 'Data date',
-  `total_sessions` int DEFAULT NULL COMMENT 'Total sessions',
-  `distinct_users` int DEFAULT NULL COMMENT 'Distinct users',
-  `pages_per_session` decimal(10,2) DEFAULT NULL COMMENT 'Pages per session',
-  `scroll_depth` decimal(10,2) DEFAULT NULL COMMENT 'Average scroll depth',
-  `dead_click_rate` decimal(10,2) DEFAULT NULL COMMENT 'Dead click rate',
-  `rage_click_rate` decimal(10,2) DEFAULT NULL COMMENT 'Rage click rate',
-  `device_data` text COMMENT 'Device distribution JSON',
-  `top_urls` text COMMENT 'Top URL JSON',
-  `num_of_days` tinyint NOT NULL DEFAULT 1 COMMENT 'Number of days',
-  `fetch_status` varchar(10) NOT NULL DEFAULT 'pending' COMMENT 'pending, success, or failed',
-  `referrer_url_data` text COMMENT 'Referrer URL JSON',
-  `page_title_data` text COMMENT 'Page title JSON',
-  `browser_data` text COMMENT 'Browser distribution JSON',
-  `create_by` varchar(64) DEFAULT NULL COMMENT 'Creator',
-  `update_by` varchar(64) DEFAULT NULL COMMENT 'Updater',
-  `del_flag` char(1) DEFAULT '0' COMMENT 'Logical delete flag',
-  `create_time` datetime DEFAULT NULL COMMENT 'Creation time',
-  `update_time` datetime DEFAULT NULL COMMENT 'Update time',
+  `id`  bigint NOT NULL COMMENT '主键',
+  `data_date`  date NOT NULL COMMENT '统计日期',
+  `total_sessions`  int DEFAULT NULL COMMENT '会话总数',
+  `distinct_users`  int DEFAULT NULL COMMENT '独立用户',
+  `pages_per_session`  decimal(10,2) DEFAULT NULL COMMENT '人均页数',
+  `scroll_depth`  decimal(10,2) DEFAULT NULL COMMENT '平均滚动',
+  `dead_click_rate`  decimal(10,2) DEFAULT NULL COMMENT '无效点击率',
+  `rage_click_rate`  decimal(10,2) DEFAULT NULL COMMENT '愤怒点击率',
+  `device_data`  text COMMENT '设备分布',
+  `top_urls`  text COMMENT '热门地址',
+  `num_of_days`  tinyint NOT NULL DEFAULT 1 COMMENT '统计天数',
+  `fetch_status`   varchar(10) NOT NULL DEFAULT 'pending' COMMENT '拉取状态，待处理、成功、失败',
+  `referrer_url_data`  text COMMENT '来源分布',
+  `page_title_data`  text COMMENT '页面标题',
+  `browser_data`  text COMMENT '浏览器分布',
+  `create_by`  varchar(64) DEFAULT NULL COMMENT '创建人',
+  `update_by`  varchar(64) DEFAULT NULL COMMENT '修改人',
+  `del_flag`   char(1) DEFAULT '0' COMMENT '删除标记，1已删除，0正常',
+  `create_time`  datetime DEFAULT NULL COMMENT '创建时间',
+  `update_time`  datetime DEFAULT NULL COMMENT '修改时间',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Clarity data cache';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='访问统计';
 
 CREATE TABLE IF NOT EXISTS `sys_file_group` (
-  `id` bigint unsigned NOT NULL COMMENT 'Primary key',
-  `type` tinyint unsigned DEFAULT 10 COMMENT '10 image, 20 video',
-  `name` varchar(32) DEFAULT '' COMMENT 'Group name',
-  `create_time` datetime DEFAULT NULL COMMENT 'Creation time',
-  `update_time` datetime DEFAULT NULL COMMENT 'Update time',
-  `del_flag` char(1) DEFAULT '0' COMMENT 'Logical delete flag',
-  `create_by` varchar(64) DEFAULT NULL COMMENT 'Creator',
-  `update_by` varchar(64) DEFAULT NULL COMMENT 'Updater',
-  `pid` bigint DEFAULT NULL COMMENT 'Parent id',
+  `id`  bigint unsigned NOT NULL COMMENT '主键',
+  `type`   tinyint unsigned DEFAULT 10 COMMENT '分组类型，10图片，20视频',
+  `name`  varchar(32) DEFAULT '' COMMENT '分组名称',
+  `create_time`  datetime DEFAULT NULL COMMENT '创建时间',
+  `update_time`  datetime DEFAULT NULL COMMENT '修改时间',
+  `del_flag`   char(1) DEFAULT '0' COMMENT '删除标记，1已删除，0正常',
+  `create_by`  varchar(64) DEFAULT NULL COMMENT '创建人',
+  `update_by`  varchar(64) DEFAULT NULL COMMENT '修改人',
+  `pid`  bigint DEFAULT NULL COMMENT '上级分组',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='File group';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='文件分组';
 
 CREATE TABLE IF NOT EXISTS `sys_i18n` (
-  `id` bigint NOT NULL COMMENT 'Primary key',
-  `name` varchar(255) NOT NULL COMMENT 'Identifier',
-  `zh_cn` varchar(255) NOT NULL COMMENT 'Chinese text',
-  `en` varchar(255) NOT NULL COMMENT 'English text',
-  `create_by` varchar(64) DEFAULT ' ' COMMENT 'Creator',
-  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
-  `update_by` varchar(64) DEFAULT ' ' COMMENT 'Updater',
-  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update time',
-  `del_flag` char(1) DEFAULT '0' COMMENT 'Logical delete flag',
+  `id`  bigint NOT NULL COMMENT '主键',
+  `name`  varchar(255) NOT NULL COMMENT '语言标识',
+  `zh_cn`  varchar(255) NOT NULL COMMENT '中文内容',
+  `en`  varchar(255) NOT NULL COMMENT '英文内容',
+  `create_by`  varchar(64) DEFAULT ' ' COMMENT '创建人',
+  `create_time`  datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by`  varchar(64) DEFAULT ' ' COMMENT '修改人',
+  `update_time`  datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `del_flag`  char(1) DEFAULT '0' COMMENT '删除标记',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Internationalization';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='国际化';
 
 CREATE TABLE IF NOT EXISTS `sys_message` (
-  `id` bigint NOT NULL COMMENT 'Primary key',
-  `category` varchar(255) DEFAULT NULL COMMENT 'Category',
-  `title` varchar(255) DEFAULT NULL COMMENT 'Title',
-  `content` text COMMENT 'Content',
-  `send_flag` char(1) DEFAULT '0' COMMENT 'Push flag',
-  `all_flag` char(1) DEFAULT '0' COMMENT 'Send-to-all flag',
-  `sort` int unsigned NOT NULL DEFAULT 0 COMMENT 'Sort value',
-  `create_time` datetime DEFAULT NULL COMMENT 'Creation time',
-  `update_time` datetime DEFAULT NULL COMMENT 'Update time',
-  `create_by` varchar(32) DEFAULT NULL COMMENT 'Creator',
-  `update_by` varchar(32) DEFAULT NULL COMMENT 'Updater',
-  `del_flag` char(1) NOT NULL COMMENT 'Logical delete flag',
+  `id`  bigint NOT NULL COMMENT '主键',
+  `category`   varchar(255) DEFAULT NULL COMMENT '分类，0公告，1站内信',
+  `title`  varchar(255) DEFAULT NULL COMMENT '标题',
+  `content`  text COMMENT '内容',
+  `send_flag`  char(1) DEFAULT '0' COMMENT '推送标记',
+  `all_flag`  char(1) DEFAULT '0' COMMENT '全员发送',
+  `sort`  int unsigned NOT NULL DEFAULT 0 COMMENT '排序',
+  `create_time`  datetime DEFAULT NULL COMMENT '创建时间',
+  `update_time`  datetime DEFAULT NULL COMMENT '修改时间',
+  `create_by`  varchar(32) DEFAULT NULL COMMENT '创建人',
+  `update_by`  varchar(32) DEFAULT NULL COMMENT '修改人',
+  `del_flag`  char(1) NOT NULL COMMENT '删除标记',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='In-app message';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='站内消息';
 
 CREATE TABLE IF NOT EXISTS `sys_message_relation` (
-  `id` bigint NOT NULL COMMENT 'Primary key',
-  `msg_id` bigint DEFAULT NULL COMMENT 'Message id',
-  `user_id` bigint DEFAULT NULL COMMENT 'Receiver id',
-  `content` text COMMENT 'Content',
-  `read_flag` char(1) DEFAULT '0' COMMENT 'Read flag',
-  `create_time` datetime DEFAULT NULL COMMENT 'Creation time',
-  `update_time` datetime DEFAULT NULL COMMENT 'Update time',
-  `create_by` varchar(32) DEFAULT NULL COMMENT 'Creator',
-  `update_by` varchar(32) DEFAULT NULL COMMENT 'Updater',
-  `del_flag` char(1) NOT NULL COMMENT 'Logical delete flag',
+  `id`  bigint NOT NULL COMMENT '主键',
+  `msg_id`  bigint DEFAULT NULL COMMENT '消息编号',
+  `user_id`  bigint DEFAULT NULL COMMENT '用户编号',
+  `content`  text COMMENT '内容',
+  `read_flag`   char(1) DEFAULT '0' COMMENT '已读标记，0否，1是',
+  `create_time`  datetime DEFAULT NULL COMMENT '创建时间',
+  `update_time`  datetime DEFAULT NULL COMMENT '修改时间',
+  `create_by`  varchar(32) DEFAULT NULL COMMENT '创建人',
+  `update_by`  varchar(32) DEFAULT NULL COMMENT '修改人',
+  `del_flag`  char(1) NOT NULL COMMENT '删除标记',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='In-app message relation';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='消息收件';
 
 CREATE TABLE IF NOT EXISTS `sys_role_widget` (
-  `id` bigint NOT NULL COMMENT 'Primary key',
-  `role_id` bigint NOT NULL COMMENT 'Role id',
-  `widget_keys` varchar(2000) NOT NULL COMMENT 'Allowed widget keys',
-  `layout_config` text COMMENT 'Layout configuration JSON',
-  `del_flag` char(1) DEFAULT '0' COMMENT 'Logical delete flag',
-  `create_by` varchar(64) DEFAULT NULL COMMENT 'Creator',
-  `update_by` varchar(64) DEFAULT NULL COMMENT 'Updater',
-  `create_time` datetime DEFAULT NULL COMMENT 'Creation time',
-  `update_time` datetime DEFAULT NULL COMMENT 'Update time',
+  `id`  bigint NOT NULL COMMENT '主键',
+  `role_id`  bigint NOT NULL COMMENT '角色编号',
+  `widget_keys`  varchar(2000) NOT NULL COMMENT '组件标识',
+  `layout_config`  text COMMENT '布局配置',
+  `del_flag`   char(1) DEFAULT '0' COMMENT '删除标记，1已删除，0正常',
+  `create_by`  varchar(64) DEFAULT NULL COMMENT '创建人',
+  `update_by`  varchar(64) DEFAULT NULL COMMENT '修改人',
+  `create_time`  datetime DEFAULT NULL COMMENT '创建时间',
+  `update_time`  datetime DEFAULT NULL COMMENT '修改时间',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Role home widget';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='角色组件';
 
 CREATE TABLE IF NOT EXISTS `sys_schedule` (
-  `id` bigint NOT NULL COMMENT 'Primary key',
-  `title` varchar(255) DEFAULT NULL COMMENT 'Title',
-  `schedule_type` varchar(255) DEFAULT NULL COMMENT 'Schedule type',
-  `schedule_state` varchar(255) DEFAULT NULL COMMENT 'Schedule state',
-  `content` text COMMENT 'Content',
-  `schedule_time` time DEFAULT NULL COMMENT 'Schedule time',
-  `schedule_date` date DEFAULT NULL COMMENT 'Schedule date',
-  `create_by` varchar(64) DEFAULT ' ' COMMENT 'Creator',
-  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
-  `update_by` varchar(64) DEFAULT ' ' COMMENT 'Updater',
-  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update time',
-  `del_flag` char(1) DEFAULT '0' COMMENT 'Logical delete flag',
+  `id`  bigint NOT NULL COMMENT '主键',
+  `title`  varchar(255) DEFAULT NULL COMMENT '标题',
+  `schedule_type`  varchar(255) DEFAULT NULL COMMENT '日程类型',
+  `schedule_state`  varchar(255) DEFAULT NULL COMMENT '日程状态',
+  `content`  text COMMENT '内容',
+  `schedule_time`  time DEFAULT NULL COMMENT '日程时间',
+  `schedule_date`  date DEFAULT NULL COMMENT '日程日期',
+  `create_by`  varchar(64) DEFAULT ' ' COMMENT '创建人',
+  `create_time`  datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_by`  varchar(64) DEFAULT ' ' COMMENT '修改人',
+  `update_time`  datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `del_flag`  char(1) DEFAULT '0' COMMENT '删除标记',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Schedule';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='日程安排';
 
 CREATE TABLE IF NOT EXISTS `sys_sensitive_word` (
-  `sensitive_id` bigint NOT NULL COMMENT 'Primary key',
-  `sensitive_word` varchar(255) DEFAULT NULL COMMENT 'Sensitive word',
-  `sensitive_type` char(1) DEFAULT NULL COMMENT 'Sensitive word type',
-  `remark` varchar(255) DEFAULT NULL COMMENT 'Remark',
-  `create_by` varchar(64) DEFAULT NULL COMMENT 'Creator',
-  `create_time` datetime DEFAULT NULL COMMENT 'Creation time',
-  `update_by` varchar(64) DEFAULT NULL COMMENT 'Updater',
-  `update_time` datetime DEFAULT NULL COMMENT 'Update time',
-  `del_flag` char(1) DEFAULT '0' COMMENT 'Logical delete flag',
+  `sensitive_id`  bigint NOT NULL COMMENT '主键',
+  `sensitive_word`  varchar(255) DEFAULT NULL COMMENT '敏感词',
+  `sensitive_type`  char(1) DEFAULT NULL COMMENT '敏感词类型',
+  `remark`  varchar(255) DEFAULT NULL COMMENT '备注',
+  `create_by`  varchar(64) DEFAULT NULL COMMENT '创建人',
+  `create_time`  datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by`  varchar(64) DEFAULT NULL COMMENT '修改人',
+  `update_time`  datetime DEFAULT NULL COMMENT '修改时间',
+  `del_flag`  char(1) DEFAULT '0' COMMENT '删除标记',
   PRIMARY KEY (`sensitive_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Sensitive word';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='敏感词';
 
 CREATE TABLE IF NOT EXISTS `sys_social_details` (
-  `id` bigint NOT NULL COMMENT 'Primary key',
-  `type` varchar(16) DEFAULT NULL COMMENT 'Social login type',
-  `remark` varchar(64) DEFAULT NULL COMMENT 'Remark',
-  `app_id` varchar(64) DEFAULT NULL COMMENT 'Application id',
-  `app_secret` varchar(1024) DEFAULT NULL COMMENT 'Application secret',
-  `redirect_url` varchar(128) DEFAULT NULL COMMENT 'Redirect URL',
-  `ext` varchar(255) DEFAULT NULL COMMENT 'Extension',
-  `create_by` varchar(64) DEFAULT ' ' COMMENT 'Creator',
-  `update_by` varchar(64) DEFAULT ' ' COMMENT 'Updater',
-  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
-  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update time',
-  `del_flag` char(1) DEFAULT '0' COMMENT 'Logical delete flag',
+  `id`  bigint NOT NULL COMMENT '主键',
+  `type`  varchar(16) DEFAULT NULL COMMENT '登录类型',
+  `remark`  varchar(64) DEFAULT NULL COMMENT '备注',
+  `app_id`  varchar(64) DEFAULT NULL COMMENT '应用编号',
+  `app_secret`  varchar(1024) DEFAULT NULL COMMENT '应用密钥',
+  `redirect_url`  varchar(128) DEFAULT NULL COMMENT '回调地址',
+  `ext`  varchar(255) DEFAULT NULL COMMENT '扩展信息',
+  `create_by`  varchar(64) DEFAULT ' ' COMMENT '创建人',
+  `update_by`  varchar(64) DEFAULT ' ' COMMENT '修改人',
+  `create_time`  datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time`  datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  `del_flag`   char(1) DEFAULT '0' COMMENT '删除标记，1已删除，0正常',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Social login account';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='社交账号';
 
 CREATE TABLE IF NOT EXISTS `sys_system_config` (
-  `id` bigint NOT NULL COMMENT 'Primary key',
-  `config_type` varchar(64) DEFAULT NULL COMMENT 'Config type',
-  `config_name` varchar(255) DEFAULT NULL COMMENT 'Config name',
-  `config_key` varchar(255) DEFAULT NULL COMMENT 'Config key',
-  `config_value` longtext COMMENT 'Config value',
-  `config_status` char(1) DEFAULT NULL COMMENT 'Config status',
-  `create_by` varchar(64) DEFAULT NULL COMMENT 'Creator',
-  `create_time` datetime DEFAULT NULL COMMENT 'Creation time',
-  `update_by` varchar(64) DEFAULT NULL COMMENT 'Updater',
-  `update_time` datetime DEFAULT NULL COMMENT 'Update time',
-  `del_flag` char(1) DEFAULT '0' COMMENT 'Logical delete flag',
+  `id`  bigint NOT NULL COMMENT '主键',
+  `config_type`  varchar(64) DEFAULT NULL COMMENT '配置类型',
+  `config_name`  varchar(255) DEFAULT NULL COMMENT '配置名称',
+  `config_key`  varchar(255) DEFAULT NULL COMMENT '配置键名',
+  `config_value`  longtext COMMENT '配置内容',
+  `config_status`  char(1) DEFAULT NULL COMMENT '配置状态',
+  `create_by`  varchar(64) DEFAULT NULL COMMENT '创建人',
+  `create_time`  datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by`  varchar(64) DEFAULT NULL COMMENT '修改人',
+  `update_time`  datetime DEFAULT NULL COMMENT '修改时间',
+  `del_flag`  char(1) DEFAULT '0' COMMENT '删除标记',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='System config';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='系统配置';
 
 CREATE TABLE IF NOT EXISTS `sys_user_dept` (
-  `user_id` bigint NOT NULL COMMENT 'User id',
-  `dept_id` bigint NOT NULL COMMENT 'Department id',
+  `user_id`  bigint NOT NULL COMMENT '用户编号',
+  `dept_id`  bigint NOT NULL COMMENT '部门编号',
   PRIMARY KEY (`user_id`, `dept_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='User department relation';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户部门';
 
 CREATE TABLE IF NOT EXISTS `gen_create_table` (
-  `id` bigint NOT NULL COMMENT 'Primary key',
-  `table_name` varchar(32) NOT NULL COMMENT 'Table name',
-  `ds_name` varchar(32) DEFAULT NULL COMMENT 'Datasource name',
-  `comments` varchar(512) DEFAULT NULL COMMENT 'Table comment',
-  `create_by` varchar(64) DEFAULT NULL COMMENT 'Creator',
-  `update_by` varchar(64) DEFAULT NULL COMMENT 'Updater',
-  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
-  `update_time` datetime DEFAULT NULL COMMENT 'Update time',
-  `column_info` text NOT NULL COMMENT 'Column information JSON',
-  `del_flag` char(1) DEFAULT NULL COMMENT 'Logical delete flag',
+  `id`  bigint NOT NULL COMMENT '主键',
+  `table_name`  varchar(32) NOT NULL COMMENT '表名',
+  `ds_name`  varchar(32) DEFAULT NULL COMMENT '数据源名',
+  `comments`  varchar(512) DEFAULT NULL COMMENT '表注释',
+  `create_by`  varchar(64) DEFAULT NULL COMMENT '创建人',
+  `update_by`  varchar(64) DEFAULT NULL COMMENT '修改人',
+  `create_time`  datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time`  datetime DEFAULT NULL COMMENT '修改时间',
+  `column_info`  text NOT NULL COMMENT '字段信息',
+  `del_flag`   char(1) DEFAULT NULL COMMENT '删除标记，1已删除，0正常',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Codegen table creation';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='建表记录';
 
 DELIMITER $$
 
@@ -1346,26 +1349,26 @@ END $$
 
 DELIMITER ;
 
-CALL bubble_add_4_1_column('sys_menu', 'component', 'varchar(255) DEFAULT NULL COMMENT ''Component path''');
-CALL bubble_add_4_1_column('sys_user', 'password_expire_flag', 'char(1) DEFAULT ''0'' COMMENT ''Password expire flag''');
-CALL bubble_add_4_1_column('sys_user', 'password_modify_time', 'datetime DEFAULT NULL COMMENT ''Password modify time''');
-CALL bubble_add_4_1_column('sys_user', 'wx_cp_userid', 'varchar(100) DEFAULT NULL COMMENT ''WeCom user id''');
-CALL bubble_add_4_1_column('sys_user', 'wx_ding_userid', 'varchar(100) DEFAULT NULL COMMENT ''DingTalk user id''');
-CALL bubble_add_4_1_column('sys_file', 'group_id', 'bigint DEFAULT NULL COMMENT ''File group id''');
-CALL bubble_add_4_1_column('sys_file', 'dir', 'varchar(200) DEFAULT NULL COMMENT ''File directory''');
-CALL bubble_add_4_1_column('sys_file', 'hash', 'varchar(50) DEFAULT NULL COMMENT ''File hash''');
-CALL bubble_add_4_1_column('sys_dict_item', 'list_class', 'varchar(50) DEFAULT NULL COMMENT ''Tag type''');
-CALL bubble_add_4_1_column('sys_job_log', 'scheduled_fire_time', 'datetime DEFAULT NULL COMMENT ''Scheduled fire time''');
-CALL bubble_add_4_1_column('sys_job_log', 'fire_instance_id', 'varchar(128) DEFAULT NULL COMMENT ''Quartz fire instance id''');
-CALL bubble_add_4_1_column('sys_job_log', 'dedup_status', 'char(1) DEFAULT ''0'' COMMENT ''Deduplication status''');
-CALL bubble_add_4_1_column('gen_field_type', 'default_form_type', 'varchar(64) DEFAULT NULL COMMENT ''Default form type''');
-CALL bubble_add_4_1_column('gen_field_type', 'default_query_form_type', 'varchar(64) DEFAULT NULL COMMENT ''Default query form type''');
-CALL bubble_add_4_1_column('gen_table', 'sync_menu_id', 'bigint DEFAULT NULL COMMENT ''Synchronized menu id''');
-CALL bubble_add_4_1_column('gen_table', 'sync_route', 'char(1) DEFAULT ''0'' COMMENT ''Synchronize route flag''');
-CALL bubble_add_4_1_column('gen_table', 'parent_field', 'varchar(200) DEFAULT NULL COMMENT ''Parent field''');
-CALL bubble_add_4_1_column('gen_table', 'name_field', 'varchar(200) DEFAULT NULL COMMENT ''Name field''');
-CALL bubble_add_4_1_column('gen_table', 'package_common_name', 'varchar(200) DEFAULT NULL COMMENT ''Common package name''');
-CALL bubble_add_4_1_column('gen_table', 'package_entity_name', 'varchar(200) DEFAULT NULL COMMENT ''Entity package name''');
+CALL bubble_add_4_1_column('sys_menu', 'component', 'varchar(255) DEFAULT NULL COMMENT ''组件路径''');
+CALL bubble_add_4_1_column('sys_user', 'password_expire_flag', 'char(1) DEFAULT ''0'' COMMENT ''密码过期''');
+CALL bubble_add_4_1_column('sys_user', 'password_modify_time', 'datetime DEFAULT NULL COMMENT ''改密时间''');
+CALL bubble_add_4_1_column('sys_user', 'wx_cp_userid', 'varchar(100) DEFAULT NULL COMMENT ''企微账号''');
+CALL bubble_add_4_1_column('sys_user', 'wx_ding_userid', 'varchar(100) DEFAULT NULL COMMENT ''钉钉账号''');
+CALL bubble_add_4_1_column('sys_file', 'group_id', 'bigint DEFAULT NULL COMMENT ''分组编号''');
+CALL bubble_add_4_1_column('sys_file', 'dir', 'varchar(200) DEFAULT NULL COMMENT ''文件目录''');
+CALL bubble_add_4_1_column('sys_file', 'hash', 'varchar(50) DEFAULT NULL COMMENT ''文件摘要''');
+CALL bubble_add_4_1_column('sys_dict_item', 'list_class', 'varchar(50) DEFAULT NULL COMMENT ''标签样式''');
+CALL bubble_add_4_1_column('sys_job_log', 'scheduled_fire_time', 'datetime DEFAULT NULL COMMENT ''计划触发时间''');
+CALL bubble_add_4_1_column('sys_job_log', 'fire_instance_id', 'varchar(128) DEFAULT NULL COMMENT ''触发实例号''');
+CALL bubble_add_4_1_column('sys_job_log', 'dedup_status', 'char(1) DEFAULT ''0'' COMMENT ''去重状态，0正常执行，1重复触发，2运行中跳过''');
+CALL bubble_add_4_1_column('gen_field_type', 'default_form_type', 'varchar(64) DEFAULT NULL COMMENT ''默认表单''');
+CALL bubble_add_4_1_column('gen_field_type', 'default_query_form_type', 'varchar(64) DEFAULT NULL COMMENT ''默认查询项''');
+CALL bubble_add_4_1_column('gen_table', 'sync_menu_id', 'bigint DEFAULT NULL COMMENT ''同步菜单''');
+CALL bubble_add_4_1_column('gen_table', 'sync_route', 'char(1) DEFAULT ''0'' COMMENT ''同步路由''');
+CALL bubble_add_4_1_column('gen_table', 'parent_field', 'varchar(200) DEFAULT NULL COMMENT ''父级字段''');
+CALL bubble_add_4_1_column('gen_table', 'name_field', 'varchar(200) DEFAULT NULL COMMENT ''名称字段''');
+CALL bubble_add_4_1_column('gen_table', 'package_common_name', 'varchar(200) DEFAULT NULL COMMENT ''项目公共模块包名''');
+CALL bubble_add_4_1_column('gen_table', 'package_entity_name', 'varchar(200) DEFAULT NULL COMMENT ''项目实体模块包名''');
 
 DROP PROCEDURE IF EXISTS `bubble_add_4_1_column`;
 

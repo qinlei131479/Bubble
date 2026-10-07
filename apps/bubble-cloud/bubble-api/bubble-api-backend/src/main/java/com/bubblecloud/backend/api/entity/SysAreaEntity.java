@@ -42,10 +42,28 @@ public class SysAreaEntity extends Model<SysAreaEntity> {
 	private String name;
 
 	/**
+	 * 简称
+	 */
+	@Schema(description = "简称")
+	private String shortName;
+
+	/**
+	 * 层级深度，0省，1市，2区，3镇
+	 */
+	@Schema(description = "层级深度，0省，1市，2区，3镇")
+	private Integer deep;
+
+	/**
 	 * 地区字母
 	 */
 	@Schema(description = "地区字母")
 	private String letter;
+
+	/**
+	 * 完整拼音
+	 */
+	@Schema(description = "完整拼音")
+	private String pinyin;
 
 	/**
 	 * 高德地区code
@@ -74,7 +92,7 @@ public class SysAreaEntity extends Model<SysAreaEntity> {
 	/**
 	 * 0:国家,1:省,2:城市,3:区县
 	 */
-	@Schema(description = "0:国家,1:省,2:城市,3:区县")
+	@Schema(description = "0国家，1省，2城市，3区县，4街道")
 	private String areaType;
 
 	/**

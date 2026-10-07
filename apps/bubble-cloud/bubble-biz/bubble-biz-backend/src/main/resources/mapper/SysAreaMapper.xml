@@ -7,7 +7,10 @@
         <id property="id" column="id"/>
         <result property="pid" column="pid"/>
         <result property="name" column="name"/>
+        <result property="shortName" column="short_name"/>
+        <result property="deep" column="deep"/>
         <result property="letter" column="letter"/>
+        <result property="pinyin" column="pinyin"/>
         <result property="adcode" column="adcode"/>
         <result property="location" column="location"/>
         <result property="areaSort" column="area_sort"/>

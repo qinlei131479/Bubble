@@ -3,6 +3,9 @@
   src: url('iconfont.woff2?t=1770778879248') format('woff2'),
        url('iconfont.woff?t=1770778879248') format('woff'),
        url('iconfont.ttf?t=1770778879248') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
 }
 
 .iconfont {

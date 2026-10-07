@@ -15,7 +15,8 @@
     <!--避免微信管理防盗链机制-->
     <meta name="referrer" content="no-referrer"/>
     <link rel="icon" href="/favicon.ico"/>
-    <!--引入字体图标-->
+    <!--引入字体图标。preload 与样式里的地址保持一致，避免字体请求排在地区数据后面才开始。-->
+    <link rel="preload" href="/assets/iconfont/iconfont.woff2?t=1770778879248" as="font" type="font/woff2" crossorigin="anonymous"/>
     <link rel="stylesheet" href="/assets/iconfont/iconfont.css"/>
     <link rel="stylesheet" href="/assets/styles/font-awesome.min.css"/>
     <title>Bubble-UI 智能平台</title>

@@ -9,12 +9,12 @@ export default {
 	<el-card v-loading="loading" class="box-card h-96">
 		<template #header>
 			<div class="flex items-center justify-between">
-				<span class="text-[15px] font-semibold text-gray-800 dark:text-gray-100">会话访客</span>
+				<span class="text-[15px] font-semibold text-gray-800 dark:text-gray-100">{{ $t('home.widgets.names.session-uv-summary') }}</span>
 			</div>
 		</template>
 		<template v-if="!loading && !hasData">
 			<div class="flex min-h-0 flex-1 items-center justify-center">
-				<el-empty description="暂无会话数据" :image-size="70" />
+				<el-empty :description="$t('home.widgets.noSessionData')" :image-size="70" />
 			</div>
 		</template>
 		<template v-else>
@@ -33,12 +33,14 @@ export default {
 <script setup lang="ts" name="session-uv-summary">
 import { systemClarity } from '/@/api/admin/system';
 import { auth } from '/@/utils/authFunction';
+import { useI18n } from 'vue-i18n';
 
 interface ClaritySummary {
 	totalSessions?: number;
 	distinctUsers?: number;
 }
 
+const { t } = useI18n();
 const loading = ref(true);
 const summary = ref<ClaritySummary>({});
 
@@ -48,12 +50,12 @@ const formatCount = (value?: number) => (value != null ? value.toLocaleString() 
 
 const stats = computed(() => [
 	{
-		label: '总会话数',
+		label: t('home.widgets.totalSessions'),
 		value: formatCount(summary.value.totalSessions),
 		desc: 'Sessions',
 	},
 	{
-		label: '独立访客 UV',
+		label: t('home.widgets.distinctUsers'),
 		value: formatCount(summary.value.distinctUsers),
 		desc: 'Unique visitors',
 	},

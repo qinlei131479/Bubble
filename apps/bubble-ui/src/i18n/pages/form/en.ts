@@ -28,6 +28,12 @@ export default {
 		download: 'Download',
 		expand: 'Expand',
 		selectAll: 'SelectAll',
+		noDataText: 'No data',
+		yes: 'Yes',
+		no: 'No',
+		getDataFailed: 'Failed to load data',
+		loadFailedText: 'Failed to load. Click to retry',
+		refreshSuccessText: 'Refreshed successfully',
 	},
 	message: {
 		box: {

@@ -38,6 +38,7 @@ export default {
 		inputjobTypeTip: 'input jobType',
 		inputexecutePathTip: 'Please enter the Request Address',
 		inputclassNameTip: 'Please enter the Full Class Path',
+		inputBeanNameTip: 'Please enter the bean name',
 		inputmethodNameTip: 'input methodName',
 		inputmethodParamsValueTip: 'input methodParamsValue',
 			inputcronExpressionTip: 'input cronExpression',

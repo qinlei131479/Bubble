@@ -9,12 +9,12 @@ export default {
 	<el-card v-loading="loading" class="box-card h-[340px] min-[992px]:h-96">
 		<template #header>
 			<div class="flex items-center justify-between">
-				<span class="text-[15px] font-semibold text-gray-800 dark:text-gray-100">设备分布</span>
+				<span class="text-[15px] font-semibold text-gray-800 dark:text-gray-100">{{ $t('home.widgets.names.device-distribution') }}</span>
 			</div>
 		</template>
 		<template v-if="!loading && deviceList.length === 0">
 			<div class="flex items-center justify-center flex-1 min-h-0">
-				<el-empty description="暂无设备数据" :image-size="80" />
+				<el-empty :description="$t('home.widgets.noDeviceData')" :image-size="80" />
 			</div>
 		</template>
 		<template v-else-if="deviceList.length > 0">
@@ -49,12 +49,14 @@ import { TooltipComponent, GraphicComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import { useThemeConfig } from '/@/stores/themeConfig';
 import { auth } from '/@/utils/authFunction';
+import { useI18n } from 'vue-i18n';
 
 use([PieChart, TooltipComponent, GraphicComponent, CanvasRenderer]);
 
 const storesThemeConfig = useThemeConfig();
 const { themeConfig } = storeToRefs(storesThemeConfig);
 const isDark = computed(() => themeConfig.value.isDark);
+const { t } = useI18n();
 
 const loading = ref(true);
 const deviceList = ref<{ name: string; value: number }[]>([]);
@@ -95,7 +97,7 @@ const chartOption = computed(() => ({
 					left: 'center',
 					top: '16px',
 					style: {
-						text: '总访问',
+						text: t('home.widgets.totalVisits'),
 						font: '11px system-ui, sans-serif',
 						fill: '#94a3b8',
 						textAlign: 'center',

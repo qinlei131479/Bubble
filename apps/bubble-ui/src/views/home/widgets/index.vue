@@ -47,7 +47,7 @@
 													<el-icon v-if="allComps[element as keyof typeof allComps].icon">
 														<component :is="allComps[element as keyof typeof allComps].icon" />
 													</el-icon>
-													{{ allComps[element as keyof typeof allComps].title }}
+													{{ widgetLabel(element, 'title') }}
 												</label>
 											</div>
 										</div>
@@ -198,7 +198,12 @@ const grid = ref(JSON.parse(JSON.stringify(defaultGrid.value)));
 const allCompsList = computed(() => {
 	const list: WidgetListItem[] = [];
 	for (const [key, compDetails] of Object.entries(allComps as Record<string, WidgetComponent>)) {
-		list.push({ key, title: compDetails.title, icon: compDetails.icon, description: compDetails.description });
+		list.push({
+			key,
+			title: widgetLabel(key, 'title'),
+			icon: compDetails.icon,
+			description: widgetLabel(key, 'description'),
+		});
 	}
 
 	const myCopmsList = grid.value.copmsList.flat();
@@ -235,9 +240,14 @@ const myCompsList = computed(() => {
 
 const nowCompsList = computed(() => grid.value.copmsList.flat());
 
-const getWidgetTitle = (itemKey: string): string => {
-	return (allComps as Record<string, WidgetComponent>)[itemKey]?.title || itemKey;
+const widgetLabel = (itemKey: string, field: 'title' | 'description'): string => {
+	const i18nKey = `home.widgets.${field === 'title' ? 'names' : 'descs'}.${itemKey}`;
+	const text = t(i18nKey);
+	if (text !== i18nKey) return text;
+	return (allComps as Record<string, WidgetComponent>)[itemKey]?.[field] || itemKey;
 };
+
+const getWidgetTitle = (itemKey: string): string => widgetLabel(itemKey, 'title');
 
 const custom = (): void => {
 	toggleCustomizing(true);

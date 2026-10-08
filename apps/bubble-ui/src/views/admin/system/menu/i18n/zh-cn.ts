@@ -53,5 +53,10 @@ export default {
         sortOrderRequired: '排序不能为空',
         componentLengthInvalid: '组件名称长度必须介于 5 和 255 之间',
         componentRequired: '请输入组件名称',
+        setHomePage: '设为首页',
+        currentHomePage: '当前首页',
+        setHomePageConfirm: '确定将此菜单设为首页？',
+        setHomePageSuccess: '首页设置成功',
+        setHomePageFailed: '首页设置失败',
     },
 };

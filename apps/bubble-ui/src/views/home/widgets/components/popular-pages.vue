@@ -9,12 +9,12 @@ export default {
 	<el-card v-loading="loading" class="box-card h-[340px] min-[992px]:h-96">
 		<template #header>
 			<div class="flex items-center justify-between">
-				<span class="text-[15px] font-semibold text-gray-800 dark:text-gray-100">热门页面</span>
+				<span class="text-[15px] font-semibold text-gray-800 dark:text-gray-100">{{ $t('home.widgets.names.popular-pages') }}</span>
 			</div>
 		</template>
 		<template v-if="!loading && pageList.length === 0">
 			<div class="flex min-h-0 flex-1 items-center justify-center">
-				<el-empty description="暂无页面数据" :image-size="80" />
+				<el-empty :description="$t('home.widgets.noPageData')" :image-size="80" />
 			</div>
 		</template>
 		<template v-else-if="pageList.length > 0">
@@ -35,12 +35,14 @@ import { TooltipComponent, GridComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import { useThemeConfig } from '/@/stores/themeConfig';
 import { auth } from '/@/utils/authFunction';
+import { useI18n } from 'vue-i18n';
 
 use([BarChart, TooltipComponent, GridComponent, CanvasRenderer]);
 
 const storesThemeConfig = useThemeConfig();
 const { themeConfig } = storeToRefs(storesThemeConfig);
 const isDark = computed(() => themeConfig.value.isDark);
+const { t } = useI18n();
 
 const loading = ref(true);
 const pageList = ref<{ name: string; value: number }[]>([]);
@@ -69,7 +71,7 @@ const chartOption = computed(() => {
 			axisPointer: { type: 'shadow' },
 			formatter: (params: any) => {
 				const item = params[0];
-				return `${top5[item.dataIndex]?.name ?? item.name}<br/>访问次数: <b>${item.value.toLocaleString()}</b>`;
+				return `${top5[item.dataIndex]?.name ?? item.name}<br/>${t('home.widgets.visitCount')}: <b>${item.value.toLocaleString()}</b>`;
 			},
 		},
 		grid: { top: 12, right: 24, bottom: 12, left: 8, containLabel: true },

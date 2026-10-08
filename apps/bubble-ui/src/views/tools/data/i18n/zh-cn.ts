@@ -1,4 +1,17 @@
 export default {
+	clarity: {
+		totalSessions: '总会话数',
+		distinctUsers: '独立访客 UV',
+		pagesPerSession: '每会话页面数',
+		scrollDepth: '平均滚动深度',
+		deadClickRate: '死点击率',
+		rageClickRate: '激怒点击率',
+		deviceDistribution: '设备分布',
+		browserDistribution: '浏览器分布',
+		referrerUrl: '来源页面 Top5',
+		pageTitle: '页面标题 Top5',
+		popularPages: '热门页面 Top5',
+	},
 	cache: {
 		title: '缓存监控',
 		redisVersion: 'Redis版本',

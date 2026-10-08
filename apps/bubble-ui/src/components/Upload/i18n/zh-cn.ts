@@ -15,6 +15,7 @@ export default {
 		typeErrorText: '文件类型错误，请上传 ',
 		uploadLimit: '上传文件数量超出限制，最多允许上传',
 		files: '个文件',
+		noFiles: '暂无文件',
 	},
 	uploadTipPrefix: '请上传',
 	uploadTipPaste: '支持点击、拖拽、粘贴上传。',

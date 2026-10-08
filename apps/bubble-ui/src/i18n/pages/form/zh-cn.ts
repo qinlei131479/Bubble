@@ -27,6 +27,12 @@ export default {
 		download: '下载',
 		expand: '展开/折叠',
 		selectAll: '全选/不全选',
+		noDataText: '暂无数据',
+		yes: '是',
+		no: '否',
+		getDataFailed: '获取数据失败',
+		loadFailedText: '加载失败，请点击重试',
+		refreshSuccessText: '刷新成功',
 	},
 	message: {
 		box: {

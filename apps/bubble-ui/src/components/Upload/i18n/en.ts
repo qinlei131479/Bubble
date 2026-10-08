@@ -15,6 +15,7 @@ export default {
 		typeErrorText: 'file type error, upload ',
 		uploadLimit: 'Upload limit exceeded. Maximum',
 		files: 'files allowed',
+		noFiles: 'No files',
 	},
 	uploadTipPrefix: 'Please upload',
 	uploadTipPaste: 'Supports click, drag and paste upload.',

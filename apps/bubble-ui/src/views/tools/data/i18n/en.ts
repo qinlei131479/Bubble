@@ -1,4 +1,17 @@
 export default {
+	clarity: {
+		totalSessions: 'Total sessions',
+		distinctUsers: 'Unique visitors',
+		pagesPerSession: 'Pages per session',
+		scrollDepth: 'Average scroll depth',
+		deadClickRate: 'Dead click rate',
+		rageClickRate: 'Rage click rate',
+		deviceDistribution: 'Devices',
+		browserDistribution: 'Browsers',
+		referrerUrl: 'Top 5 referrers',
+		pageTitle: 'Top 5 page titles',
+		popularPages: 'Top 5 pages',
+	},
 	cache: {
 		title: 'Cache Monitor',
 		redisVersion: 'Redis Version',

@@ -58,13 +58,13 @@
 			<artifactId>spring-boot-admin-starter-client</artifactId>
 			<version>${spring-boot-admin.version}</version>
 		</dependency>
-		<!--Lombok-->
+		<!--Lombok依赖-->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<scope>provided</scope>
 		</dependency>
-		<!-- JAVA 17 -->
+		<!-- JDK 17兼容依赖 -->
 		<dependency>
 			<groupId>com.sun.xml.bind</groupId>
 			<artifactId>jaxb-impl</artifactId>
@@ -112,7 +112,7 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
-			<!-- commons-lang3 -->
+		<!-- commons-lang3依赖 -->
 			<dependency>
 				<groupId>org.apache.commons</groupId>
 				<artifactId>commons-lang3</artifactId>
@@ -174,7 +174,7 @@
 					<artifactId>docker-maven-plugin</artifactId>
 					<version>${docker.plugin.version}</version>
 					<configuration>
-						<!-- Docker Remote Api-->
+						<!-- Docker远程API -->
 						<dockerHost>${docker.host}</dockerHost>
 						<!-- Docker 镜像私服-->
 						<registry>${docker.registry}</registry>
@@ -281,8 +281,6 @@
 			<properties>
 				<!-- 环境标识，需要与配置文件的名称相对应 -->
 				<profiles.active>dev</profiles.active>
-				<nacos.username>nacos</nacos.username>
-				<nacos.password>nacos</nacos.password>
 				<nacos.namespace>bubble</nacos.namespace>
 			</properties>
 			<activation>

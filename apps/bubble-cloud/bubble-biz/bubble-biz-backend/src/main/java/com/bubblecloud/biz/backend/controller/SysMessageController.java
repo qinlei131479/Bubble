@@ -167,6 +167,7 @@ public class SysMessageController {
 	 */
 	@Operation(summary = "查询用户阅读情况", description = "查询用户阅读情况")
 	@GetMapping("/user/read/page")
+	@HasPermission("sys_message_view")
 	public R getUserMessageList(@ParameterObject Page page, @ParameterObject Long messageId,
 			@ParameterObject @RequestParam(required = false) String name) {
 		return R.ok(sysMessageService.pageUserRead(page, messageId, name));
@@ -229,6 +230,7 @@ public class SysMessageController {
 	}
 
 	@GetMapping("/list/hook")
+	@HasPermission("sys_message_view")
 	public R listHookBizCode(MessageHookDTO messageHookDTO) {
 		return sysMessageService.listHookBizCode(messageHookDTO);
 	}

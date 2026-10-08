@@ -19,6 +19,7 @@ package com.bubblecloud.biz.backend.controller;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ArrayUtil;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.bubblecloud.backend.api.entity.SysSocialDetails;
@@ -63,7 +64,9 @@ public class SysSocialDetailsController {
 	@GetMapping("/page")
 	@HasPermission("sys_social_details_view")
 	public R getSocialDetailsPage(@ParameterObject Page page, @ParameterObject SysSocialDetails sysSocialDetails) {
-		return R.ok(sysSocialDetailsService.page(page, Wrappers.query(sysSocialDetails)));
+		IPage<SysSocialDetails> result = sysSocialDetailsService.page(page, Wrappers.query(sysSocialDetails));
+		maskSecrets(result.getRecords());
+		return R.ok(result);
 	}
 
 	/**
@@ -82,12 +85,16 @@ public class SysSocialDetailsController {
 	 * @return R
 	 */
 	@GetMapping("/{type}")
+	@HasPermission("sys_social_details_view")
 	public R getByType(@PathVariable("type") String type) {
-		return R.ok(sysSocialDetailsService
-			.list(Wrappers.<SysSocialDetails>lambdaQuery().eq(SysSocialDetails::getType, type)));
+		List<SysSocialDetails> result = sysSocialDetailsService
+			.list(Wrappers.<SysSocialDetails>lambdaQuery().eq(SysSocialDetails::getType, type));
+		maskSecrets(result);
+		return R.ok(result);
 	}
 
 	@GetMapping("/getById/{id}")
+	@HasPermission("sys_social_details_edit")
 	public R info(@PathVariable("id") Long id) {
 		return R.ok(sysSocialDetailsService.getById(id));
 	}
@@ -155,9 +162,18 @@ public class SysSocialDetailsController {
 	 * 导出
 	 */
 	@GetMapping("/export")
+	@HasPermission("sys_social_details_view")
 	public List<SysSocialDetails> export(SysSocialDetails sysSocialDetails, Long[] ids) {
-		return sysSocialDetailsService.list(Wrappers.lambdaQuery(sysSocialDetails)
+		List<SysSocialDetails> result = sysSocialDetailsService.list(Wrappers.lambdaQuery(sysSocialDetails)
 			.in(ArrayUtil.isNotEmpty(ids), SysSocialDetails::getId, CollUtil.toList(ids)));
+		maskSecrets(result);
+		return result;
+	}
+
+	private void maskSecrets(List<SysSocialDetails> details) {
+		if (CollUtil.isNotEmpty(details)) {
+			details.forEach(detail -> detail.setAppSecret("******"));
+		}
 	}
 
 }

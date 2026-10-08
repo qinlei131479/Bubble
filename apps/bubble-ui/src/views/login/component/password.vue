@@ -118,7 +118,7 @@
 
 		<!-- 服务协议提示 -->
 		<div v-if="siteConfig.privacyTip" class="flex items-center justify-center">
-			<span class="text-xs leading-relaxed text-center text-gray-400 dark:text-slate-500" v-html="siteConfig.privacyTip">
+			<span class="text-xs leading-relaxed text-center text-gray-400 dark:text-slate-500" v-html="sanitizeHtml(siteConfig.privacyTip)">
 			</span>
 		</div>
 	</el-form>
@@ -137,6 +137,7 @@ import { useUserInfo } from '/@/stores/userInfo';
 import { useI18n } from 'vue-i18n';
 import { generateUUID } from '/@/utils/other';
 import { LoginErrorEnum, LoginTypeEnum } from '/@/api/login';
+import { sanitizeHtml } from '/@/utils/sanitize';
 
 // 使用国际化插件
 const { t } = useI18n();

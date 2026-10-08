@@ -7,6 +7,9 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * 代码生成默认配置类
  *
@@ -70,6 +73,12 @@ public class CodeGenDefaultProperties implements InitializingBean {
 	 * 生成代码的前端路径
 	 */
 	private String frontendPath = "AgetBubbles";
+
+	/**
+	 * 生成文件和校验路径允许写入的根目录。为空时使用服务工作目录所在的
+	 * 最近Git仓库根目录。
+	 */
+	private List<String> allowedOutputRoots = new ArrayList<>();
 
 	/**
 	 * 生成代码的作者

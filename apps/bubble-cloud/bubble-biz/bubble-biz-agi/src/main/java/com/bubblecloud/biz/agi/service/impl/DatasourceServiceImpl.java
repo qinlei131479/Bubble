@@ -1,7 +1,11 @@
 package com.bubblecloud.biz.agi.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.bubblecloud.common.core.exception.CheckedException;
+import com.bubblecloud.common.core.util.R;
 import com.bubblecloud.common.mybatis.service.impl.UpServiceImpl;
 import com.bubblecloud.agi.api.entity.Datasource;
 import com.bubblecloud.agi.api.entity.DatasourceTable;
@@ -12,6 +16,7 @@ import com.bubblecloud.agi.api.vo.TableInfoVO;
 import com.bubblecloud.biz.agi.mapper.DatasourceMapper;
 import com.bubblecloud.biz.agi.mapper.DatasourceTableMapper;
 import com.bubblecloud.biz.agi.mapper.DatasourceTableFieldMapper;
+import com.bubblecloud.biz.agi.config.DatasourceSecurityProperties;
 import com.bubblecloud.biz.agi.service.DatasourceService;
 import com.bubblecloud.biz.agi.util.JdbcUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -41,9 +46,13 @@ public class DatasourceServiceImpl extends UpServiceImpl<DatasourceMapper, Datas
 	@Autowired
 	private DatasourceTableFieldMapper datasourceTableFieldMapper;
 
+	@Autowired
+	private DatasourceSecurityProperties datasourceSecurityProperties;
+
 	@Override
 	public DatasourceTestResultVO testConnection(DatasourceTestDTO dto) {
-		DatasourceTestResultVO result = JdbcUtils.testConnection(dto);
+		DatasourceTestResultVO result = JdbcUtils.testConnection(dto,
+				datasourceSecurityProperties.isAllowPrivateNetwork());
 
 		// 如果有数据源ID，则更新数据库中的状态
 		if (Objects.nonNull(dto.getId())) {
@@ -59,7 +68,25 @@ public class DatasourceServiceImpl extends UpServiceImpl<DatasourceMapper, Datas
 
 	@Override
 	public List<TableInfoVO> getTableInfo(DatasourceTestDTO dto) {
-		return JdbcUtils.getTableInfo(dto);
+		return JdbcUtils.getTableInfo(dto, datasourceSecurityProperties.isAllowPrivateNetwork());
+	}
+
+	@Override
+	public R insert(Datasource req) {
+		validateConnection(req, true);
+		return super.insert(req);
+	}
+
+	@Override
+	public R update(Datasource req) {
+		validateConnection(req, false);
+		return super.update(req);
+	}
+
+	@Override
+	public R update(Datasource req, boolean isCustom) {
+		validateConnection(req, false);
+		return super.update(req, isCustom);
 	}
 
 	/**
@@ -88,7 +115,8 @@ public class DatasourceServiceImpl extends UpServiceImpl<DatasourceMapper, Datas
 		dto.setDbSchema(datasource.getInstance());
 
 		// 3. 获取表信息
-		List<TableInfoVO> allTableInfoList = JdbcUtils.getTableInfo(dto);
+		List<TableInfoVO> allTableInfoList = JdbcUtils.getTableInfo(dto,
+				datasourceSecurityProperties.isAllowPrivateNetwork());
 		if (CollUtil.isEmpty(allTableInfoList)) {
 			log.warn("数据源[{}]未获取到任何表", dsId);
 			return;
@@ -156,7 +184,8 @@ public class DatasourceServiceImpl extends UpServiceImpl<DatasourceMapper, Datas
 				continue;
 			}
 			// 获取表的字段信息
-			List<DatasourceTableField> fieldList = JdbcUtils.getTableFields(dto, tableInfo.getTableName());
+			List<DatasourceTableField> fieldList = JdbcUtils.getTableFields(dto, tableInfo.getTableName(),
+					datasourceSecurityProperties.isAllowPrivateNetwork());
 			// 保存字段信息
 			for (DatasourceTableField field : fieldList) {
 				field.setDsId(dsId);
@@ -175,5 +204,22 @@ public class DatasourceServiceImpl extends UpServiceImpl<DatasourceMapper, Datas
 		this.updateById(updateDatasource);
 
 		log.info("数据源[{}]表结构同步成功，共{}张表", dsId, tableInfoList.size());
+	}
+
+	private void validateConnection(Datasource datasource, boolean create) {
+		if (datasource == null) {
+			throw new CheckedException("数据源配置不能为空");
+		}
+		if (!create && StrUtil.isBlank(datasource.getDsType()) && StrUtil.isBlank(datasource.getHost())
+				&& ObjectUtil.isNull(datasource.getPort()) && StrUtil.isBlank(datasource.getDsName())) {
+			return;
+		}
+		DatasourceTestDTO dto = new DatasourceTestDTO();
+		dto.setDsType(datasource.getDsType());
+		dto.setHost(datasource.getHost());
+		dto.setPort(datasource.getPort());
+		dto.setDsName(datasource.getDsName());
+		dto.setDbSchema(datasource.getInstance());
+		JdbcUtils.validate(dto, datasourceSecurityProperties.isAllowPrivateNetwork());
 	}
 }

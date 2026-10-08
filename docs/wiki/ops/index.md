@@ -8,10 +8,10 @@
 
 | 服务名 | 容器 | 宿主机端口 | 说明 |
 |--------|------|------------|------|
-| mysql | bubble-mysql | 33306 | 初始化脚本来自 `script/db` |
-| redis | bubble-redis | 36379 | 无密码 |
-| register | bubble-register | 8848、9848、8080 | Nacos |
-| gateway | bubble-gateway | 8666 | 依赖 register |
+| mysql | bubble-mysql | 3306 | 初始化脚本来自 `script/db` |
+| redis | bubble-redis | 6379 | 无密码 |
+| register | bubble-register | 8848、9848 | Nacos |
+| gateway | bubble-gateway | 8666 | 依赖 register；Nginx 的 `/api` 也转发到这里 |
 | auth | bubble-auth | 不映射 | 仅 `bubble-net` 内访问 |
 | biz-backend | bubble-biz-backend | 不映射 | 系统业务 |
 | codegen | bubble-codegen | 不映射 | 代码生成 |
@@ -22,18 +22,38 @@
 不包含 `bubble-biz-agi`。Python 智能体的服务块是注释。容器网络为 `bubble-net`，`NACOS_HOST=bubble-register`，数据库与缓存主机名为 `bubble-mysql`、`bubble-redis`。
 
 ```bash
-docker compose -f docker/docker-compose.yml up -d --build
-docker compose -f docker/docker-compose.yml up -d mysql redis register
-docker compose -f docker/docker-compose.yml logs -f gateway auth biz-backend
+cd docker
+cp .env.example .env
+# 替换 change-me，生成独立的 Nacos 身份键值和至少 32 字节随机密钥。
+docker compose up -d mysql redis register
+docker compose logs -f register
+```
+
+等待 Nacos 就绪后访问 `http://127.0.0.1:8848/nacos`，用 `nacos` / `nacos` 登录。创建 `.env` 中 `NACOS_USERNAME` / `NACOS_PASSWORD` 对应的新管理员；退出后用新管理员禁用或强改默认账号。最后启动其余服务并检查 Java 日志：
+
+```bash
+docker compose up -d --build
+docker compose logs -f gateway auth biz-backend
 ```
 
 镜像要求模块已执行 `mvn package`，Dockerfile 复制 `target/*.jar`。前端使用 `docker/bubble-ui.Dockerfile`，Nginx 配置在 `docker/nginx`。
 
-在 `docker/` 下复制 `.env.example` 为 `.env` 可覆盖 `MYSQL_PORT`（33306）、`MYSQL_ROOT_PASSWORD`（root）、`REDIS_PORT`（36379）。不要提交生产密码。
+在 `docker/` 下复制 `.env.example` 为 `.env`，必须设置 `NACOS_USERNAME`、`NACOS_PASSWORD`、`NACOS_AUTH_IDENTITY_KEY`、`NACOS_AUTH_IDENTITY_VALUE` 和不少于 32 字节随机值的 `NACOS_AUTH_TOKEN`，并可选覆盖 `MYSQL_PORT`（3306）、`MYSQL_ROOT_PASSWORD`（root）、`REDIS_PORT`（6379）。不要提交生产密码。
+
+`bubble_config.sql` 只提供 Nacos 初始管理员，属于首启引导凭据。生产环境首次启动后要立即创建新的管理员账号、更新客户端凭据，并禁用或强改默认账号；完成后再重启全部 Java 服务。跳过这一步会使已知种子凭据继续有效。
+
+### 安全基线
+
+- 浏览器不要携带 URL Token。`access_token` 只放在 `Authorization: Bearer` 中；WebSocket 握手只接受 `token` Cookie，并且 Cookie 使用 `SameSite=Strict`，HTTPS 自动加 `Secure`。
+- Nginx 拒绝 absolute-form 请求目标，统一 `Host` 为 `$host`，并下发 CSP、HSTS、`X-Frame-Options`、`nosniff` 和 Referrer Policy。网关也会拒绝缺失、重复或含非法字符的 Host。
+- CORS 默认关闭携带凭证，允许来源为空。启用跨域时在 Nacos 中填写明确的管理端域名，不要使用 `*` 配合 Cookie。
+- AGI 数据源是否允许回环、私网和共享地址段，由 Nacos `bubble-biz-agi-dev.yml` 的 `agi.datasource.allow-private-network` 决定。未配置时为 `true`，修改后刷新生效。链路本地、组播和云元数据地址始终拒绝。
+- Codegen 写入目录必须位于 `CODE_GEN_ALLOWED_OUTPUT_ROOTS` 配置的根目录内；未配置时回退到包含进程工作目录的 Git 仓库根。拒绝绝对路径、`..`、符号链接逃逸和 ZIP 路径穿越。
+- 代码生成不再覆盖已有数据库表；同名表会明确失败，以免误删数据。
 
 `depends_on` 只等待容器创建。网关和业务镜像会先 `sleep` 再启动 Java。若仍连不上配置中心，等 register 就绪后执行 `docker compose restart gateway auth biz-backend`。
 
-IDE 默认访问 `127.0.0.1:3306`，compose 的 MySQL 在宿主机是 33306。同一份 Nacos 配置不要同时指向容器主机名和 localhost。空库与增量脚本的选择见[快速开始](/wiki/guide/#quick-start)。
+宿主机与 IDE 都使用 `127.0.0.1:3306`。同一份 Nacos 配置不要同时指向容器主机名和 localhost。空库与增量脚本的选择见[快速开始](/wiki/guide/#quick-start)。
 
 ## 脚本部署 {#script}
 
@@ -52,6 +72,8 @@ properties 包含应用名、端口、健康检查地址、jar 路径和 profile
 `script/db/Dockerfile` 把初始化 SQL 放进 `bubble-mysql` 镜像。改脚本后需重新构建镜像；已有数据卷不会自动重放 SQL。
 
 发布顺序：备份 `bubble`；执行增量 SQL；先发布业务 jar，再发布依赖它的服务，最后发布网关；用管理端打开改过的页面。令牌格式不兼容时安排重新登录，不要在脚本中删除 `bubble-cloud::token::`。
+
+旧客户端如果仍调用 `GET /auth/token/check_token?token=...`，需要改为 `POST /auth/token/check_token`，表单体为 `token=...`，客户端 Basic 认证保持不变。这会影响未同步升级的外部脚本。
 
 ## 监控与日志 {#monitoring}
 
@@ -87,7 +109,7 @@ properties 包含应用名、端口、健康检查地址、jar 路径和 profile
 
 ### 启动报 Failed to configure a DataSource
 
-到命名空间 `bubble` 查看 `{服务名}-dev.yml`。JDBC 端口与实际实例一致：本机 3306、compose 映射 33306，容器内为 `bubble-mysql:3306`。
+到命名空间 `bubble` 查看 `{服务名}-dev.yml`。JDBC 端口与实际实例一致：宿主机 `127.0.0.1:3306`，容器内为 `bubble-mysql:3306`。
 
 ### 网关文档空指针
 

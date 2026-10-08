@@ -15,7 +15,7 @@
               {{ t('sensitive.matchResult') }}
               <tip :content="t('sensitive.matchResultTip')"/>
             </template>
-            <div v-html="matchResult" @click="handleChildClick"/>
+            <div v-html="sanitizeHtml(matchResult)" @click="handleChildClick"/>
           </el-form-item>
         </el-col>
       </el-row>
@@ -34,6 +34,7 @@ import { useMessage } from '/@/hooks/message';
 import { testObj, addObj, getObj } from '/@/api/admin/sensitive';
 import { rule } from '/@/utils/validate';
 import { useI18n } from 'vue-i18n';
+import { sanitizeHtml } from '/@/utils/sanitize';
 
 /**
  * 定义组件事件

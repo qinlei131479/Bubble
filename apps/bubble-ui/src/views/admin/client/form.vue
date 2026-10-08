@@ -10,7 +10,11 @@
 
 				<el-col :span="12" class="mb20">
 					<el-form-item :label="t('client.clientSecret')" prop="clientSecret">
-						<el-input :placeholder="t('client.inputClientSecretTip')" v-model="form.clientSecret" />
+						<el-input
+							:placeholder="form.id ? t('client.inputClientSecretEditTip') : t('client.inputClientSecretTip')"
+							v-model="form.clientSecret"
+							show-password
+						/>
 					</el-form-item>
 				</el-col>
 
@@ -43,7 +47,7 @@
 				<el-col :span="12" class="mb20" v-if="form.authorizedGrantTypes.includes('authorization_code')">
 					<el-form-item :label="t('client.autoapprove')" prop="autoapprove">
 						<el-radio-group v-model="form.autoapprove">
-							<el-radio :key="index" :label="item.value" border v-for="(item, index) in common_status">{{ item.label }} </el-radio>
+							<el-radio :key="index" :value="item.value" border v-for="(item, index) in common_status">{{ item.label }} </el-radio>
 						</el-radio-group>
 					</el-form-item>
 				</el-col>
@@ -74,7 +78,7 @@
 						<el-col :span="12" class="mb20">
 							<el-form-item :label="t('client.captchaFlag')" prop="captchaFlag">
 								<el-radio-group v-model="form.captchaFlag">
-									<el-radio :key="index" :label="item.value" border v-for="(item, index) in captcha_flag_types">
+									<el-radio :key="index" :value="item.value" border v-for="(item, index) in captcha_flag_types">
 										{{ item.label }}
 									</el-radio>
 								</el-radio-group>
@@ -83,7 +87,7 @@
 						<el-col :span="12" class="mb20">
 							<el-form-item :label="t('client.encFlag')" prop="encFlag">
 								<el-radio-group v-model="form.encFlag">
-									<el-radio :key="index" :label="item.value" border v-for="(item, index) in enc_flag_types">
+									<el-radio :key="index" :value="item.value" border v-for="(item, index) in enc_flag_types">
 										{{ item.label }}
 									</el-radio>
 								</el-radio-group>
@@ -92,7 +96,7 @@
 						<el-col :span="12" class="mb20">
 							<el-form-item :label="t('client.onlineQuantity')" prop="onlineQuantity">
 								<el-radio-group v-model="form.onlineQuantity">
-									<el-radio :key="index" :label="item.value" border v-for="(item, index) in enc_flag_types">
+									<el-radio :key="index" :value="item.value" border v-for="(item, index) in enc_flag_types">
 										{{ item.label }}
 									</el-radio>
 								</el-radio-group>
@@ -130,6 +134,7 @@ const { t } = useI18n();
 const dataFormRef = ref();
 const visible = ref(false);
 const loading = ref(false);
+const isEdit = ref(false);
 
 // 定义字典
 const { grant_types, common_status, captcha_flag_types, enc_flag_types } = useDict(
@@ -157,6 +162,7 @@ const form = reactive({
 });
 
 const collapseActive = ref('1');
+const CLIENT_SECRET_MASK = '******';
 
 // 定义校验规则
 const dataRules = ref({
@@ -166,15 +172,27 @@ const dataRules = ref({
 		{ validator: rule.validatorLowercase, trigger: 'blur' },
 		{
 			validator: (rule: any, value: any, callback: any) => {
-				validateclientId(rule, value, callback, form.id !== '', t);
+				validateclientId(rule, value, callback, isEdit.value, t);
 			},
 			trigger: 'blur',
 		},
 	],
 	clientSecret: [
 		{ validator: rule.overLength, trigger: 'blur' },
-		{ required: true, message: t('client.clientSecretRequired'), trigger: 'blur' },
-		{ validator: rule.validatorLower, trigger: 'blur' },
+		{
+			validator: (rule: any, value: any, callback: any) => {
+				if (!form.id && !value) {
+					callback(new Error(t('client.clientSecretRequired')));
+					return;
+				}
+				if (value && value !== CLIENT_SECRET_MASK) {
+					rule.validatorLower(rule, value, callback);
+					return;
+				}
+				callback();
+			},
+			trigger: 'blur',
+		},
 	],
 	scope: [
 		{ validator: rule.overLength, trigger: 'blur' },
@@ -202,6 +220,7 @@ const dataRules = ref({
 // 打开弹窗
 const openDialog = (id: string) => {
 	visible.value = true;
+	isEdit.value = Boolean(id);
 	form.id = '';
 	// 重置表单数据
 	nextTick(() => {
@@ -244,6 +263,7 @@ const getClientDetailsData = async (id: string) => {
 	try {
 		const { data } = await getObj(id);
 		Object.assign(form, data);
+		form.clientSecret = data?.clientSecretMasked || '';
 	} catch (err: any) {
 		useMessage().error(err.msg);
 	}

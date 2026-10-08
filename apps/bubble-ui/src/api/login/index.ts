@@ -4,6 +4,7 @@ import { validateNull } from '/@/utils/validate';
 import { useUserInfo } from '/@/stores/userInfo';
 import { encryptPassword } from '/@/utils/passwordCrypto';
 import { refAutoReset } from '@vueuse/core';
+import qs from 'qs';
 
 /**
  * https://www.ietf.org/rfc/rfc6749.txt
@@ -167,13 +168,14 @@ export const checkToken = async (): Promise<boolean> => {
 		const basicAuth = Session.get('basicAuth') || defaultPasswordBasicAuth();
 		const response = await request({
 			url: '/auth/token/check_token',
+			method: 'post',
+			data: qs.stringify({ token: Session.getToken() }),
 			headers: {
 				skipToken: true,
 				Authorization: basicAuth,
 				'Content-Type': FORM_CONTENT_TYPE,
+				'Enc-Flag': 'false',
 			},
-			method: 'get',
-			params: { token: Session.getToken() },
 		});
 
 		// 检查响应有效性

@@ -22,6 +22,8 @@ import com.bubblecloud.common.core.constant.SecurityConstants;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -30,6 +32,8 @@ import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR;
@@ -48,15 +52,23 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.a
 @Component
 public class CustomRequestGlobalFilter implements GlobalFilter, Ordered {
 
+	private static final Pattern HOST_PATTERN =
+			Pattern.compile("^(?:\\[[0-9a-fA-F:]+]|[A-Za-z0-9.-]+)(?::\\d{1,5})?$");
+
 	/**
-	 * Process the Web request and (optionally) delegate to the next {@code WebFilter}
-	 * through the given {@link GatewayFilterChain}.
-	 * @param exchange the current server exchange
-	 * @param chain provides a way to delegate to the next filter
-	 * @return {@code Mono<Void>} to indicate when request processing is complete
+	 * 处理Web请求，并可选地通过指定的{@link GatewayFilterChain}委托给下一个{@code WebFilter}。
+	 * @param exchange 当前服务端交换上下文
+	 * @param chain 提供委托给下一个过滤器的能力
+	 * @return {@code Mono<Void>} 表示请求处理已完成
 	 */
 	@Override
 	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+		List<String> hostHeaders = exchange.getRequest().getHeaders().getOrEmpty(HttpHeaders.HOST);
+		if (hostHeaders.size() != 1 || !HOST_PATTERN.matcher(hostHeaders.get(0)).matches()) {
+			exchange.getResponse().setStatusCode(HttpStatus.BAD_REQUEST);
+			return exchange.getResponse().setComplete();
+		}
+
 		// 1. 清洗请求头中from 参数
 		ServerHttpRequest request = exchange.getRequest().mutate().headers(httpHeaders -> {
 			httpHeaders.remove(SecurityConstants.FROM);

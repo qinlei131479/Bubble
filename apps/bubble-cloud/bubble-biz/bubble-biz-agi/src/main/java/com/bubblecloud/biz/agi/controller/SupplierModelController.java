@@ -10,6 +10,9 @@ import com.bubblecloud.common.mybatis.base.Req;
 import com.bubblecloud.common.core.util.R;
 import com.bubblecloud.common.log.annotation.SysLog;
 import com.bubblecloud.agi.api.entity.SupplierModel;
+import com.bubblecloud.agi.api.entity.Supplier;
+import com.bubblecloud.agi.api.vo.SupplierModelVO;
+import com.bubblecloud.agi.api.vo.SupplierVO;
 import com.bubblecloud.biz.agi.service.SupplierModelService;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -23,8 +26,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 
 /**
  * AI供应商模型表
@@ -52,9 +53,12 @@ public class SupplierModelController {
 	@Operation(summary = "分页查询", description = "分页查询")
 	@GetMapping("/page")
 	@HasPermission("agi_supplierModel_view")
-	public R<Page<SupplierModel>> page(@ParameterObject Pg pg, @ParameterObject SupplierModel req) {
+	public R<Page<SupplierModelVO>> page(@ParameterObject Pg pg, @ParameterObject SupplierModel req) {
 		pg.addOrderDefault(OrderItem.desc("t.id"));
-		return R.ok(supplierModelService.findPg(pg, req));
+		Page<SupplierModel> page = supplierModelService.findPg(pg, req);
+		Page<SupplierModelVO> safePage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
+		safePage.setRecords(page.getRecords().stream().map(this::toSafeVO).toList());
+		return R.ok(safePage);
 	}
 
 	/**
@@ -66,16 +70,22 @@ public class SupplierModelController {
 	@Operation(summary = "通过条件查询", description = "通过条件查询对象")
 	@GetMapping("/details")
 	@HasPermission("agi_supplierModel_view")
-	public R<List<SupplierModel>> details(@ParameterObject SupplierModel req) {
+	public R<List<SupplierModelVO>> details(@ParameterObject SupplierModel req) {
 		List<SupplierModel> list = supplierModelService.list(Wrappers.query(req));
-		if (Objects.nonNull(req.getId()) && CollUtil.isNotEmpty(list)) {
-			list.forEach(item -> Optional.ofNullable(supplierService.getById(item.getSupplierId()))
-					.ifPresent(supplier -> {
-						item.setApiKey(supplier.getApiKey());
-						item.setApiDomain(supplier.getApiDomain());
-					}));
+		return R.ok(list.stream().map(this::toSafeVO).toList());
+	}
+
+	private SupplierModelVO toSafeVO(SupplierModel model) {
+		Supplier supplier = supplierService.getById(model.getSupplierId());
+		SupplierModelVO vo = SupplierModelVO.from(model, false, false);
+		if (supplier != null) {
+			vo.setSupplierName(supplier.getName());
+			vo.setApiKeyConfigured(supplier.getApiKey() != null && !supplier.getApiKey().isBlank());
+			vo.setApiDomainConfigured(supplier.getApiDomain() != null && !supplier.getApiDomain().isBlank());
+			vo.setApiDomain(supplier.getApiDomain());
+			vo.setApiKeyMasked(vo.isApiKeyConfigured() ? SupplierVO.SECRET_MASK : "");
 		}
-		return R.ok(list);
+		return vo;
 	}
 
 	/**

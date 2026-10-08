@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 /**
  * 文件管理
@@ -39,6 +40,8 @@ import java.util.Objects;
 @Tag(description = "sys-file", name = "文件管理")
 @SecurityRequirement(name = HttpHeaders.AUTHORIZATION)
 public class SysFileController {
+
+	private static final Pattern LOCAL_TEMPLATE_PATTERN = Pattern.compile("^[A-Za-z0-9][A-Za-z0-9._-]{0,127}\\.xlsx?$");
 
 	private final SysFileService sysFileService;
 
@@ -76,6 +79,7 @@ public class SysFileController {
 	}
 
 	@PutMapping("/rename")
+	@HasPermission("sys_file_del")
 	public R rename(@RequestBody SysFile sysFile) {
 		return R.ok(sysFileService.updateById(sysFile));
 	}
@@ -132,7 +136,15 @@ public class SysFileController {
 	@SneakyThrows
 	@GetMapping("/local/file/{fileName}")
 	public void localFile(@PathVariable String fileName, HttpServletResponse response) {
+		if (!LOCAL_TEMPLATE_PATTERN.matcher(fileName).matches()) {
+			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			return;
+		}
 		ClassPathResource resource = new ClassPathResource("file/" + fileName);
+		if (!resource.exists()) {
+			response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+			return;
+		}
 		response.setContentType("application/octet-stream; charset=UTF-8");
 		IoUtil.copy(resource.getInputStream(), response.getOutputStream());
 	}
@@ -153,6 +165,7 @@ public class SysFileController {
 	 * @return 包含添加结果的R对象
 	 */
 	@PostMapping("/group/add")
+	@HasPermission("sys_file_del")
 	public R addGroup(@RequestBody SysFileGroup fileGroup) {
 		return R.ok(sysFileService.saveOrUpdateGroup(fileGroup));
 	}
@@ -163,6 +176,7 @@ public class SysFileController {
 	 * @return 包含更新结果的R对象
 	 */
 	@PutMapping("/group/update")
+	@HasPermission("sys_file_del")
 	public R updateGroup(@RequestBody SysFileGroup fileGroup) {
 		return R.ok(sysFileService.saveOrUpdateGroup(fileGroup));
 	}
@@ -173,6 +187,7 @@ public class SysFileController {
 	 * @return 包含删除结果的R对象
 	 */
 	@DeleteMapping("/group/delete/{id}")
+	@HasPermission("sys_file_del")
 	public R updateGroup(@PathVariable Long id) {
 		return R.ok(sysFileService.deleteGroup(id));
 	}
@@ -183,6 +198,7 @@ public class SysFileController {
 	 * @return 包含移动结果的R对象
 	 */
 	@PutMapping("/group/move")
+	@HasPermission("sys_file_del")
 	public R moveFileGroup(@RequestBody SysFileGroupDTO fileGroupDTO) {
 		return R.ok(sysFileService.moveFileGroup(fileGroupDTO));
 	}

@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.bubblecloud.common.core.util.R;
+import com.bubblecloud.common.security.annotation.HasPermission;
 import com.bubblecloud.common.excel.annotation.ResponseExcel;
 import com.bubblecloud.common.log.annotation.SysLog;
 import com.bubblecloud.common.security.annotation.HasPermission;
@@ -68,6 +69,7 @@ public class SysJobController {
 	 */
 	@GetMapping("/page")
 	@Operation(description = "分页定时业务查询")
+	@HasPermission({ "job_sys_job_add", "job_sys_job_edit", "job_sys_job_export" })
 	public R getSysJobPage(Page page, SysJob sysJob) {
 		LambdaQueryWrapper<SysJob> wrapper = Wrappers.<SysJob>lambdaQuery()
 			.like(StrUtil.isNotBlank(sysJob.getJobName()), SysJob::getJobName, sysJob.getJobName())
@@ -86,6 +88,7 @@ public class SysJobController {
 	 */
 	@GetMapping("/validate")
 	@Operation(description = "检查定时任务")
+	@HasPermission({ "job_sys_job_add", "job_sys_job_edit" })
 	public R validate(String field, SysJob sysJob) {
 		return sysJobService.checkJob(field, sysJob);
 	}
@@ -97,6 +100,7 @@ public class SysJobController {
 	 */
 	@GetMapping("/{id}")
 	@Operation(description = "唯一标识查询定时任务")
+	@HasPermission({ "job_sys_job_add", "job_sys_job_edit", "job_sys_job_export" })
 	public R getById(@PathVariable("id") Long id) {
 		return R.ok(sysJobService.getById(id));
 	}
@@ -304,6 +308,7 @@ public class SysJobController {
 	 */
 	@GetMapping("/job-log")
 	@Operation(description = "唯一标识查询定时执行日志")
+	@HasPermission({ "job_sys_job_add", "job_sys_job_edit", "job_sys_job_export" })
 	public R getJobLog(Page page, SysJobLog sysJobLog) {
 		return R.ok(sysJobLogService.page(page, Wrappers.query(sysJobLog)));
 	}
@@ -314,6 +319,7 @@ public class SysJobController {
 	 */
 	@GetMapping("/is-valid-task-name")
 	@Operation(description = "检验任务名称和任务组联合是否唯一")
+	@HasPermission({ "job_sys_job_add", "job_sys_job_edit" })
 	public R isValidTaskName(@RequestParam String jobName, @RequestParam String jobGroup) {
 		return this.sysJobService
 			.count(Wrappers.query(SysJob.builder().jobName(jobName).jobGroup(jobGroup).build())) > 0
@@ -328,6 +334,7 @@ public class SysJobController {
 	@ResponseExcel
 	@GetMapping("/export")
 	@Operation(description = "导出任务")
+	@HasPermission("job_sys_job_export")
 	public List<SysJob> export(SysJob sysJob) {
 		return sysJobService.list(Wrappers.query(sysJob));
 	}

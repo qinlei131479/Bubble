@@ -82,11 +82,11 @@ docker compose -f docker/docker-compose.yml up -d mysql redis register
 
 | 服务 | 宿主机 | 容器内 |
 |------|--------|--------|
-| MySQL | 33306（`MYSQL_PORT`） | 3306 |
-| Redis | 36379（`REDIS_PORT`） | 6379 |
+| MySQL | 3306（`MYSQL_PORT`） | 3306 |
+| Redis | 6379（`REDIS_PORT`） | 6379 |
 | Nacos | 8848，gRPC 9848 | 同左 |
 
-MySQL root 密码默认 `root`。IDE 里的服务默认连 `127.0.0.1:3306` 与 `6379`。若数据库只暴露在 33306，数据源要改到该端口，或本机另起监听 3306 的实例。
+MySQL root 密码默认 `root`。宿主机与 IDE 都使用 `127.0.0.1:3306` 和 `6379`。
 
 空库：
 
@@ -138,4 +138,4 @@ npm run dev
 
 登录必须填写验证码，答案在 Redis，前缀 `bubble-cloud::DEFAULT_CODE_KEY:`。`sys_oauth_client_details` 必须与 `.env` 使用同一组 `client_id` 与 `client_secret`。请求格式与令牌键见[认证](/wiki/architecture/#auth)。
 
-网站配置中的锁定次数和密码有效期写入 `sys_public_param` 的 `LOGIN_ERROR_TIMES`、`PASSWORD_EXPIRE_DAYS`。Nacos 为 `nacos` / `nacos`，命名空间 `bubble`。监控台不使用 `admin`。
+网站配置中的锁定次数和密码有效期写入 `sys_public_param` 的 `LOGIN_ERROR_TIMES`、`PASSWORD_EXPIRE_DAYS`。Nacos 凭据来自环境变量 `NACOS_USERNAME` / `NACOS_PASSWORD`，命名空间 `bubble`。监控台不使用 `admin`。

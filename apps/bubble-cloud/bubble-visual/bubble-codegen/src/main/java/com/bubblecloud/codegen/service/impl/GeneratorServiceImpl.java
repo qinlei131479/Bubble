@@ -21,6 +21,7 @@ import com.bubblecloud.codegen.service.GenTableColumnService;
 import com.bubblecloud.codegen.service.GenTableService;
 import com.bubblecloud.codegen.service.GeneratorService;
 import com.bubblecloud.codegen.util.VelocityKit;
+import com.bubblecloud.codegen.util.CodegenOutputPathValidator;
 import com.bubblecloud.codegen.util.vo.GroupVO;
 
 import cn.hutool.core.collection.CollUtil;
@@ -82,6 +83,8 @@ public class GeneratorServiceImpl implements GeneratorService {
 
 	private final GenTemplateService genTemplateService;
 
+	private final CodegenOutputPathValidator outputPathValidator;
+
 	private final RemoteMenuService menuService;
 
 	/**
@@ -114,7 +117,7 @@ public class GeneratorServiceImpl implements GeneratorService {
 			dataModel.put(GenTable.Fields.frontendPath, frontendPath);
 			dataModel.put(GenTable.Fields.backendPath, backendPath);
 			String content = VelocityKit.renderStr(templateCode, dataModel);
-			String path = VelocityKit.renderStr(generatorPath, dataModel);
+			String path = outputPathValidator.validateZipEntry(VelocityKit.renderStr(generatorPath, dataModel));
 
 			// 添加到zip
 			zip.putNextEntry(new ZipEntry(path));
@@ -161,7 +164,7 @@ public class GeneratorServiceImpl implements GeneratorService {
 			dataModel.put(GenTable.Fields.frontendPath, frontendPath);
 			dataModel.put(GenTable.Fields.backendPath, backendPath);
 			String content = VelocityKit.renderStr(templateCode, dataModel);
-			String path = VelocityKit.renderStr(generatorPath, dataModel);
+			String path = outputPathValidator.validateZipEntry(VelocityKit.renderStr(generatorPath, dataModel));
 
 			// 使用 map 简化代码
 			result.add(new HashMap<>(4) {
@@ -200,7 +203,8 @@ public class GeneratorServiceImpl implements GeneratorService {
 			String generatorPath = template.getGeneratorPath();
 			String content = VelocityKit.renderStr(templateCode, dataModel);
 			String path = VelocityKit.renderStr(generatorPath, dataModel);
-			FileUtil.writeUtf8String(content, path);
+			Path outputFile = outputPathValidator.validateOutputFile(path);
+			FileUtil.writeUtf8String(content, outputFile.toString());
 		}
 	}
 
@@ -226,12 +230,7 @@ public class GeneratorServiceImpl implements GeneratorService {
 			throw new CheckedException("路径无效");
 		}
 
-		String normalizedPath = FileUtil.normalize(path);
-		if (StrUtil.isBlank(normalizedPath)) {
-			throw new CheckedException("路径无效");
-		}
-
-		return FileUtil.isDirectory(normalizedPath);
+		return Files.isDirectory(outputPathValidator.validateDirectory(path));
 	}
 
 	/**

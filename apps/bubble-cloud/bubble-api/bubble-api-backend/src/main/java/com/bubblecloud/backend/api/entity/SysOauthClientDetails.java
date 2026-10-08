@@ -30,14 +30,12 @@ public class SysOauthClientDetails extends Model<SysOauthClientDetails> {
 	/**
 	 * 客户端ID
 	 */
-	@NotBlank(message = "client_id 不能为空")
 	@Schema(description = "客户端id")
 	private String clientId;
 
 	/**
 	 * 客户端密钥
 	 */
-	@NotBlank(message = "client_secret 不能为空")
 	@Schema(description = "客户端密钥")
 	private String clientSecret;
 

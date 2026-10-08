@@ -11,7 +11,9 @@ import com.bubblecloud.common.core.constant.CacheConstants;
 import com.bubblecloud.common.core.constant.SecurityConstants;
 import com.bubblecloud.common.core.util.MsgUtils;
 import com.bubblecloud.common.core.util.R;
+import com.bubblecloud.common.core.util.WebUtils;
 import com.bubblecloud.common.data.cache.RedisUtils;
+import com.bubblecloud.common.data.resolver.ParamResolver;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dromara.sms4j.api.SmsBlend;
@@ -45,24 +47,33 @@ public class SysMobileServiceImpl implements SysMobileService {
 	 */
 	@Override
 	public R<Boolean> sendSmsCode(String mobile) {
+		String clientIp = WebUtils.getIP();
+		String ipLimitKey = CacheConstants.DEFAULT_CODE_KEY + "MOBILE_IP_LIMIT:" + clientIp;
+		Long ipSendTimes = RedisUtils.increment(ipLimitKey, 1L);
+		RedisUtils.expire(ipLimitKey, SecurityConstants.CODE_TIME);
+		Long maxTimes = ParamResolver.getLong("SMS_IP_LIMIT_TIMES", 5L);
+		if (ipSendTimes != null && ipSendTimes > maxTimes) {
+			return R.ok(Boolean.FALSE, MsgUtils.getMessage(UpmsErrorCodes.SYS_APP_SMS_OFTEN));
+		}
+
 		List<SysUser> userList = userMapper
 			.selectList(Wrappers.<SysUser>query().lambda().eq(SysUser::getPhone, mobile));
 
 		if (CollUtil.isEmpty(userList)) {
-			log.info("手机号未注册:{}", mobile);
-			return R.ok(Boolean.FALSE, MsgUtils.getMessage(UpmsErrorCodes.SYS_APP_PHONE_UNREGISTERED, mobile));
+			log.info("手机号未注册");
+			return R.ok(Boolean.TRUE);
 		}
 
 		String cacheKey = CacheConstants.DEFAULT_CODE_KEY + mobile;
 		String codeObj = RedisUtils.get(cacheKey);
 
 		if (codeObj != null) {
-			log.info("手机号验证码未过期:{}，{}", mobile, codeObj);
+			log.info("手机号验证码未过期");
 			return R.ok(Boolean.FALSE, MsgUtils.getMessage(UpmsErrorCodes.SYS_APP_SMS_OFTEN));
 		}
 
 		String code = RandomUtil.randomNumbers(Integer.parseInt(SecurityConstants.CODE_SIZE));
-		log.info("手机号生成验证码成功:{},{}", mobile, code);
+		log.info("手机号生成验证码成功");
 		RedisUtils.set(cacheKey, code, SecurityConstants.CODE_TIME, TimeUnit.SECONDS);
 
 		// 集成短信服务发送验证码

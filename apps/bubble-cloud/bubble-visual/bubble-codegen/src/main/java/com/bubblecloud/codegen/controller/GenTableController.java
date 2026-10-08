@@ -11,6 +11,7 @@ import com.bubblecloud.codegen.entity.GenTableColumnEntity;
 import com.bubblecloud.common.core.util.R;
 import com.bubblecloud.common.excel.annotation.ResponseExcel;
 import com.bubblecloud.common.log.annotation.SysLog;
+import com.bubblecloud.common.security.annotation.HasPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -47,6 +48,7 @@ public class GenTableController {
 	 */
 	@Operation(summary = "分页查询", description = "分页查询")
 	@GetMapping("/page")
+	@HasPermission("codegen_template_view")
 	public R getTablePage(Page page, GenTable table) {
 		return R.ok(tableService.queryTablePage(page, table));
 	}
@@ -58,6 +60,7 @@ public class GenTableController {
 	 */
 	@Operation(summary = "通过id查询", description = "通过id查询")
 	@GetMapping("/{id}")
+	@HasPermission("codegen_template_view")
 	public R getTable(@PathVariable("id") Long id) {
 		return R.ok(tableService.getById(id));
 	}
@@ -67,6 +70,7 @@ public class GenTableController {
 	 * @param dsName 数据源
 	 */
 	@GetMapping("/list/{dsName}")
+	@HasPermission("codegen_template_view")
 	public R listTable(@PathVariable("dsName") String dsName) {
 		return R.ok(tableService.queryTableList(dsName));
 	}
@@ -77,6 +81,7 @@ public class GenTableController {
 	 * @param tableName 表名称
 	 */
 	@GetMapping("/{dsName}/{tableName}")
+	@HasPermission("codegen_template_view")
 	public R<GenTable> getTable(@PathVariable("dsName") String dsName, @PathVariable String tableName) {
 		if (SqlInjectionUtils.check(tableName)) {
 			log.warn("代码生成检测到非法表名，dsName: {}, tableName: {}", dsName, tableName);
@@ -91,6 +96,7 @@ public class GenTableController {
 	 * @param tableName 表名称
 	 */
 	@GetMapping("/column/{dsName}/{tableName}")
+	@HasPermission("codegen_template_view")
 	public R getColumn(@PathVariable("dsName") String dsName, @PathVariable String tableName) throws Exception {
 		if (SqlInjectionUtils.check(tableName)) {
 			log.warn("代码生成检测到非法表名，dsName: {}, tableName: {}", dsName, tableName);
@@ -105,6 +111,7 @@ public class GenTableController {
 	 * @param tableName 表名称
 	 */
 	@GetMapping("/ddl/{dsName}/{tableName}")
+	@HasPermission("codegen_template_view")
 	public R getDdl(@PathVariable("dsName") String dsName, @PathVariable String tableName) throws Exception {
 		if (SqlInjectionUtils.check(tableName)) {
 			log.warn("代码生成检测到非法表名，dsName: {}, tableName: {}", dsName, tableName);
@@ -120,6 +127,7 @@ public class GenTableController {
 	 * @return 操作结果
 	 */
 	@GetMapping("/sync/{dsName}/{tableName}")
+	@HasPermission("codegen_template_add")
 	public R<GenTable> syncTable(@PathVariable("dsName") String dsName, @PathVariable String tableName) {
 		if (SqlInjectionUtils.check(tableName)) {
 			log.warn("代码生成检测到非法表名，dsName: {}, tableName: {}", dsName, tableName);
@@ -136,6 +144,7 @@ public class GenTableController {
 	@Operation(summary = "修改列属性", description = "修改列属性")
 	@SysLog("修改列属性")
 	@PutMapping
+	@HasPermission("codegen_template_edit")
 	public R updateById(@RequestBody GenTable table) {
 		return R.ok(tableService.updateById(table));
 	}
@@ -147,6 +156,7 @@ public class GenTableController {
 	 * @param tableFieldList 字段列表
 	 */
 	@PutMapping("/field/{dsName}/{tableName}")
+	@HasPermission("codegen_template_edit")
 	public R<String> updateTableField(@PathVariable("dsName") String dsName, @PathVariable String tableName,
 			@RequestBody List<GenTableColumnEntity> tableFieldList) {
 		tableColumnService.updateTableField(dsName, tableName, tableFieldList);
@@ -160,6 +170,7 @@ public class GenTableController {
 	 */
 	@ResponseExcel
 	@GetMapping("/export")
+	@HasPermission("codegen_template_export")
 	public List<GenTable> export(GenTable table) {
 		// 切换至对应数据源
 		DynamicDataSourceContextHolder.push(table.getDsName());

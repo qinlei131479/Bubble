@@ -46,9 +46,9 @@ Controller 不注入 Mapper。简单条件使用 `Wrappers`，复杂查询放在
 | bubble-ui 开发服务器 | 8888 | Vite | 网关 |
 | bubble-ui 容器 | 80 | Nginx，反代 `/api` | 网关 |
 
-Nacos 控制台 8848，客户端 gRPC 9848。容器还映射 8080，日常使用 8848。
+Nacos 控制台 8848，客户端 gRPC 9848。compose 把这两个端口映射到宿主机所有网卡。
 
-compose 把数据库和缓存映射到宿主机的非默认端口：MySQL `33306`（`MYSQL_PORT`），Redis `36379`（`REDIS_PORT`）。IDE 默认连接 `127.0.0.1:3306` 与 `6379`。只用 compose 中的 MySQL 时，把映射改为 `3306:3306`，或在 Nacos 数据源中写 `127.0.0.1:33306`。容器内使用主机名 `bubble-mysql`、`bubble-redis`、`bubble-register`。
+compose 把数据库、缓存、网关和监控映射到宿主机所有网卡：MySQL `3306`（`MYSQL_PORT`），Redis `6379`（`REDIS_PORT`），Gateway `8666`，Monitor `5001`，前端 Nginx `80`。容器内使用主机名 `bubble-mysql`、`bubble-redis`、`bubble-register`。
 
 `bubble-monitor` 的进程端口是 **8902**。Dockerfile 的 `EXPOSE` 与 compose 映射仍是 **5001:5001**。jar 未改 `server.port` 时，宿主机 5001 到不了进程。本地使用 `http://localhost:8902`。
 
@@ -97,14 +97,14 @@ AGI 表与系统表同在 `bubble` 库，实体在 `bubble-api-agi`。
 
 ## 注册与配置 {#nacos}
 
-所有 Java 进程连接同一台 Nacos，控制台 `http://localhost:8848/nacos`，账号 `nacos` / `nacos`。命名空间固定为 **`bubble`**，由聚合 POM 的 `nacos.namespace` 在构建时写入 `application.yml`。`public` 中出现服务不表示配置已生效。`bubble_config.sql` 负责放入该命名空间和初始配置。
+所有 Java 进程连接同一台 Nacos，控制台 `http://localhost:8848/nacos`。账号和密码来自部署环境的 `NACOS_USERNAME` / `NACOS_PASSWORD`，不要写入代码或仓库文档。命名空间固定为 **`bubble`**，由聚合 POM 的 `nacos.namespace` 在构建时写入 `application.yml`。`public` 中出现服务不表示配置已生效。`bubble_config.sql` 负责放入该命名空间和初始配置。
 
 ```yaml
 spring:
   cloud:
     nacos:
-      username: nacos
-      password: nacos
+      username: ${NACOS_USERNAME}
+      password: ${NACOS_PASSWORD}
       discovery:
         server-addr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}
         namespace: bubble
@@ -156,6 +156,8 @@ spring:
 
 开发请求发到 8888，由 Vite 转发，通常不触发跨域。生产环境页面与网关不同源时，在网关配置中允许管理端来源以及 `Authorization`、`Enc-Flag`。不要在每个 Controller 上再写 CORS。
 
+网关拒绝非法或重复的 Host，去除外部 `from` 头，并拒绝 absolute-form 请求目标。Nginx 同时做 Host 规范化和安全响应头收口。不要把 8666 直接暴露到公网。
+
 网关放行登录、验证码和文档等匿名路径，名单在 Nacos。业务进程仍要作为资源服务器校验 Token。令牌失效时返回 **424**，前端据此重新登录。
 
 Sentinel 可按路由限流。下游超时表现为 504，先确认实例已注册且接口本身没有长时间锁等待。OpenAPI 由各服务的 `@EnableDoc` 提供，网关做分组。某个分组缺失只说明该服务没启动。调试仍需 Bearer Token，见[平台能力](/wiki/development/platform)。
@@ -172,7 +174,7 @@ Sentinel 可按路由限流。下游超时表现为 504，先确认实例已注�
 4. 查询参数包含 `username`、`grant_type=password`、`scope`、`randomStr`、`code`。
 5. 认证中心核对 Redis 验证码、客户端表和 bcrypt 密码。
 
-成功响应包含 `access_token` 与 `refresh_token`。刷新仍走 `/auth/oauth2/token`，`grant_type=refresh_token`。短信和社交登录使用 `grant_type=mobile`，`mobile` 参数带渠道前缀。只改前端或只改库表时，表现为客户端不合法或密码错误。
+成功响应包含 `access_token` 与 `refresh_token`。刷新仍走 `/auth/oauth2/token`，`grant_type=refresh_token`。短信和社交登录使用 `grant_type=mobile`，`mobile` 参数带渠道前缀。只改前端或只改库表时，表现为客户端不合法或密码错误。令牌续期校验使用 `POST /auth/token/check_token`，令牌放在表单体中，不再放入 URL。
 
 | 键 | 作用 |
 |----|------|
@@ -184,6 +186,8 @@ Sentinel 可按路由限流。下游超时表现为 504，先确认实例已注�
 有效期以签发时的客户端配置为准。可以删除 `menu_details`。不要整段删除 `bubble-cloud::token::`。
 
 业务请求携带 `Authorization: Bearer <access_token>`。权限注解 `@HasPermission` 与 `sys_menu.permission`、前端 `v-auth` 一致。服务间调用使用 `@Inner`，由 Feign 带上内部标识。当前用户从安全工具类读取，不在 Controller 里解析 JWT。
+
+浏览器不再接受 URL 中的 `access_token` / `refresh_token`。WebSocket 无法自定义请求头，因此只在 Upgrade 握手阶段允许 `token` Cookie；普通 HTTP 请求仍只接受 Bearer Header，避免 Cookie 被跨站请求滥用。
 
 验证码、登录、部分文档和健康检查保持匿名，名单在 Nacos。不要留下永久放开的调试接口。HTTP 状态的完整对照见[参考](/wiki/reference/#errors)。
 

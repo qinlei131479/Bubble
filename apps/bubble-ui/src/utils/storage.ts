@@ -12,6 +12,12 @@ export const STORAGE_KEYS = {
 
 const LOCAL_STORAGE_KEY_PREFIX = `${__NEXT_NAME__}${__VERSION__}:`;
 
+const cookieOptions = () => ({
+	path: '/',
+	sameSite: 'Strict' as const,
+	secure: window.location.protocol === 'https:',
+});
+
 /**
  * js-cookie 统一包装
  * @description 全局 Cookie 读写统一走此对象，业务代码不直接 import 'js-cookie'，
@@ -20,7 +26,7 @@ const LOCAL_STORAGE_KEY_PREFIX = `${__NEXT_NAME__}${__VERSION__}:`;
 export const Cookie = {
 	// 写入 Cookie，options 透传 js-cookie 的属性配置
 	set(key: string, val: string, options?: object) {
-		Cookies.set(key, val, options);
+		Cookies.set(key, val, { ...cookieOptions(), ...options });
 	},
 	// 读取 Cookie，不存在时返回 undefined
 	get(key: string): string | undefined {
@@ -28,7 +34,7 @@ export const Cookie = {
 	},
 	// 移除 Cookie
 	remove(key: string) {
-		Cookies.remove(key);
+		Cookies.remove(key, { path: '/' });
 	},
 };
 

@@ -50,12 +50,12 @@ onUnmounted(() => {
 
 /**
  * 初始化 WebSocket 连接
-	 * 根据当前页面协议自动选择 ws/wss，URL 中携带 access_token 进行鉴权
+ * 根据当前页面协议自动选择 ws/wss，握手中通过 SameSite Cookie 鉴权
 	 */
 const initWebSocket = () => {
 	const { host, protocol: pageProtocol } = window.location;
 	const protocol = pageProtocol === 'https:' ? 'wss' : 'ws';
-	const wsUri = `${protocol}://${host}${baseURL}${other.adaptationUrl(props.uri)}?access_token=${Session.getToken()}`;
+	const wsUri = `${protocol}://${host}${baseURL}${other.adaptationUrl(props.uri)}`;
 
 	state.webSocket = new WebSocket(wsUri);
 	state.webSocket.onopen = onOpen;
@@ -143,7 +143,6 @@ const onMessage = (msgEvent: MessageEvent) => {
 
 	ElNotification.warning({
 		title: '消息提醒',
-		dangerouslyUseHTMLString: true,
 		message: text + '请及时处理',
 		offset: 60,
 	});

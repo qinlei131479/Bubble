@@ -19,7 +19,7 @@
 
 `VITE_PWD_ENC_KEY` 与 `VITE_OAUTH2_*` 不在此重复列出。
 
-后端进程读取 `NACOS_HOST`（默认 `127.0.0.1`，容器内为 `bubble-register`）和 `NACOS_PORT`（默认 `8848`）。数据源不在环境变量中。compose 另传入 `MYSQL_HOST`、`REDIS_HOST`，并可覆盖 `MYSQL_PORT`（33306）、`MYSQL_ROOT_PASSWORD`（root）、`REDIS_PORT`（36379）。本地若连接 compose 中的 MySQL，端口是 33306。
+后端进程读取 `NACOS_HOST`（默认 `127.0.0.1`，容器内为 `bubble-register`）和 `NACOS_PORT`（默认 `8848`）。数据源不在环境变量中。compose 另传入 `MYSQL_HOST`、`REDIS_HOST`，并可覆盖 `MYSQL_PORT`（3306）、`MYSQL_ROOT_PASSWORD`（root）、`REDIS_PORT`（6379）。本地连接 compose 中的 MySQL 时，端口是 3306。
 
 ## 错误码 {#errors}
 

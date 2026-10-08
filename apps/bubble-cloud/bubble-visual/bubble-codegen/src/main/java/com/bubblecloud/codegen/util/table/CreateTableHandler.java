@@ -55,10 +55,11 @@ public class CreateTableHandler {
 		}
 		try {
 			AnylineService service = ServiceProxy.service(dsName);
-			// 如果已存在，删除重键
+			// 不允许隐式覆盖已存在的表。
 			Table table = service.metadata().table(tableInfo.getName(), false);
-			if (null != table)
-				service.ddl().drop(table);
+			if (null != table) {
+				throw new IllegalStateException("数据表[" + tableInfo.getName() + "]已存在，已拒绝覆盖");
+			}
 			// 执行建表SQL
 			service.ddl().create(tableInfo);
 			log.info("自动创建表处理完成!");

@@ -72,6 +72,49 @@ npm run dev
 
 开发服务器默认 `http://localhost:8888`，接口经 `/api` 转发到网关 `8666`。
 
+## 安全配置
+
+容器部署必须先在 `docker/` 下执行 `cp .env.example .env`，再替换所有 `change-me` 值。`NACOS_USERNAME` 和 `NACOS_PASSWORD` 是 Java 服务访问 Nacos 的账号；首次初始化使用 `nacos` / `nacos` 登录控制台，创建 `.env` 中配置的新管理员并禁用默认账号，然后启动 Java 服务。不要把生产 `.env` 提交到仓库。宿主机已导出的同名环境变量优先于 `docker/.env`，部署前应确认没有残留的 `NACOS_USERNAME=nacos` 或 `NACOS_PASSWORD=nacos`。
+
+首次启动顺序：
+
+```bash
+cd docker
+docker compose up -d mysql redis register
+# 访问 http://127.0.0.1:8848/nacos，用 nacos/nacos 登录，
+# 创建 .env 中的管理员，再退出并用新账号禁用/修改默认账号。
+docker compose up -d
+```
+
+| 配置 | 必填 | 说明 |
+|------|------|------|
+| `NACOS_USERNAME` | 是 | Java 服务和 Nacos 控制台账号，生产环境必须更换默认账号 |
+| `NACOS_PASSWORD` | 是 | 与 Nacos 用户表中的 bcrypt 密码匹配；首启后立即轮换 |
+| `NACOS_AUTH_IDENTITY_KEY` | 是 | Nacos 服务间身份 Header 名，每个环境独立设置 |
+| `NACOS_AUTH_IDENTITY_VALUE` | 是 | Nacos 服务间身份 Header 值，必须使用随机值 |
+| `NACOS_AUTH_TOKEN` | 是 | Base64 编码且解码后不少于 32 字节的随机密钥 |
+| `CODE_GEN_ALLOWED_OUTPUT_ROOTS` | 否 | 允许代码生成写入的目录根；未配置时默认限制在当前 Git 仓库 |
+
+升级影响：浏览器不再接受 URL 中的 `access_token` / `refresh_token`；`check_token` 改为 `POST` 表单提交；WebSocket 使用同站 `token` Cookie；CORS 默认关闭；Actuator 只暴露健康检查。老客户端或外部脚本未同步调整时会出现登录、令牌校验或 WebSocket 连接失败。
+
+### AGI 内网数据源
+
+开关写在 Nacos 的 `bubble-biz-agi-dev.yml`：
+
+```yaml
+agi:
+  datasource:
+    allow-private-network: true
+```
+
+未配置时默认为 `true`。在 Nacos 中修改后会刷新到 `bubble-biz-agi`，不必重启。回环、私网和共享地址段允许访问；链路本地、组播和云厂商元数据地址始终拒绝。
+
+### 凭证展示与编辑
+
+OAuth 客户端密钥和 AI 供应商 API Key 不再通过管理端查询、详情或导出接口返回明文。页面显示 `******` 表示已配置，显示“未配置”表示没有可用凭证。编辑表单回填 `******`；提交空白或 `******` 时后端保留原凭证，提交新的真实值时才替换。AI 模型选择已有凭证的供应商创建时，可以直接提交掩码并复用供应商凭证；API 域名不是凭证，仍按普通字段展示和编辑。
+
+`******` 是保留哨兵值，不要把真实凭证设置为这 6 个字符。
+
 ## 文档
 
 知识库本地预览：

@@ -80,6 +80,7 @@ public class SysUserController {
 	 * @return 用户信息
 	 */
 	@GetMapping("/details/{id}")
+	@HasPermission("sys_user_view")
 	public R user(@PathVariable Long id) {
 		return R.ok(userService.selectUserVoById(id));
 	}
@@ -92,8 +93,8 @@ public class SysUserController {
 	@Inner(value = false)
 	@GetMapping("/details")
 	public R getDetails(@ParameterObject SysUser query) {
-		SysUser sysUser = userService.getOne(Wrappers.query(query), false);
-		return R.ok(sysUser == null ? null : CommonConstants.SUCCESS);
+		// 不向未认证的注册校验接口暴露账号是否存在。
+		return R.ok(null);
 	}
 
 	/**
@@ -173,6 +174,7 @@ public class SysUserController {
 	 * @return 上级部门用户列表
 	 */
 	@GetMapping("/ancestor/{username}")
+	@HasPermission("sys_user_view")
 	public R listAncestorUsers(@PathVariable String username) {
 		return R.ok(userService.listAncestorUsers(username));
 	}

@@ -57,6 +57,12 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
 	private static final PasswordEncoder ENCODER = new BCryptPasswordEncoder();
 
+	private static final long SMS_CODE_MAX_FAILURES = 5L;
+
+	private static final long SMS_IP_MAX_FAILURES = 20L;
+
+	private static final long PASSWORD_CHECK_TTL_SECONDS = 15 * 60L;
+
 	private final SysMenuService sysMenuService;
 
 	private final SysRoleService sysRoleService;
@@ -234,11 +240,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
 		// 校验手机号
 		if (StrUtil.isNotBlank(userDto.getPhone())) {
-			String codeObj = RedisUtils.get(
-					CacheConstants.DEFAULT_CODE_KEY + LoginTypeEnum.SMS.getType() + StringPool.AT + userDto.getPhone());
-			// 验证码可能已过期或未发送（Redis 中不存在），codeObj 为 null 时直接判为校验失败，避免 NPE
-			if (StrUtil.isBlank(codeObj) || !StrUtil.equals(codeObj, userDto.getCode())) {
-				return R.failed(MsgUtils.getMessage(UpmsErrorCodes.SYS_APP_SMS_ERROR));
+			R<Boolean> codeCheck = verifySmsCode(userDto.getPhone(), userDto.getCode(), "change-phone");
+			if (!Boolean.TRUE.equals(codeCheck.getData())) {
+				return R.failed(codeCheck.getMsg());
 			}
 			sysUser.setPhone(userDto.getPhone());
 		}
@@ -502,29 +506,18 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 		String feignHeader = WebUtils.getRequest().getHeader(SecurityConstants.FROM);
 		// 外部注册校验短信验证码,对 AI 的内部注册跳过验证码处理
 		if (!SecurityConstants.FROM_IN.equals(feignHeader)) {
-			if (StrUtil.isBlank(userDto.getCode())) {
-				return R.failed(MsgUtils.getMessage(UpmsErrorCodes.SYS_PARAM_ILLEGAL));
-			}
-			String codeObj = RedisUtils.get(
-					CacheConstants.DEFAULT_CODE_KEY + LoginTypeEnum.SMS.getType() + StringPool.AT + userDto.getPhone());
-			if (!StrUtil.equals(codeObj, userDto.getCode())) {
-				return R.failed(MsgUtils.getMessage(UpmsErrorCodes.SYS_APP_SMS_ERROR));
+			R<Boolean> codeCheck = verifySmsCode(userDto.getPhone(), userDto.getCode(), "register");
+			if (!Boolean.TRUE.equals(codeCheck.getData())) {
+				return codeCheck;
 			}
 		}
 
 		// 判断用户名是否存在
 		boolean usernameExists = this
 			.exists(Wrappers.<SysUser>lambdaQuery().eq(SysUser::getUsername, userDto.getUsername()));
-		if (usernameExists) {
-			String message = MsgUtils.getMessage(UpmsErrorCodes.SYS_USER_USERNAME_EXISTING, userDto.getUsername());
-			return R.failed(message);
-		}
-
-		// 判断手机号是否存在
 		boolean phoneExists = this.exists(Wrappers.<SysUser>lambdaQuery().eq(SysUser::getPhone, userDto.getPhone()));
-		if (phoneExists) {
-			String message = MsgUtils.getMessage(UpmsErrorCodes.SYS_USER_PHONE_EXISTING, userDto.getPhone());
-			return R.failed(message);
+		if (usernameExists || phoneExists) {
+			return R.failed(MsgUtils.getMessage(UpmsErrorCodes.SYS_PARAM_ILLEGAL));
 		}
 
 		// 单独的用户避免越权
@@ -629,9 +622,37 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 	 */
 	@Override
 	public R<Boolean> checkPassword(String username, String password) {
+		if (StrUtil.isBlank(username) || StrUtil.isBlank(password)) {
+			return R.ok(false, MsgUtils.getMessage(UpmsErrorCodes.SYS_USER_PASSWORD_MISMATCH));
+		}
+		String usernameFailureKey = CacheConstants.DEFAULT_CODE_KEY + "PASSWORD_CHECK_FAIL:" + username;
+		String ipFailureKey = CacheConstants.DEFAULT_CODE_KEY + "PASSWORD_CHECK_IP_FAIL:" + WebUtils.getIP();
+		long maxFailures = ParamResolver.getLong("LOGIN_ERROR_TIMES", 5L);
+		if (maxFailures > 0) {
+			Long usernameFailures = Optional.ofNullable(RedisUtils.get(usernameFailureKey))
+				.map(value -> Long.parseLong(value.toString()))
+				.orElse(0L);
+			Long ipFailures = Optional.ofNullable(RedisUtils.get(ipFailureKey))
+				.map(value -> Long.parseLong(value.toString()))
+				.orElse(0L);
+			if (usernameFailures >= maxFailures || ipFailures >= maxFailures * 4) {
+				return R.ok(false, MsgUtils.getMessage(UpmsErrorCodes.SYS_USER_PASSWORD_MISMATCH));
+			}
+		}
+
 		SysUser sysUser = this.getOne(Wrappers.<SysUser>lambdaQuery().eq(SysUser::getUsername, username));
-		boolean matches = ENCODER.matches(password, sysUser.getPassword());
-		return matches ? R.ok(true) : R.ok(false, MsgUtils.getMessage(UpmsErrorCodes.SYS_USER_PASSWORD_MISMATCH));
+		boolean matches = sysUser != null && ENCODER.matches(password, sysUser.getPassword());
+		if (matches) {
+			RedisUtils.delete(usernameFailureKey, ipFailureKey);
+			return R.ok(true);
+		}
+		if (maxFailures > 0) {
+			RedisUtils.increment(usernameFailureKey, 1L);
+			RedisUtils.increment(ipFailureKey, 1L);
+			RedisUtils.expire(usernameFailureKey, PASSWORD_CHECK_TTL_SECONDS);
+			RedisUtils.expire(ipFailureKey, PASSWORD_CHECK_TTL_SECONDS);
+		}
+		return R.ok(false, MsgUtils.getMessage(UpmsErrorCodes.SYS_USER_PASSWORD_MISMATCH));
 	}
 
 	/**
@@ -672,19 +693,20 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 	@Override
 	public R<Boolean> forgetUserPassword(RegisterUserDTO userDto, String code) {
 		if (StrUtil.isBlank(userDto.getPhone())) {
-			return R.failed(MsgUtils.getMessage(UpmsErrorCodes.SYS_PARAM_ILLEGAL));
-		}
-
-		String codeObj = RedisUtils
-			.get(CacheConstants.DEFAULT_CODE_KEY + LoginTypeEnum.SMS.getType() + StringPool.AT + userDto.getPhone());
-		if (!StrUtil.equals(codeObj, code)) {
 			return R.failed(MsgUtils.getMessage(UpmsErrorCodes.SYS_APP_SMS_ERROR));
 		}
 
-		String username = lambdaQuery().select(SysUser::getUsername)
+		R<Boolean> codeCheck = verifySmsCode(userDto.getPhone(), code, "forget-password");
+		if (!Boolean.TRUE.equals(codeCheck.getData())) {
+			return codeCheck;
+		}
+
+		SysUser user = lambdaQuery().select(SysUser::getUsername)
 			.eq(SysUser::getPhone, userDto.getPhone())
-			.one()
-			.getUsername();
+			.one();
+		if (user == null) {
+			return R.failed(MsgUtils.getMessage(UpmsErrorCodes.SYS_APP_SMS_ERROR));
+		}
 
 		// 重置密码
 		String password = ENCODER.encode(userDto.getNewpassword1());
@@ -693,9 +715,49 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 			.set(SysUser::getPasswordModifyTime, LocalDateTime.now())
 			.set(SysUser::getPasswordExpireFlag, CommonConstants.STATUS_NORMAL)
 			.eq(SysUser::getPhone, userDto.getPhone()));
-		cacheManager.getCache(CacheConstants.USER_DETAILS).evict(username);
+		cacheManager.getCache(CacheConstants.USER_DETAILS).evict(user.getUsername());
 
 		return R.ok();
+	}
+
+	/**
+	 * 校验并消费一次性短信验证码，同时记录账号和IP的失败次数。
+	 */
+	private R<Boolean> verifySmsCode(String phone, String code, String scene) {
+		R<Boolean> genericFailure = R.failed(MsgUtils.getMessage(UpmsErrorCodes.SYS_APP_SMS_ERROR));
+		if (StrUtil.isBlank(phone) || StrUtil.isBlank(code)) {
+			return genericFailure;
+		}
+
+		String phoneFailureKey = CacheConstants.DEFAULT_CODE_KEY + "SMS_VERIFY_FAIL:" + scene + ":" + phone;
+		String ipFailureKey = CacheConstants.DEFAULT_CODE_KEY + "SMS_VERIFY_IP_FAIL:" + scene + ":" + WebUtils.getIP();
+		Long phoneFailures = Optional.ofNullable(RedisUtils.get(phoneFailureKey))
+			.map(value -> Long.parseLong(value.toString()))
+			.orElse(0L);
+		Long ipFailures = Optional.ofNullable(RedisUtils.get(ipFailureKey))
+			.map(value -> Long.parseLong(value.toString()))
+			.orElse(0L);
+		if (phoneFailures >= SMS_CODE_MAX_FAILURES || ipFailures >= SMS_IP_MAX_FAILURES) {
+			RedisUtils.delete(CacheConstants.DEFAULT_CODE_KEY + LoginTypeEnum.SMS.getType() + StringPool.AT + phone);
+			return genericFailure;
+		}
+
+		String cacheKey = CacheConstants.DEFAULT_CODE_KEY + LoginTypeEnum.SMS.getType() + StringPool.AT + phone;
+		String codeObj = RedisUtils.get(cacheKey);
+		if (StrUtil.isBlank(codeObj) || !StrUtil.equals(codeObj, code)) {
+			Long phoneAttempts = RedisUtils.increment(phoneFailureKey, 1L);
+			Long ipAttempts = RedisUtils.increment(ipFailureKey, 1L);
+			RedisUtils.expire(phoneFailureKey, SecurityConstants.CODE_TIME);
+			RedisUtils.expire(ipFailureKey, SecurityConstants.CODE_TIME);
+			if ((phoneAttempts != null && phoneAttempts >= SMS_CODE_MAX_FAILURES)
+					|| (ipAttempts != null && ipAttempts >= SMS_IP_MAX_FAILURES)) {
+				RedisUtils.delete(cacheKey);
+			}
+			return genericFailure;
+		}
+
+		RedisUtils.delete(cacheKey, phoneFailureKey);
+		return R.ok(Boolean.TRUE);
 	}
 
 	/**

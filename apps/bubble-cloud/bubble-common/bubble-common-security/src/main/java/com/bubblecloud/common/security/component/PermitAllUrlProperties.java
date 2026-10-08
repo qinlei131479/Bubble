@@ -35,7 +35,11 @@ public class PermitAllUrlProperties implements InitializingBean, ApplicationList
 	private static final Pattern PATH_VARIABLE = Pattern.compile("\\{(.*?)\\}");
 
 	private static final String[] DEFAULT_IGNORE_URLS =
-			new String[] { "/actuator/**", "/error", "/v3/api-docs/**" };
+			new String[] { "/actuator/health/**", "/actuator/liveness/**", "/actuator/readiness/**", "/error" };
+
+	private static final String[] PUBLIC_AUTH_AND_CONFIG_URLS = new String[] { "/register/**", "/mobile/**",
+			"/system/config", "/param/publicValue/**", "/param/publicValues", "/social/getLoginAppList",
+			"/sysMessage/send/smsCode", "/sys-file/oss/file", "/user/details" };
 
 	@Getter
 	private final CopyOnWriteArrayList<String> urls = new CopyOnWriteArrayList<>();
@@ -51,6 +55,7 @@ public class PermitAllUrlProperties implements InitializingBean, ApplicationList
 	@Override
 	public void afterPropertiesSet() {
 		urls.addAllAbsent(Arrays.asList(DEFAULT_IGNORE_URLS));
+		urls.addAllAbsent(Arrays.asList(PUBLIC_AUTH_AND_CONFIG_URLS));
 	}
 
 	@Override
@@ -98,6 +103,9 @@ public class PermitAllUrlProperties implements InitializingBean, ApplicationList
 			Inner method = AnnotationUtils.findAnnotation(handlerMethod.getMethod(), Inner.class);
 			Inner controller = AnnotationUtils.findAnnotation(handlerMethod.getBeanType(), Inner.class);
 			if (method == null && controller == null) {
+				return;
+			}
+			if (method != null ? !method.value() : !controller.value()) {
 				return;
 			}
 

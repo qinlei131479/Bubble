@@ -302,20 +302,21 @@ public class SysMessageServiceImpl extends ServiceImpl<SysMessageMapper, SysMess
 			.selectList(Wrappers.<SysUser>query().lambda().eq(SysUser::getPhone, mobile));
 
 		if (registered && CollUtil.isEmpty(userList)) {
-			log.info("手机号未注册:{}", mobile);
-			return R.failed(Boolean.FALSE, MsgUtils.getMessage(UpmsErrorCodes.SYS_APP_PHONE_UNREGISTERED, mobile));
+			log.info("手机号未注册");
+			// 返回与发送成功相同的结果，避免账号枚举。
+			return R.ok(Boolean.TRUE);
 		}
 
 		String codeObj = RedisUtils
 			.get(CacheConstants.DEFAULT_CODE_KEY + LoginTypeEnum.SMS.getType() + StringPool.AT + mobile);
 
 		if (StrUtil.isNotBlank(codeObj)) {
-			log.info("手机号验证码未过期:{}，{}", mobile, codeObj);
+			log.info("手机号验证码未过期");
 			return R.failed(Boolean.FALSE, MsgUtils.getMessage(UpmsErrorCodes.SYS_APP_SMS_OFTEN));
 		}
 
 		String code = RandomUtil.randomNumbers(Integer.parseInt(SecurityConstants.CODE_SIZE));
-		log.info("手机号生成验证码成功:{},{}", mobile, code);
+		log.info("手机号生成验证码成功");
 		RedisUtils.set(CacheConstants.DEFAULT_CODE_KEY + LoginTypeEnum.SMS.getType() + StringPool.AT + mobile, code,
 				SecurityConstants.CODE_TIME);
 

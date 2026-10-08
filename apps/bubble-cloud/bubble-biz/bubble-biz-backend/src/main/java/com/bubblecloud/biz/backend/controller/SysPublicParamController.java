@@ -13,7 +13,6 @@ import com.bubblecloud.common.excel.annotation.ResponseExcel;
 import com.bubblecloud.common.log.annotation.SysLog;
 import com.bubblecloud.common.security.annotation.HasPermission;
 import com.bubblecloud.common.security.annotation.Inner;
-import com.bubblecloud.common.excel.annotation.ResponseExcel;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,7 +21,9 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 公共参数
@@ -37,6 +38,9 @@ import java.util.List;
 @SecurityRequirement(name = HttpHeaders.AUTHORIZATION)
 public class SysPublicParamController {
 
+	private static final Set<String> PUBLIC_PARAM_ALLOWLIST =
+			Set.of("PASSWORD_EXPIRE_DAYS", "LOGIN_ERROR_TIMES");
+
 	private final SysPublicParamService sysPublicParamService;
 
 	/**
@@ -48,6 +52,9 @@ public class SysPublicParamController {
 	@Operation(description = "查询公共参数值", summary = "根据key查询公共参数值")
 	@GetMapping("/publicValue/{publicKey}")
 	public R publicKey(@PathVariable("publicKey") String publicKey) {
+		if (!isPublicKeyAllowed(publicKey)) {
+			return R.failed("公共参数不允许访问");
+		}
 		return R.ok(sysPublicParamService.getSysPublicParamKeyToValue(publicKey));
 	}
 
@@ -60,7 +67,13 @@ public class SysPublicParamController {
 	@Operation(description = "查询公共参数值", summary = "根据key查询公共参数值")
 	@GetMapping("/publicValues")
 	public R publicKeys(String[] keys) {
-		return R.ok(sysPublicParamService.getSysPublicParamsKeyToValue(keys));
+		String[] allowedKeys = keys == null ? new String[0]
+				: Arrays.stream(keys).filter(this::isPublicKeyAllowed).toArray(String[]::new);
+		return R.ok(sysPublicParamService.getSysPublicParamsKeyToValue(allowedKeys));
+	}
+
+	private boolean isPublicKeyAllowed(String publicKey) {
+		return publicKey != null && (publicKey.startsWith("SITE_") || PUBLIC_PARAM_ALLOWLIST.contains(publicKey));
 	}
 
 	/**
@@ -91,11 +104,13 @@ public class SysPublicParamController {
 	 */
 	@Operation(description = "通过id查询公共参数", summary = "通过id查询公共参数")
 	@GetMapping("/details/{publicId}")
+	@HasPermission("sys_syspublicparam_view")
 	public R getById(@PathVariable("publicId") Long publicId) {
 		return R.ok(sysPublicParamService.getById(publicId));
 	}
 
 	@GetMapping("/details")
+	@HasPermission("sys_syspublicparam_view")
 	public R getDetail(@ParameterObject SysPublicParam param) {
 		return R.ok(sysPublicParamService.getOne(Wrappers.query(param), false));
 	}

@@ -53,13 +53,13 @@
 			class="verify-bar-area"
 			:style="{ width: setSize.imgWidth, color: this.barAreaColor, 'border-color': this.barAreaBorderColor, 'line-height': this.barSize.height }"
 		>
-			<span class="verify-msg text-sm font-medium text-gray-600 dark:text-gray-300" v-html="text"></span>
+			<span class="verify-msg text-sm font-medium text-gray-600 dark:text-gray-300" v-html="sanitizeHtml(text)"></span>
 		</div>
 	</div>
 </template>
 <script type="text/babel">
 /**
- * VerifyPoints
+ * 点选验证组件（VerifyPoints）
  * @description 点选
  * */
 import { resetSize } from '../utils/util';
@@ -67,6 +67,7 @@ import { aesEncrypt } from '../utils/ase';
 import { reqGet, reqCheck } from '../api/index';
 import { onMounted, reactive, ref, nextTick, toRefs, getCurrentInstance } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { sanitizeHtml } from '/@/utils/sanitize';
 export default {
 	name: 'VerifyPoints',
 	props: {

@@ -73,7 +73,7 @@ public class DatasourceController {
 	 */
 	@Operation(summary = "通过条件查询", description = "通过条件查询对象")
 	@GetMapping("/details")
-//	@HasPermission("agi_datasource_view")
+	@HasPermission("agi_datasource_view")
 	public R<List<Datasource>> details(@ParameterObject Datasource req) {
 		List<Datasource> list = datasourceService.list(Wrappers.query(req));
 		if (CollUtil.isNotEmpty(list)) {
@@ -153,6 +153,7 @@ public class DatasourceController {
 	 */
 	@Operation(summary = "测试数据源连接", description = "测试数据源连接")
 	@PostMapping("/test")
+	@HasPermission({ "agi_datasource_add", "agi_datasource_edit" })
 	public R<DatasourceTestResultVO> test(@RequestBody DatasourceTestDTO dto) {
 		return R.ok(datasourceService.testConnection(dto));
 	}
@@ -165,6 +166,7 @@ public class DatasourceController {
 	 */
 	@Operation(summary = "获取数据库表列表", description = "获取数据库表列表")
 	@PostMapping("/tables")
+	@HasPermission({ "agi_datasource_add", "agi_datasource_edit" })
 	public R<List<TableInfoVO>> getTables(@RequestBody DatasourceTestDTO dto) {
 		return R.ok(datasourceService.getTableInfo(dto));
 	}
@@ -193,6 +195,7 @@ public class DatasourceController {
 	 */
 	@Operation(summary = "通过条件查询", description = "通过条件查询对象")
 	@GetMapping("/detailsTable")
+	@HasPermission("agi_datasource_view")
 	public R<List<DatasourceTable>> detailsTable(@ParameterObject DatasourceTable req) {
 		return R.ok(datasourceTableService.list(Wrappers.query(req)));
 	}
@@ -220,6 +223,7 @@ public class DatasourceController {
 	 */
 	@Operation(summary = "通过条件查询", description = "通过条件查询对象")
 	@GetMapping("/detailsTableField")
+	@HasPermission("agi_datasource_view")
 	public R<List<DatasourceTableField>> detailsTableField(@ParameterObject DatasourceTableField req) {
 		return R.ok(datasourceTableFieldService.list(Wrappers.query(req)));
 	}

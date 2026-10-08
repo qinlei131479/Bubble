@@ -47,6 +47,11 @@
         <el-table-column type="index" label="#" width="50"/>
         <el-table-column prop="supplierName" label="供应商" width="180"/>
         <el-table-column prop="name" label="模型名称" width="220"/>
+        <el-table-column label="API Key" width="110" align="center">
+          <template #default="scope">
+            {{ scope.row.apiKeyMasked || '未配置' }}
+          </template>
+        </el-table-column>
         <el-table-column prop="baseModel" label="模型别名" width="220"/>
         <el-table-column prop="modelType" label="模型类型" width="120">
           <template #default="scope">
@@ -123,7 +128,7 @@ onMounted(() => {
     supplierData.value = res.data;
   });
 });
-//  table hook
+// 表格Hook
 const {
   getDataList,
   currentChangeHandle,

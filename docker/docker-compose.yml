@@ -3,6 +3,10 @@
 # 示例: docker compose up -d mysql redis register  (仅基础设施)
 #       docker compose up -d                        (全部服务)
 
+x-nacos-client-env: &nacos-client-env
+  NACOS_USERNAME: "${NACOS_USERNAME:?set NACOS_USERNAME in docker/.env}"
+  NACOS_PASSWORD: "${NACOS_PASSWORD:?set NACOS_PASSWORD in docker/.env}"
+
 services:
 
   # ============ 基础设施 ============
@@ -14,7 +18,7 @@ services:
     image: bubble-mysql
     restart: always
     ports:
-      - "${MYSQL_PORT:-33306}:3306"
+      - "${MYSQL_PORT:-3306}:3306"
     environment:
       MYSQL_ROOT_HOST: "%"
       MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-root}"
@@ -27,24 +31,30 @@ services:
     hostname: bubble-redis
     restart: always
     ports:
-      - "${REDIS_PORT:-36379}:6379"
+      - "${REDIS_PORT:-6379}:6379"
     networks:
       - bubble-net
 
   register:
-    build:
-      context: ../apps/bubble-cloud/bubble-register
     container_name: bubble-register
     hostname: bubble-register
-    image: bubble-register
+    image: nacos/nacos-server:v2.5.1
     restart: always
     ports:
       - "8848:8848"
       - "9848:9848"
-      - "8080:8080"
     environment:
-      MYSQL_HOST: bubble-mysql
-      REDIS_HOST: bubble-redis
+      MODE: standalone
+      SPRING_DATASOURCE_PLATFORM: mysql
+      MYSQL_SERVICE_HOST: bubble-mysql
+      MYSQL_SERVICE_PORT: "3306"
+      MYSQL_SERVICE_DB_NAME: bubble_config
+      MYSQL_SERVICE_USER: root
+      MYSQL_SERVICE_PASSWORD: "${MYSQL_ROOT_PASSWORD:-root}"
+      NACOS_CORE_AUTH_ENABLED: "true"
+      NACOS_CORE_AUTH_SERVER_IDENTITY_KEY: "${NACOS_AUTH_IDENTITY_KEY:?set NACOS_AUTH_IDENTITY_KEY in docker/.env}"
+      NACOS_CORE_AUTH_SERVER_IDENTITY_VALUE: "${NACOS_AUTH_IDENTITY_VALUE:?set NACOS_AUTH_IDENTITY_VALUE in docker/.env}"
+      NACOS_CORE_AUTH_PLUGIN_NACOS_TOKEN_SECRET_KEY: "${NACOS_AUTH_TOKEN:?set NACOS_AUTH_TOKEN in docker/.env}"
     depends_on:
       - mysql
       - redis
@@ -63,6 +73,7 @@ services:
     ports:
       - "8666:8666"
     environment:
+      <<: *nacos-client-env
       REDIS_HOST: bubble-redis
       NACOS_HOST: bubble-register
     depends_on:
@@ -78,6 +89,7 @@ services:
     image: bubble-auth
     restart: always
     environment:
+      <<: *nacos-client-env
       REDIS_HOST: bubble-redis
       NACOS_HOST: bubble-register
     depends_on:
@@ -93,6 +105,7 @@ services:
     image: bubble-biz-backend
     restart: always
     environment:
+      <<: *nacos-client-env
       MYSQL_HOST: bubble-mysql
       REDIS_HOST: bubble-redis
       NACOS_HOST: bubble-register
@@ -111,6 +124,7 @@ services:
     ports:
       - "5001:5001"
     environment:
+      <<: *nacos-client-env
       NACOS_HOST: bubble-register
     depends_on:
       - register
@@ -125,6 +139,7 @@ services:
     image: bubble-codegen
     restart: always
     environment:
+      <<: *nacos-client-env
       MYSQL_HOST: bubble-mysql
       REDIS_HOST: bubble-redis
       NACOS_HOST: bubble-register
@@ -140,6 +155,7 @@ services:
     image: bubble-quartz
     restart: always
     environment:
+      <<: *nacos-client-env
       MYSQL_HOST: bubble-mysql
       REDIS_HOST: bubble-redis
       NACOS_HOST: bubble-register

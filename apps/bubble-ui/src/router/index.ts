@@ -86,10 +86,10 @@ export function formatTwoStageRoutes(arr: any) {
 
 // 路由加载前
 router.beforeEach(async (to, _from, next) => {
-	// 检测并处理 URL 中的 access_token（支持任意页面携带 token 访问）
-	const accessTokenRedirect = handleAccessTokenFromUrl(to);
-	if (accessTokenRedirect) {
-		next(accessTokenRedirect);
+	// 不接受URL查询参数中的令牌；先移除它们，再执行正常认证。
+	const tokenRedirect = stripTokensFromUrl(to);
+	if (tokenRedirect) {
+		next(tokenRedirect);
 		return;
 	}
 
@@ -122,28 +122,12 @@ router.beforeEach(async (to, _from, next) => {
 });
 
 /**
- * 处理 URL 中的 access_token 参数
- * @description 检测并处理 URL 中的 access_token，支持任意页面携带 token 访问
- * @param to 目标路由
- * @returns 如果检测到 token 返回清理令牌后的重定向目标，否则返回 undefined
+	 * 移除旧版URL令牌，但不消费这些令牌。
  */
-function handleAccessTokenFromUrl(to: RouteLocationNormalized): RouteLocationRaw | undefined {
-	const accessToken = getFirstQueryValue(to.query.access_token);
-	if (!accessToken) return undefined;
-
-	// 清除旧会话
-	Session.clear();
-
-	// 保存新的 token 到 Session
-	Session.set('token', accessToken);
-
-	// 如果 URL 中还有 refresh_token，也一并保存
-	const refreshToken = getFirstQueryValue(to.query.refresh_token);
-	if (refreshToken) {
-		Session.set('refresh_token', refreshToken);
+function stripTokensFromUrl(to: RouteLocationNormalized): RouteLocationRaw | undefined {
+	if (to.query.access_token === undefined && to.query.refresh_token === undefined) {
+		return undefined;
 	}
-
-	// 移除 URL 中的令牌参数后回到原页面，支持移动端 webview 一次直达。
 	const nextQuery = { ...to.query };
 	delete nextQuery.access_token;
 	delete nextQuery.refresh_token;
@@ -153,22 +137,6 @@ function handleAccessTokenFromUrl(to: RouteLocationNormalized): RouteLocationRaw
 		query: nextQuery,
 		replace: true,
 	};
-}
-
-/**
- * 提取路由 query 参数的字符串值
- * @description Vue Router 的 LocationQuery 允许同名参数重复，类型为 string | null | (string | null)[]。
- * 直接 as string 断言在数组情况下会保留原始数组，导致后续字符串操作静默出错；
- * 此函数统一取首个字符串值，兼容单值和多值两种形式。
- * @param value query 中某个参数的原始值
- * @returns 首个字符串值；不存在或非字符串时返回空字符串
- */
-function getFirstQueryValue(value: unknown): string {
-	if (Array.isArray(value)) {
-		const firstValue = value[0];
-		return typeof firstValue === 'string' ? firstValue : '';
-	}
-	return typeof value === 'string' ? value : '';
 }
 
 

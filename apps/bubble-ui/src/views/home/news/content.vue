@@ -15,7 +15,7 @@
 
         <div class="mb-8 border-t border-gray-100 dark:border-gray-800"></div>
 
-        <div class="text-base leading-relaxed text-gray-700 dark:text-gray-300" v-html="currentNew.content"></div>
+        <div class="text-base leading-relaxed text-gray-700 dark:text-gray-300" v-html="sanitizeHtml(currentNew.content)"></div>
 
         <div class="pt-6 mt-12 text-center border-t border-gray-100 dark:border-gray-800">
           <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('home.thanksForReading') }}</span>
@@ -28,6 +28,7 @@
 <script setup lang="ts" name="newsLetter">
 import { readUserMessage } from '/@/api/admin/message';
 import { useI18n } from 'vue-i18n';
+import { sanitizeHtml } from '/@/utils/sanitize';
 
 const emit = defineEmits(['refresh']);
 const { t } = useI18n();

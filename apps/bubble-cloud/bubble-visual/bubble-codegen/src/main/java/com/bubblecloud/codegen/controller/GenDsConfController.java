@@ -12,6 +12,7 @@ import com.bubblecloud.codegen.entity.GenDatasourceConf;
 import com.bubblecloud.codegen.service.GenDatasourceConfService;
 import com.bubblecloud.common.core.util.R;
 import com.bubblecloud.common.core.util.SpringContextHolder;
+import com.bubblecloud.common.security.annotation.HasPermission;
 import com.bubblecloud.common.xss.core.XssCleanIgnore;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,7 @@ public class GenDsConfController {
 	 * @return
 	 */
 	@GetMapping("/page")
+	@HasPermission("codegen_template_view")
 	public R getSysDatasourceConfPage(Page page, GenDatasourceConf datasourceConf) {
 		return R.ok(datasourceConfService.page(page,
 				Wrappers.<GenDatasourceConf>lambdaQuery()
@@ -54,6 +56,7 @@ public class GenDsConfController {
 	 * @return
 	 */
 	@GetMapping("/list")
+	@HasPermission("codegen_template_view")
 	public R list() {
 		return R.ok(datasourceConfService.list());
 	}
@@ -63,6 +66,7 @@ public class GenDsConfController {
 	 * @return R 包含各数据源类型（dsType）与其 AnyLine 解析插件是否已加载（true/false）的映射
 	 */
 	@GetMapping("/parser-plugins")
+	@HasPermission("codegen_template_view")
 	public R parserPlugins() {
 		return R.ok(datasourceConfService.listParserPlugins());
 	}
@@ -73,6 +77,7 @@ public class GenDsConfController {
 	 * @return R
 	 */
 	@GetMapping("/{id}")
+	@HasPermission("codegen_template_view")
 	public R getById(@PathVariable("id") Long id) {
 		return R.ok(datasourceConfService.getById(id));
 	}
@@ -84,6 +89,7 @@ public class GenDsConfController {
 	 */
 	@PostMapping
 	@XssCleanIgnore
+	@HasPermission("codegen_template_add")
 	public R save(@RequestBody GenDatasourceConf datasourceConf) {
 		return R.ok(datasourceConfService.saveDsByEnc(datasourceConf));
 	}
@@ -95,6 +101,7 @@ public class GenDsConfController {
 	 */
 	@PutMapping
 	@XssCleanIgnore
+	@HasPermission("codegen_template_edit")
 	public R updateById(@RequestBody GenDatasourceConf conf) {
 		return R.ok(datasourceConfService.updateDsByEnc(conf));
 	}
@@ -105,6 +112,7 @@ public class GenDsConfController {
 	 * @return R
 	 */
 	@DeleteMapping
+	@HasPermission("codegen_template_del")
 	public R removeById(@RequestBody Long[] ids) {
 		return R.ok(datasourceConfService.removeByDsId(ids));
 	}
@@ -115,6 +123,7 @@ public class GenDsConfController {
 	 */
 	@SneakyThrows
 	@GetMapping("/doc")
+	@HasPermission("codegen_template_export")
 	public void generatorDoc(String dsName, HttpServletResponse response) {
 		// 设置指定的数据源
 		DynamicRoutingDataSource dynamicRoutingDataSource = SpringContextHolder.getBean(DynamicRoutingDataSource.class);

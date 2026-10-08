@@ -4,6 +4,7 @@ import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.StrUtil;
 import com.bubblecloud.codegen.service.GeneratorService;
 import com.bubblecloud.common.core.util.R;
+import com.bubblecloud.common.security.annotation.HasPermission;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -38,6 +39,7 @@ public class GeneratorController {
 	 */
 	@SneakyThrows
 	@GetMapping("/download")
+	@HasPermission("codegen_template_view")
 	public void download(String tableIds, HttpServletResponse response) {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		ZipOutputStream zip = new ZipOutputStream(outputStream);
@@ -64,6 +66,7 @@ public class GeneratorController {
 	 */
 	@ResponseBody
 	@GetMapping("/code")
+	@HasPermission("codegen_template_add")
 	public R<String> code(String tableIds) throws Exception {
 		// 生成代码
 		for (String tableId : tableIds.split(StrUtil.COMMA)) {
@@ -79,6 +82,7 @@ public class GeneratorController {
 	 * @return true 表示路径存在且为目录
 	 */
 	@GetMapping("/check-path")
+	@HasPermission("codegen_template_add")
 	public R<Boolean> checkPath(String path) {
 		return R.ok(generatorService.checkPath(path));
 	}
@@ -90,6 +94,7 @@ public class GeneratorController {
 	 */
 	@SneakyThrows
 	@GetMapping("/preview")
+	@HasPermission("codegen_template_view")
 	public List<Map<String, String>> preview(Long tableId) {
 		return generatorService.preview(tableId);
 	}

@@ -1,10 +1,10 @@
 package com.bubblecloud.common.security.component;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.server.resource.BearerTokenError;
 import org.springframework.security.oauth2.server.resource.BearerTokenErrors;
@@ -22,10 +22,6 @@ public class CustomBearerTokenExtractor implements BearerTokenResolver {
 	private static final Pattern AUTHORIZATION_PATTERN =
 			Pattern.compile("^Bearer (?<token>[a-zA-Z0-9-:._~+/]+=*)$", Pattern.CASE_INSENSITIVE);
 
-	private boolean allowFormEncodedBodyParameter = false;
-
-	private boolean allowUriQueryParameter = true;
-
 	private String bearerTokenHeaderName = HttpHeaders.AUTHORIZATION;
 
 	private final PermitAllUrlProperties urlProperties;
@@ -41,21 +37,17 @@ public class CustomBearerTokenExtractor implements BearerTokenResolver {
 		}
 
 		String authorizationHeaderToken = resolveFromAuthorizationHeader(request);
-		String parameterToken = isParameterTokenSupportedForRequest(request) ? resolveFromRequestParameters(request)
-				: null;
+		String webSocketCookieToken = resolveFromWebSocketCookie(request);
 
 		if (authorizationHeaderToken != null) {
-			if (parameterToken != null) {
+			if (webSocketCookieToken != null) {
 				BearerTokenError error = BearerTokenErrors.invalidRequest("Found multiple bearer tokens");
 				throw new OAuth2AuthenticationException(error);
 			}
 			return authorizationHeaderToken;
 		}
 
-		if (parameterToken != null && isParameterTokenEnabledForRequest(request)) {
-			return parameterToken;
-		}
-		return null;
+		return webSocketCookieToken;
 	}
 
 	private String resolveFromAuthorizationHeader(HttpServletRequest request) {
@@ -72,28 +64,20 @@ public class CustomBearerTokenExtractor implements BearerTokenResolver {
 		return matcher.group("token");
 	}
 
-	private static String resolveFromRequestParameters(HttpServletRequest request) {
-		String[] values = request.getParameterValues("access_token");
-		if (values == null || values.length == 0) {
+	private static String resolveFromWebSocketCookie(HttpServletRequest request) {
+		if (!"websocket".equalsIgnoreCase(request.getHeader(HttpHeaders.UPGRADE))) {
 			return null;
 		}
-		if (values.length == 1) {
-			return values[0];
+		Cookie[] cookies = request.getCookies();
+		if (cookies == null) {
+			return null;
 		}
-		BearerTokenError error = BearerTokenErrors.invalidRequest("Found multiple bearer tokens");
-		throw new OAuth2AuthenticationException(error);
-	}
-
-	private boolean isParameterTokenSupportedForRequest(HttpServletRequest request) {
-		return ("POST".equals(request.getMethod())
-				&& MediaType.APPLICATION_FORM_URLENCODED_VALUE.equals(request.getContentType()))
-				|| "GET".equals(request.getMethod());
-	}
-
-	private boolean isParameterTokenEnabledForRequest(HttpServletRequest request) {
-		return (allowFormEncodedBodyParameter && "POST".equals(request.getMethod())
-				&& MediaType.APPLICATION_FORM_URLENCODED_VALUE.equals(request.getContentType()))
-				|| (allowUriQueryParameter && "GET".equals(request.getMethod()));
+		for (Cookie cookie : cookies) {
+			if ("token".equals(cookie.getName()) && StringUtils.hasText(cookie.getValue())) {
+				return cookie.getValue();
+			}
+		}
+		return null;
 	}
 
 }

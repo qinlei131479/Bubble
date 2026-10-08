@@ -61,6 +61,7 @@ public class GenCreateTableController {
 	 */
 	@Operation(summary = "分页查询", description = "分页查询")
 	@GetMapping("/page")
+	@HasPermission({ "codegen_template_view", "codegen_table_add" })
 	public R getPage(Page page, @ModelAttribute GenCreateTable createTable,
 			@RequestParam(required = false) String[] queryTime) {
 		QueryWrapper<GenCreateTable> query = Wrappers.query(createTable);
@@ -74,6 +75,7 @@ public class GenCreateTableController {
 	 */
 	@Operation(summary = "通过id查询", description = "通过id查询")
 	@GetMapping("/{id}")
+	@HasPermission({ "codegen_template_view", "codegen_table_add" })
 	public R getById(@PathVariable("id") Long id) {
 		return R.ok(createTableService.getById(id));
 	}
@@ -130,6 +132,7 @@ public class GenCreateTableController {
 	 * @return R
 	 */
 	@GetMapping("/list")
+	@HasPermission({ "codegen_template_view", "codegen_table_add" })
 	public R list() {
 		return R.ok(createTableService.list());
 	}

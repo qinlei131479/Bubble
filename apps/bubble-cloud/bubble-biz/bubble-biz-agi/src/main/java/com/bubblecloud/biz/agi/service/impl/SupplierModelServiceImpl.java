@@ -7,9 +7,11 @@ import com.bubblecloud.common.core.constant.enums.FlagEnum;
 import com.bubblecloud.common.core.util.R;
 import com.bubblecloud.common.mybatis.service.impl.UpServiceImpl;
 import com.bubblecloud.agi.api.entity.SupplierModel;
+import com.bubblecloud.agi.api.vo.SupplierVO;
 import com.bubblecloud.biz.agi.mapper.SupplierModelMapper;
 import com.bubblecloud.biz.agi.service.SupplierModelService;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import cn.hutool.core.util.StrUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,12 +56,23 @@ public class SupplierModelServiceImpl extends UpServiceImpl<SupplierModelMapper,
 		if (Objects.isNull(supplier)) {
 			return R.failed("供应商不存在");
 		}
+		boolean replaceApiKey = StrUtil.isNotBlank(req.getApiKey())
+				&& !SupplierVO.SECRET_MASK.equals(req.getApiKey());
+		boolean replaceApiDomain = StrUtil.isNotBlank(req.getApiDomain());
+		if ((!replaceApiKey && StrUtil.isBlank(supplier.getApiKey()))
+				|| (!replaceApiDomain && StrUtil.isBlank(supplier.getApiDomain()))) {
+			return R.failed("API Key和API域名不能为空");
+		}
 		Long count = this.lambdaQuery().eq(SupplierModel::getSupplierId, req.getSupplierId()).eq(SupplierModel::getName, req.getName()).count();
 		if (count > 0) {
 			return R.failed("供应商模型名称已存在");
 		}
-		supplier.setApiKey(req.getApiKey());
-		supplier.setApiDomain(req.getApiDomain());
+		if (replaceApiKey) {
+			supplier.setApiKey(req.getApiKey());
+		}
+		if (replaceApiDomain) {
+			supplier.setApiDomain(req.getApiDomain());
+		}
 		supplierMapper.updateById(supplier);
 		req.setDefaultFlag(FlagEnum.NO.getCode());
 		return super.create(req);
@@ -81,8 +94,14 @@ public class SupplierModelServiceImpl extends UpServiceImpl<SupplierModelMapper,
 		if (Objects.isNull(supplier)) {
 			return R.failed("供应商不存在");
 		}
-		supplier.setApiKey(req.getApiKey());
-		supplier.setApiDomain(req.getApiDomain());
+		if (StrUtil.isNotBlank(req.getApiKey())) {
+			if (!SupplierVO.SECRET_MASK.equals(req.getApiKey())) {
+				supplier.setApiKey(req.getApiKey());
+			}
+		}
+		if (StrUtil.isNotBlank(req.getApiDomain())) {
+			supplier.setApiDomain(req.getApiDomain());
+		}
 		supplierMapper.updateById(supplier);
 
 		return super.update(req);

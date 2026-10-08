@@ -27,6 +27,7 @@ export default {
 		inputClientIdTip: '请输入客户端ID',
 		inputResourceIdsTip: '请输入资源ID',
 		inputClientSecretTip: '请输入密钥',
+		inputClientSecretEditTip: '已掩码保护；保持不变或输入新密钥',
 		inputScopeTip: '请输入域',
 		inputAuthorizedGrantTypesTip: '请输入授权模式',
 		inputWebServerRedirectUriTip: '请输入回调地址',

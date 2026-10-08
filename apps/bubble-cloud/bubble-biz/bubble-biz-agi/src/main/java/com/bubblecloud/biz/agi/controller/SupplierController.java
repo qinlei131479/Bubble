@@ -19,6 +19,7 @@ import com.bubblecloud.common.mybatis.base.Req;
 import com.bubblecloud.common.mybatis.base.Pg;
 import com.bubblecloud.common.log.annotation.SysLog;
 import com.bubblecloud.agi.api.entity.Supplier;
+import com.bubblecloud.agi.api.vo.SupplierVO;
 import com.bubblecloud.biz.agi.service.SupplierService;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -64,8 +65,8 @@ public class SupplierController {
 	@Operation(summary = "通过条件查询", description = "通过条件查询对象")
 	@GetMapping("/details")
 //	@HasPermission("agi_supplier_view")
-	public R<List<Supplier>> details(@ParameterObject Supplier req) {
-		return R.ok(supplierService.list(Wrappers.query(req)));
+	public R<List<SupplierVO>> details(@ParameterObject Supplier req) {
+		return R.ok(supplierService.list(Wrappers.query(req)).stream().map(SupplierVO::from).toList());
 	}
 
 

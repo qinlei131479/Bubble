@@ -27,6 +27,7 @@ export default {
 		inputClientIdTip: 'Please enter client ID',
 		inputResourceIdsTip: 'Please enter resource IDs',
 		inputClientSecretTip: 'Please enter client secret',
+		inputClientSecretEditTip: 'Masked; leave it unchanged or enter a new secret',
 		inputScopeTip: 'Please enter scope',
 		inputAuthorizedGrantTypesTip: 'Please enter grant types',
 		inputWebServerRedirectUriTip: 'Please enter redirect URI',

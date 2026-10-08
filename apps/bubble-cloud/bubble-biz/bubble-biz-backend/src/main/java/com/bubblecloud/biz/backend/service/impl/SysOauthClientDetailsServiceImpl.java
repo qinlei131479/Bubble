@@ -1,8 +1,10 @@
 package com.bubblecloud.biz.backend.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.bubblecloud.backend.api.vo.SysOauthClientDetailsVO;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -45,6 +47,15 @@ public class SysOauthClientDetailsServiceImpl extends ServiceImpl<SysOauthClient
 	@CacheEvict(value = CacheConstants.CLIENT_DETAILS_KEY, allEntries = true)
 	@Transactional(rollbackFor = Exception.class)
 	public Boolean updateClientById(SysOauthClientDetailsDTO clientDetailsDTO) {
+		// 管理端返回空值或掩码值时，保留数据库中已存储的密钥。
+		if (StrUtil.isBlank(clientDetailsDTO.getClientSecret())
+				|| SysOauthClientDetailsVO.SECRET_MASK.equals(clientDetailsDTO.getClientSecret())) {
+			SysOauthClientDetails existing = getById(clientDetailsDTO.getId());
+			if (existing == null) {
+				throw new IllegalArgumentException("client does not exist");
+			}
+			clientDetailsDTO.setClientSecret(existing.getClientSecret());
+		}
 		this.insertOrUpdate(clientDetailsDTO);
 		return Boolean.TRUE;
 	}
@@ -58,6 +69,9 @@ public class SysOauthClientDetailsServiceImpl extends ServiceImpl<SysOauthClient
 	@CacheEvict(value = CacheConstants.CLIENT_DETAILS_KEY, key = "#clientDetailsDTO.clientId")
 	@Transactional(rollbackFor = Exception.class)
 	public Boolean saveClient(SysOauthClientDetailsDTO clientDetailsDTO) {
+		if (StrUtil.isBlank(clientDetailsDTO.getClientId()) || StrUtil.isBlank(clientDetailsDTO.getClientSecret())) {
+			throw new IllegalArgumentException("clientId and clientSecret are required");
+		}
 		this.insertOrUpdate(clientDetailsDTO);
 		return Boolean.TRUE;
 	}

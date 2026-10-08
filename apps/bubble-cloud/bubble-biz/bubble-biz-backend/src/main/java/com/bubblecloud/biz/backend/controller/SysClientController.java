@@ -2,11 +2,13 @@ package com.bubblecloud.biz.backend.controller;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.bubblecloud.backend.api.dto.SysOauthClientDetailsDTO;
 import com.bubblecloud.backend.api.entity.SysOauthClientDetails;
+import com.bubblecloud.backend.api.vo.SysOauthClientDetailsVO;
 import com.bubblecloud.biz.backend.service.SysOauthClientDetailsService;
 import com.bubblecloud.common.core.constant.CommonConstants;
 import com.bubblecloud.common.core.util.R;
@@ -14,7 +16,6 @@ import com.bubblecloud.common.excel.annotation.ResponseExcel;
 import com.bubblecloud.common.log.annotation.SysLog;
 import com.bubblecloud.common.security.annotation.HasPermission;
 import com.bubblecloud.common.security.annotation.Inner;
-import com.bubblecloud.common.excel.annotation.ResponseExcel;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -50,19 +51,11 @@ public class SysClientController {
 	 * @return SysOauthClientDetails
 	 */
 	@GetMapping("/{clientId}")
+	@HasPermission("sys_client_view")
 	public R getByClientId(@PathVariable String clientId) {
 		SysOauthClientDetails details = clientDetailsService
 			.getOne(Wrappers.<SysOauthClientDetails>lambdaQuery().eq(SysOauthClientDetails::getClientId, clientId));
-		String information = details.getAdditionalInformation();
-		String captchaFlag = JSONUtil.parseObj(information).getStr(CommonConstants.CAPTCHA_FLAG);
-		String encFlag = JSONUtil.parseObj(information).getStr(CommonConstants.ENC_FLAG);
-		String onlineQuantity = JSONUtil.parseObj(information).getStr(CommonConstants.ONLINE_QUANTITY);
-		SysOauthClientDetailsDTO dto = new SysOauthClientDetailsDTO();
-		BeanUtils.copyProperties(details, dto);
-		dto.setCaptchaFlag(captchaFlag);
-		dto.setEncFlag(encFlag);
-		dto.setOnlineQuantity(onlineQuantity);
-		return R.ok(dto);
+		return R.ok(details == null ? null : toSecureVo(details));
 	}
 
 	/**
@@ -77,10 +70,12 @@ public class SysClientController {
 			@ParameterObject SysOauthClientDetails sysOauthClientDetails) {
 		LambdaQueryWrapper<SysOauthClientDetails> wrapper = Wrappers.<SysOauthClientDetails>lambdaQuery()
 			.like(StrUtil.isNotBlank(sysOauthClientDetails.getClientId()), SysOauthClientDetails::getClientId,
-					sysOauthClientDetails.getClientId())
-			.like(StrUtil.isNotBlank(sysOauthClientDetails.getClientSecret()), SysOauthClientDetails::getClientSecret,
-					sysOauthClientDetails.getClientSecret());
-		return R.ok(clientDetailsService.page(page, wrapper));
+					sysOauthClientDetails.getClientId());
+		Page<SysOauthClientDetails> clientPage = clientDetailsService.page(page, wrapper);
+		Page<SysOauthClientDetailsVO> securePage = new Page<>(clientPage.getCurrent(), clientPage.getSize(),
+				clientPage.getTotal());
+		securePage.setRecords(clientPage.getRecords().stream().map(this::toSecureVo).toList());
+		return R.ok(securePage);
 	}
 
 	/**
@@ -139,7 +134,9 @@ public class SysClientController {
 	@GetMapping("/details")
 	@HasPermission("sys_client_view")
 	public R getDetails(@ParameterObject SysOauthClientDetails clientDetails) {
-		return getClientDetailsById(clientDetails.getClientId());
+		SysOauthClientDetails details = clientDetailsService.getOne(Wrappers.<SysOauthClientDetails>lambdaQuery()
+			.eq(SysOauthClientDetails::getClientId, clientDetails.getClientId()));
+		return R.ok(details == null ? null : toSecureVo(details));
 	}
 
 	/**
@@ -148,6 +145,7 @@ public class SysClientController {
 	 */
 	@SysLog("同步终端")
 	@PutMapping("/sync")
+	@HasPermission("sys_client_edit")
 	public R sync() {
 		return clientDetailsService.syncClientCache();
 	}
@@ -159,8 +157,27 @@ public class SysClientController {
 	@ResponseExcel
 	@SysLog("导出excel")
 	@GetMapping("/export")
-	public List<SysOauthClientDetails> export(SysOauthClientDetails sysOauthClientDetails) {
-		return clientDetailsService.list(Wrappers.query(sysOauthClientDetails));
+	@HasPermission("sys_client_view")
+	public List<SysOauthClientDetailsVO> export(SysOauthClientDetails sysOauthClientDetails) {
+		LambdaQueryWrapper<SysOauthClientDetails> wrapper = Wrappers.<SysOauthClientDetails>lambdaQuery()
+			.like(StrUtil.isNotBlank(sysOauthClientDetails.getClientId()), SysOauthClientDetails::getClientId,
+					sysOauthClientDetails.getClientId());
+		return clientDetailsService.list(wrapper).stream().map(this::toSecureVo).toList();
+	}
+
+	private SysOauthClientDetailsVO toSecureVo(SysOauthClientDetails details) {
+		String information = details.getAdditionalInformation();
+		SysOauthClientDetailsVO vo = new SysOauthClientDetailsVO();
+		BeanUtils.copyProperties(details, vo);
+		if (StrUtil.isNotBlank(details.getClientSecret())) {
+			vo.setClientSecretMasked(SysOauthClientDetailsVO.SECRET_MASK);
+		}
+		if (StrUtil.isNotBlank(information)) {
+			vo.setCaptchaFlag(JSONUtil.parseObj(information).getStr(CommonConstants.CAPTCHA_FLAG));
+			vo.setEncFlag(JSONUtil.parseObj(information).getStr(CommonConstants.ENC_FLAG));
+			vo.setOnlineQuantity(JSONUtil.parseObj(information).getStr(CommonConstants.ONLINE_QUANTITY));
+		}
+		return vo;
 	}
 
 }

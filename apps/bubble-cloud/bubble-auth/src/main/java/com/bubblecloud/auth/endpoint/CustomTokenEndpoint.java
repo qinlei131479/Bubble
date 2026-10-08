@@ -93,7 +93,7 @@ public class CustomTokenEndpoint {
 	public ModelAndView require(ModelAndView modelAndView, @RequestParam(required = false) String error,
 			HttpServletRequest request, HttpServletResponse response) {
 		modelAndView.setViewName("ftl/login");
-		// Note: XSS prevention is handled by FreeMarker template using ?html directive
+		// 注意：XSS防护由FreeMarker模板的?html指令处理
 		modelAndView.addObject("error", error);
 
 		String authClientId = StrUtil.blankToDefault(
@@ -120,7 +120,7 @@ public class CustomTokenEndpoint {
 		}
 
 		Set<String> authorizedScopes = StringUtils.commaDelimitedListToSet(clientDetails.getScope());
-		// Note: XSS prevention is handled by FreeMarker template using ?html directive
+		// 注意：XSS防护由FreeMarker模板的?html指令处理
 		modelAndView.addObject("clientId", clientId);
 		modelAndView.addObject("state", state);
 		modelAndView.addObject("scopeList", authorizedScopes);
@@ -150,7 +150,7 @@ public class CustomTokenEndpoint {
 	 * @return
 	 */
 	@SneakyThrows
-	@GetMapping("/token/check_token")
+	@PostMapping("/token/check_token")
 	public R<OAuth2AccessToken> checkToken(String token, HttpServletResponse response, HttpServletRequest request) {
 		ServletServerHttpResponse httpResponse = new ServletServerHttpResponse(response);
 

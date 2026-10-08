@@ -25,13 +25,16 @@
         <template v-if="form.supplierId">
           <el-col :span="12" class="mb20">
             <el-form-item label="API Key" prop="apiKey">
-              <el-input v-model="form.apiKey" placeholder="请输入模型名称"/>
+              <el-input v-model="form.apiKey"
+                        :placeholder="form.id ? '已掩码保护；保持不变或输入新 API Key' : '请输入 API Key'"
+                        show-password/>
             </el-form-item>
           </el-col>
 
           <el-col :span="12" class="mb20">
             <el-form-item label="API域名" prop="apiDomain">
-              <el-input v-model="form.apiDomain" placeholder="请输入API Url"/>
+              <el-input v-model="form.apiDomain"
+                        :placeholder="form.id ? '留空保持原域名，输入则重置' : '请输入 API Url'"/>
             </el-form-item>
           </el-col>
         </template>
@@ -101,6 +104,7 @@ const dataFormRef = ref();
 const visible = ref(false)
 const loading = ref(false)
 const supplierData = ref<any[]>([]);
+const API_KEY_MASK = '******';
 // 定义字典
 
 // 提交表单数据
@@ -122,8 +126,14 @@ const form = reactive({
 const dataRules = ref({
   supplierId: [{required: true, message: '供应商不能为空', trigger: 'blur'}],
   name: [{required: true, message: '模型姓名不能为空', trigger: 'blur'}],
-  apiKey: [{required: true, message: 'API key不能为空', trigger: 'blur'}],
-  apiDomain: [{required: true, message: 'API域名不能为空', trigger: 'blur'}],
+  apiKey: [{validator: (_rule: any, value: any, callback: any) => {
+      if (!form.id && !value && value !== API_KEY_MASK) return callback(new Error('API key不能为空'));
+      callback();
+    }, trigger: 'blur'}],
+  apiDomain: [{validator: (_rule: any, value: any, callback: any) => {
+      if (!form.id && !value) return callback(new Error('API域名不能为空'));
+      callback();
+    }, trigger: 'blur'}],
   baseModel: [{required: true, message: '模型别名不能为空', trigger: 'blur'}],
   modelType: [{required: true, message: '模型类型不能为空', trigger: 'blur'}],
   defaultFlag: [{required: true, message: '默认模型不能为空', trigger: 'blur'}],
@@ -149,8 +159,8 @@ const openDialog = (id: string) => {
 
 const fillData = (selectedId: string) => {
   const selectedItem = supplierData.value.find(item => item.id === selectedId);
-  form.apiKey = selectedItem.apiKey;
-  form.apiDomain = selectedItem.apiDomain;
+  form.apiKey = selectedItem?.apiKeyMasked || '';
+  form.apiDomain = selectedItem?.apiDomain || '';
 }
 
 // 提交
@@ -179,6 +189,7 @@ const getSupplierModelData = (id: string) => {
   loading.value = true
   getObj({id: id}).then((res: any) => {
     Object.assign(form, res.data[0])
+    form.apiKey = res.data[0]?.apiKeyMasked || '';
   }).finally(() => {
     loading.value = false
   })

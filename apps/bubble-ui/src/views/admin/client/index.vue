@@ -6,9 +6,6 @@
 					<el-form-item :label="$t('client.clientId')" prop="clientId">
 						<el-input :placeholder="$t('client.clientId')" style="max-width: 180px" v-model="state.queryForm.clientId" />
 					</el-form-item>
-					<el-form-item :label="$t('client.clientSecret')" prop="clientSecret">
-						<el-input :placeholder="$t('client.clientSecret')" style="max-width: 180px" v-model="state.queryForm.clientSecret" />
-					</el-form-item>
 					<el-form-item>
 						<el-button @click="getDataList" icon="search" type="primary">
 							{{ $t('common.queryBtn') }}
@@ -22,7 +19,7 @@
 					<el-button v-auth="'sys_client_add'" @click="formDialogRef.openDialog()" class="ml10" icon="folder-add" type="primary">
 						{{ $t('common.addBtn') }}
 					</el-button>
-					<el-button v-auth="'sys_client_del'" plain @click="handleRefreshCache()" class="ml10" icon="refresh-left" type="primary">
+					<el-button v-auth="'sys_client_edit'" plain @click="handleRefreshCache()" class="ml10" icon="refresh-left" type="primary">
 						{{ $t('common.refreshCacheBtn') }}
 					</el-button>
 
@@ -31,7 +28,7 @@
 					</el-button>
 
 					<right-toolbar
-						:export="'sys_client_del'"
+						:export="'sys_client_view'"
 						@exportExcel="exportExcel"
 						@queryTable="getDataList"
 						class="ml10"
@@ -53,7 +50,11 @@
 				<el-table-column align="center" type="selection" width="40" />
 				<el-table-column :label="t('client.index')" type="index" width="60" />
 				<el-table-column :label="t('client.clientId')" prop="clientId" show-overflow-tooltip />
-				<el-table-column :label="t('client.clientSecret')" prop="clientSecret" show-overflow-tooltip />
+				<el-table-column :label="t('client.clientSecret')" width="110" align="center">
+					<template #default="scope">
+						{{ scope.row.clientSecretMasked || '未配置' }}
+					</template>
+				</el-table-column>
 				<el-table-column :label="t('client.scope')" prop="scope" show-overflow-tooltip />
 				<el-table-column :label="t('client.authorizedGrantTypes')" prop="authorizedGrantTypes" show-overflow-tooltip width="400px">
 					<template #default="scope">
@@ -64,7 +65,7 @@
 				<el-table-column :label="t('client.refreshTokenValidity')" prop="refreshTokenValidity" show-overflow-tooltip />
 				<el-table-column :label="$t('common.action')" width="150">
 					<template #default="scope">
-						<el-button icon="edit-pen" @click="formDialogRef.openDialog(scope.row.clientId)" text type="primary" v-auth="'sys_client_add'"
+						<el-button icon="edit-pen" @click="formDialogRef.openDialog(scope.row.clientId)" text type="primary" v-auth="'sys_client_edit'"
 							>{{ $t('common.editBtn') }}
 						</el-button>
 						<el-button icon="delete" @click="handleDelete([scope.row.id])" text type="primary" v-auth="'sys_client_del'">
@@ -108,7 +109,7 @@ const state: BasicTableProps = reactive<BasicTableProps>({
 	descs: ['id'],
 });
 
-//  table hook
+// 表格Hook
 const { getDataList, currentChangeHandle, sizeChangeHandle, downBlobFile, tableStyle } = useTable(state);
 
 // 删除缓存

@@ -24,7 +24,7 @@ public class BootCorsProperties {
 	/**
 	 * 允许的源模式列表，支持通配符 例如：http://localhost:*, https://*.example.com
 	 */
-	private List<String> allowedOriginPatterns = new ArrayList<>(List.of("*"));
+	private List<String> allowedOriginPatterns = new ArrayList<>();
 
 	/**
 	 * 允许的请求头列表 默认允许所有请求头
@@ -39,7 +39,7 @@ public class BootCorsProperties {
 	/**
 	 * 是否允许携带凭证（如Cookie） 当设置为true时，allowedOriginPatterns不能使用通配符*
 	 */
-	private Boolean allowCredentials = true;
+	private Boolean allowCredentials = false;
 
 	/**
 	 * 应用CORS配置的路径模式 默认应用到所有路径

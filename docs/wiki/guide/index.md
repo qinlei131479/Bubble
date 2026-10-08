@@ -138,4 +138,4 @@ npm run dev
 
 登录必须填写验证码，答案在 Redis，前缀 `bubble-cloud::DEFAULT_CODE_KEY:`。`sys_oauth_client_details` 必须与 `.env` 使用同一组 `client_id` 与 `client_secret`。请求格式与令牌键见[认证](/wiki/architecture/#auth)。
 
-网站配置中的锁定次数和密码有效期写入 `sys_public_param` 的 `LOGIN_ERROR_TIMES`、`PASSWORD_EXPIRE_DAYS`。Nacos 凭据来自环境变量 `NACOS_USERNAME` / `NACOS_PASSWORD`，命名空间 `bubble`。监控台不使用 `admin`。
+网站配置中的锁定次数和密码有效期写入 `sys_public_param` 的 `LOGIN_ERROR_TIMES`、`PASSWORD_EXPIRE_DAYS`。Nacos 凭据来自环境变量 `NACOS_USERNAME` / `NACOS_PASSWORD`，命名空间 `bubble`。监控台不使用 `admin`。钉钉和企业微信的申请、密钥填写和绑定步骤见[钉钉与企业微信绑定](/wiki/guide/social-bind)。

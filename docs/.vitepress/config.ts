@@ -37,6 +37,7 @@ export default defineConfig({
                         {text: '快速开始', link: '/wiki/guide/#quick-start'},
                         {text: '目录结构', link: '/wiki/guide/#layout'},
                         {text: '账号与客户端', link: '/wiki/guide/#accounts'},
+                        {text: '钉钉与企业微信绑定', link: '/wiki/guide/social-bind'},
                     ],
                 },
             ],

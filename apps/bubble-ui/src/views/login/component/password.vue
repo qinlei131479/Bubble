@@ -45,7 +45,7 @@
 
 		<!-- 验证码输入框（条件渲染） -->
 		<el-form-item class="mb-6 login-animation2" prop="code" v-if="verifyImageEnable">
-			<div class="flex gap-3">
+			<div class="flex items-center w-full captcha-row gap-3">
 				<el-input
 					text
 					maxlength="4"

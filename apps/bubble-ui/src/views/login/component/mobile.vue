@@ -13,7 +13,7 @@
 
 		<!-- 验证码输入框 + 获取验证码按钮 -->
 		<el-form-item class="mb-6 login-animation2" prop="code">
-			<div class="flex gap-3">
+			<div class="flex items-center w-full captcha-row gap-3">
 				<el-input text maxlength="4" :placeholder="$t('mobile.placeholder2')" v-model="loginForm.code" clearable
 					class="flex-1 transition-all duration-200 rounded-md login-input h-11" autocomplete="off">
 					<template #prefix>

@@ -235,6 +235,25 @@
 		-webkit-backdrop-filter: none;
 		border: none;
 		box-shadow: none;
+		min-height: auto;
+		padding: 48px 28px 36px;
+	}
+
+	.login-content-form.el-form {
+		.el-form-item {
+			// 全局窄屏把表单项改成 inline，登录页改回纵向排列，间距才能生效
+			display: flex !important;
+			margin-bottom: 28px;
+		}
+	}
+
+	.captcha-row {
+		gap: 16px;
+	}
+
+	.captcha-img {
+		width: 112px;
+		flex-shrink: 0;
 	}
 }
 

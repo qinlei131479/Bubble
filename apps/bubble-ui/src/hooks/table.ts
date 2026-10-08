@@ -1,5 +1,6 @@
 import { useToNumber } from '@vueuse/core';
-import { CellStyle, ElMessage } from 'element-plus';
+import { CellStyle } from 'element-plus';
+import { useMessage } from '/@/hooks/message';
 import other from '/@/utils/other';
 
 /**
@@ -147,7 +148,7 @@ export function useTable(options?: BasicTableProps) {
 			} catch (err: any) {
 				// 表格捕获异常并显示错误提示
 				if (err?.msg || err?.data) {
-					ElMessage.error(err.msg || err.data);
+					useMessage().error(err.msg || err.data);
 				}
 			} finally {
 				// 结束加载数据，设置state.loading为false

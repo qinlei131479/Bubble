@@ -11,8 +11,25 @@ const defaultOptions = {
 
 type MessageType = 'info' | 'warning' | 'success' | 'error';
 
+const recentMessages = new Map<string, number>();
+
 function showMessage(message: string, type: MessageType, overrides?: Record<string, any>) {
+	if (!message) return;
+	if (type === 'error') {
+		const now = Date.now();
+		const last = recentMessages.get(message);
+		// 同一句错误短时间内只提示一次，避免列表和附属请求同时失败时连弹
+		if (last && now - last < 2000) return;
+		recentMessages.set(message, now);
+	}
 	ElMessage({ ...defaultOptions, message, type, ...overrides });
+}
+
+/** 服务未注册或未启动时的提示，随当前语言切换 */
+export function serviceUnavailableMessage(service?: string) {
+	return service
+		? t('request.serviceUnavailable', { service })
+		: t('request.serviceUnavailableUnknown');
 }
 
 export function useMessage() {

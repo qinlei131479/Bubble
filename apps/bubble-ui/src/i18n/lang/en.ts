@@ -223,6 +223,10 @@ export default {
 			title: 'Tips'
 		}
 	},
+	request: {
+		serviceUnavailable: 'Service is not running ({service}). Please start it and try again.',
+		serviceUnavailableUnknown: 'The service is not running or temporarily unavailable. Please try again later.',
+	},
 	validate: {
 		overLength: 'Input is too long, please re-enter',
 		validatorNameCn: 'Please enter Chinese, English, numbers and underscores',

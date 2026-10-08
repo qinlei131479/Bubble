@@ -216,6 +216,10 @@ export default {
 			title: '提示'
 		}
 	},
+	request: {
+		serviceUnavailable: '服务未启动（{service}），请先启动对应服务后再试',
+		serviceUnavailableUnknown: '服务未启动或暂时不可用，请稍后再试',
+	},
 	validate: {
 		overLength: '输入内容过长，请重新输入',
 		validatorNameCn: '请输入中文、英文、数字包括下划线',

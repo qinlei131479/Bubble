@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { Session } from '/@/utils/storage';
-import { useMessageBox } from '/@/hooks/message';
+import { serviceUnavailableMessage, useMessage, useMessageBox } from '/@/hooks/message';
 import qs from 'qs';
 import other from './other';
 import { wrapEncryption, encryptRequestParams, decrypt } from './apiCrypto';
@@ -88,11 +88,41 @@ const handleResponse = (response: AxiosResponse<any>) => {
 	return response.data;
 };
 
+/** 已由全局拦截器提示过，未捕获时不再把原始异常打到控制台 */
+const SERVICE_UNAVAILABLE = 'serviceUnavailable';
+
+// 调用方没有 catch 时，避免控制台出现 Uncaught (in promise)
+window.addEventListener('unhandledrejection', (event) => {
+	if (event.reason?.[SERVICE_UNAVAILABLE]) {
+		event.preventDefault();
+	}
+});
+
 /**
- * 添加 Axios 的响应拦截器，用于全局响应结果处理
+ * 网关找不到服务实例时，把原始 503 文案换成当前语言的提示。
+ * 所有接口共用这一处，页面不需要再单独捕获。
  */
+const toServiceUnavailable = (data: any, status: number) => {
+	const raw = typeof data === 'string' ? data : String(data?.msg ?? data?.message ?? '');
+	const matched = raw.match(/Unable to find instance for\s+([^"\s]+)/i);
+	const unavailable = status === 503 || /SERVICE_UNAVAILABLE/i.test(raw) || /Unable to find instance/i.test(raw);
+	if (!unavailable) {
+		return data;
+	}
+	const body = data && typeof data === 'object' ? { ...data } : { code: 1, data: null, ok: false };
+	body.msg = serviceUnavailableMessage(matched?.[1]);
+	body.code = body.code ?? 1;
+	body[SERVICE_UNAVAILABLE] = true;
+	useMessage().error(body.msg);
+	return body;
+};
+
 service.interceptors.response.use(handleResponse, (error) => {
-	const status = Number(error.response.status) || 200;
+	if (error?.code === 'ERR_CANCELED') {
+		return Promise.reject(error);
+	}
+
+	const status = Number(error.response?.status) || 0;
 	if (status === 423) {
 		return Promise.reject({ msg: '"演示环境，仅供预览"' });
 	}
@@ -112,7 +142,7 @@ service.interceptors.response.use(handleResponse, (error) => {
 		error.response.data = decrypt(error.response?.data.encryption);
 	}
 
-	return Promise.reject(error.response.data);
+	return Promise.reject(toServiceUnavailable(error.response?.data, status));
 });
 
 // 导出 axios 实例

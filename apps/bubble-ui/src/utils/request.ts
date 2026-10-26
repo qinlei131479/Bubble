@@ -91,6 +91,9 @@ const handleResponse = (response: AxiosResponse<any>) => {
 /** 已由全局拦截器提示过，未捕获时不再把原始异常打到控制台 */
 const SERVICE_UNAVAILABLE = 'serviceUnavailable';
 
+/** 424 处理标记：并发请求同时收到 424 时只弹一次确认框 */
+let handlingTokenExpired = false;
+
 // 调用方没有 catch 时，避免控制台出现 Uncaught (in promise)
 window.addEventListener('unhandledrejection', (event) => {
 	if (event.reason?.[SERVICE_UNAVAILABLE]) {
@@ -124,17 +127,22 @@ service.interceptors.response.use(handleResponse, (error) => {
 
 	const status = Number(error.response?.status) || 0;
 	if (status === 423) {
-		return Promise.reject({ msg: '"演示环境，仅供预览"' });
+		return Promise.reject({ msg: '演示环境，仅供预览' });
 	}
 
 	if (status === 424) {
-		useMessageBox()
-			.confirm('令牌状态已过期，请点击重新登录')
-			.then(() => {
+		if (!handlingTokenExpired) {
+			handlingTokenExpired = true;
+			const relogin = () => {
 				Session.clear(); // 清除浏览器全部临时缓存
 				window.location.href = '/'; // 去登录页
-				return;
-			});
+			};
+			useMessageBox()
+				.confirm('令牌状态已过期，请点击重新登录')
+				.then(relogin)
+				.catch(relogin);
+		}
+		return Promise.reject({ msg: '令牌状态已过期，请点击重新登录' });
 	}
 
 	// 针对密文返回解密

@@ -2,6 +2,8 @@ package com.bubblecloud.common.security.component;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -51,10 +53,14 @@ public class CustomResourceServerConfiguration {
 
 	/**
 	 * 资源服务器安全配置
+	 * <p>
+	 * 排在授权服务器过滤链（{@code Ordered.HIGHEST_PRECEDENCE}）之后，保证 /oauth2/** 等授权端点
+	 * 优先由授权链匹配，不被本链的 anyRequest().authenticated() 拦截
 	 * @param http http
 	 * @return {@link SecurityFilterChain }
 	 */
 	@Bean
+	@Order(Ordered.HIGHEST_PRECEDENCE + 1)
 	SecurityFilterChain resourceServer(HttpSecurity http) throws Exception {
 		RequestMatcher permitAllMatcher = permitAllUrl::isPermitAll;
 

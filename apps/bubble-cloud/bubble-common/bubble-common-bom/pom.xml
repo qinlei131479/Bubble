@@ -20,13 +20,13 @@
 		<sms.version>3.3.5</sms.version>
 		<jakarta.mail.version>2.0.2</jakarta.mail.version>
 		<sensitive.word.version>0.21.0</sensitive.word.version>
-		<aws.version>2.44.14</aws.version>
+		<aws.version>2.55.16</aws.version>
 		<mysql.version>9.5.0</mysql.version>
 		<seata.version>1.7.0</seata.version>
 		<excel.version>3.4.3</excel.version>
 		<screw.version>0.0.3</screw.version>
 		<highgo.version>6.2.5</highgo.version>
-		<hutool.version>5.8.47</hutool.version>
+		<hutool.version>5.8.48</hutool.version>
 		<velocity.version>2.4</velocity.version>
 		<captcha.version>2.2.5</captcha.version>
 		<captcha.image.version>2.2.3</captcha.image.version>
@@ -35,17 +35,17 @@
 		<knife4j.version>4.5.0</knife4j.version>
 		<gateway.version>4.3.2</gateway.version>
 		<sentinel.version>1.8.10</sentinel.version>
-		<git.commit.plugin>9.0.1</git.commit.plugin>
+		<git.commit.plugin>10.0.1</git.commit.plugin>
 		<springdoc.version>3.0.3</springdoc.version>
 		<common.io.version>2.18.0</common.io.version>
-		<dynamic-ds.version>4.5.0</dynamic-ds.version>
+		<dynamic-ds.version>4.6.0</dynamic-ds.version>
 		<swagger.fox.version>3.0.0</swagger.fox.version>
 		<maven.compiler.source>17</maven.compiler.source>
 		<maven.compiler.target>17</maven.compiler.target>
-		<nacos.client.version>3.2.3</nacos.client.version>
+		<nacos.client.version>3.2.4</nacos.client.version>
 		<velocity.tool.version>3.1</velocity.tool.version>
 		<configuration.version>1.10</configuration.version>
-		<swagger.core.version>2.2.54</swagger.core.version>
+		<swagger.core.version>2.2.55</swagger.core.version>
 		<mybatis-plus.version>3.5.16</mybatis-plus.version>
 		<mybatis-plus-join.version>1.5.8</mybatis-plus-join.version>
 		<druid.version>1.2.28</druid.version>

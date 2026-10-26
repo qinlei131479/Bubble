@@ -18,7 +18,6 @@
 package com.bubblecloud.biz.backend.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -38,6 +37,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 
 import java.util.*;
 
@@ -125,6 +125,13 @@ public class SysSiteConfigServiceImpl implements SysSiteConfigService {
 	@Transactional(rollbackFor = Exception.class)
 	@CacheEvict(value = { CacheConstants.SITE_CONFIG_DETAILS, CacheConstants.PARAMS_DETAILS }, allEntries = true)
 	public void updateSiteConfig(SiteConfigDTO dto) {
+		SysOauthClientDetails captchaClient = null;
+		if (dto.getCaptchaType() != null) {
+			Assert.hasText(dto.getCaptchaClientId(), "网站登录客户端 ID 不能为空");
+			captchaClient = sysOauthClientDetailsService.getOne(Wrappers.<SysOauthClientDetails>lambdaQuery()
+				.eq(SysOauthClientDetails::getClientId, dto.getCaptchaClientId()));
+			Assert.notNull(captchaClient, "网站登录客户端不存在");
+		}
 		Map<String, Object> fieldValues = BeanUtil.beanToMap(dto, false, true);
 
 		for (Map.Entry<String, String> entry : KEY_FIELD_MAP.entrySet()) {
@@ -153,9 +160,9 @@ public class SysSiteConfigServiceImpl implements SysSiteConfigService {
 			upsertParam("LOGIN_ERROR_TIMES", String.valueOf(dto.getLoginErrorTimes()));
 		}
 
-		// 同步 captcha_flag 到 OAuth 客户端扩展信息
-		if (dto.getCaptchaType() != null) {
-			syncCaptchaFlagToClients(!"none".equals(dto.getCaptchaType()));
+		// 只同步网站密码登录客户端，保留其他终端的独立配置。
+		if (captchaClient != null) {
+			syncCaptchaFlagToClient(captchaClient, !"none".equals(dto.getCaptchaType()));
 		}
 	}
 
@@ -191,24 +198,15 @@ public class SysSiteConfigServiceImpl implements SysSiteConfigService {
 	}
 
 	/**
-	 * 同步验证码开关到所有 OAuth 客户端的 additionalInformation
-	 * @param captchaEnable 是否启用验证码
+	 * 同步网站登录客户端的验证码开关，并清空客户端缓存。
 	 */
-	private void syncCaptchaFlagToClients(Boolean captchaEnable) {
-		String captchaFlag = YesNoEnum.getCode(captchaEnable);
-		List<SysOauthClientDetails> clients = sysOauthClientDetailsService.list();
-
-		for (SysOauthClientDetails client : clients) {
-			if (StrUtil.isBlank(client.getAdditionalInformation())) {
-				continue;
-			}
-			JSONObject informationObj = JSONUtil.parseObj(client.getAdditionalInformation());
-			informationObj.set(CommonConstants.CAPTCHA_FLAG, captchaFlag);
-			client.setAdditionalInformation(informationObj.toString());
-			sysOauthClientDetailsService.updateById(client);
-		}
-
-		// 清空客户端缓存，下次访问时重新查库
+	private void syncCaptchaFlagToClient(SysOauthClientDetails client, Boolean captchaEnable) {
+		JSONObject information = JSONUtil.parseObj(client.getAdditionalInformation());
+		information.set(CommonConstants.CAPTCHA_FLAG, YesNoEnum.getCode(captchaEnable));
+		SysOauthClientDetails update = new SysOauthClientDetails();
+		update.setId(client.getId());
+		update.setAdditionalInformation(information.toString());
+		Assert.isTrue(sysOauthClientDetailsService.updateById(update), "更新网站登录客户端失败");
 		sysOauthClientDetailsService.syncClientCache();
 	}
 

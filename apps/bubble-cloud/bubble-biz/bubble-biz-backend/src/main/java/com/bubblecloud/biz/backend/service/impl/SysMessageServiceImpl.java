@@ -213,6 +213,19 @@ public class SysMessageServiceImpl extends ServiceImpl<SysMessageMapper, SysMess
 	}
 
 	/**
+	 * 删除当前用户的接收记录，记录不存在或不属于当前用户时不删除任何数据。
+	 * @param id 消息 ID
+	 * @return true
+	 */
+	@Override
+	public Boolean removeUserMessage(Long id) {
+		relationMapper.delete(Wrappers.<SysMessageRelationEntity>lambdaQuery()
+			.eq(SysMessageRelationEntity::getMsgId, id)
+			.eq(SysMessageRelationEntity::getUserId, SecurityUtils.getUser().getId()));
+		return Boolean.TRUE;
+	}
+
+	/**
 	 * 获取信息
 	 * @param id id
 	 * @return messageVO

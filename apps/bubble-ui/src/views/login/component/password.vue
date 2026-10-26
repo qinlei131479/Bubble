@@ -118,7 +118,7 @@
 
 		<!-- 服务协议提示 -->
 		<div v-if="siteConfig.privacyTip" class="flex items-center justify-center">
-			<span class="text-xs leading-relaxed text-center text-gray-400 dark:text-slate-500" v-html="sanitizeHtml(siteConfig.privacyTip)">
+			<span class="text-xs leading-relaxed text-center text-gray-400 dark:text-slate-500" v-html="sanitizeHtml(privacyTip)">
 			</span>
 		</div>
 	</el-form>
@@ -138,6 +138,7 @@ import { useI18n } from 'vue-i18n';
 import { generateUUID } from '/@/utils/other';
 import { LoginErrorEnum, LoginTypeEnum } from '/@/api/login';
 import { sanitizeHtml } from '/@/utils/sanitize';
+import loginZh from '/@/i18n/pages/login/zh-cn';
 
 // 使用国际化插件
 const { t } = useI18n();
@@ -146,6 +147,25 @@ const { t } = useI18n();
 const Verify = defineAsyncComponent(() => import('/@/components/Verifition/Verify.vue'));
 import { useSiteConfig, CaptchaType } from '/@/stores/siteConfig';
 const { siteConfig } = storeToRefs(useSiteConfig());
+
+// 仅翻译默认协议文本，保留站点配置的链接、样式及自定义内容。
+const privacyTip = computed(() => {
+	const template = document.createElement('template');
+	template.innerHTML = siteConfig.value.privacyTip || '';
+	const keys = ['agreement', 'serviceAgreement', 'and', 'privacyPolicy'] as const;
+	const translations = new Map(keys.map((key) => [loginZh.password[key], t(`password.${key}`)]));
+	const walker = document.createTreeWalker(template.content, NodeFilter.SHOW_TEXT);
+	let node = walker.nextNode();
+	while (node) {
+		const text = node.textContent || '';
+		const translated = translations.get(text.trim());
+		if (translated && !node.parentElement?.closest('script, style')) {
+			node.textContent = text.replace(text.trim(), () => translated);
+		}
+		node = walker.nextNode();
+	}
+	return template.innerHTML;
+});
 
 const captchaType = computed(() => siteConfig.value.captchaType || CaptchaType.ClickWord);
 

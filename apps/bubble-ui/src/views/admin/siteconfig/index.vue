@@ -378,6 +378,8 @@ const handleSave = async () => {
 			forceResetPwd,
 			passwordExpireDays,
 			loginErrorTimes: loginFailureLock ? loginErrorTimes : 0,
+			// 后端校验验证码配置时必须指定网站密码登录客户端
+			captchaClientId: (import.meta.env.VITE_OAUTH2_PASSWORD_CLIENT as string)?.split(':')[0],
 		});
 
 		savedSnapshot.value = buildSnapshot();

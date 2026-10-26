@@ -2,6 +2,7 @@ package com.bubblecloud.biz.agi.controller;
 
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -11,6 +12,7 @@ import com.bubblecloud.biz.agi.service.DatasourceTableFieldService;
 import com.bubblecloud.common.mybatis.base.Pg;
 import com.bubblecloud.common.mybatis.base.Req;
 import com.bubblecloud.common.core.util.R;
+import com.bubblecloud.common.core.constant.CommonConstants;
 import com.bubblecloud.common.log.annotation.SysLog;
 import com.bubblecloud.common.excel.annotation.ResponseExcel;
 import com.bubblecloud.agi.api.entity.Datasource;
@@ -61,7 +63,9 @@ public class DatasourceController {
 	@HasPermission("agi_datasource_view")
 	public R<Page<Datasource>> page(@ParameterObject Pg pg, @ParameterObject Datasource req) {
 		pg.addOrderDefault(OrderItem.desc("t.id"));
-		return R.ok(datasourceService.findPg(pg, req));
+		Page<Datasource> page = datasourceService.findPg(pg, req);
+		page.getRecords().forEach(this::maskPassword);
+		return R.ok(page);
 	}
 
 
@@ -77,12 +81,15 @@ public class DatasourceController {
 	public R<List<Datasource>> details(@ParameterObject Datasource req) {
 		List<Datasource> list = datasourceService.list(Wrappers.query(req));
 		if (CollUtil.isNotEmpty(list)) {
-			list.forEach(datasource -> datasource.setTableNames(datasourceTableService.list(Wrappers.lambdaQuery(DatasourceTable.class)
-							.eq(DatasourceTable::getDsId, datasource.getId())
-							.select(DatasourceTable::getTableName))
-					.stream()
-					.map(DatasourceTable::getTableName)
-					.toList()));
+			list.forEach(datasource -> {
+				maskPassword(datasource);
+				datasource.setTableNames(datasourceTableService.list(Wrappers.lambdaQuery(DatasourceTable.class)
+								.eq(DatasourceTable::getDsId, datasource.getId())
+								.select(DatasourceTable::getTableName))
+						.stream()
+						.map(DatasourceTable::getTableName)
+						.toList());
+			});
 		}
 		return R.ok(list);
 	}
@@ -183,7 +190,19 @@ public class DatasourceController {
 	@GetMapping("/export")
 	@HasPermission("agi_datasource_export")
 	public List<Datasource> exportExcel(Datasource req, Long[] ids) {
-		return datasourceService.list(Wrappers.lambdaQuery(req).in(ArrayUtil.isNotEmpty(ids), Datasource::getId, ids));
+		List<Datasource> list = datasourceService
+			.list(Wrappers.lambdaQuery(req).in(ArrayUtil.isNotEmpty(ids), Datasource::getId, ids));
+		list.forEach(this::maskPassword);
+		return list;
+	}
+
+	/**
+	 * 密码脱敏：仅返回掩码，真实密码不外泄；编辑保存时服务端识别掩码并沿用库中原值
+	 */
+	private void maskPassword(Datasource datasource) {
+		if (datasource != null && StrUtil.isNotBlank(datasource.getPassword())) {
+			datasource.setPassword(CommonConstants.SECRET_MASK);
+		}
 	}
 
 

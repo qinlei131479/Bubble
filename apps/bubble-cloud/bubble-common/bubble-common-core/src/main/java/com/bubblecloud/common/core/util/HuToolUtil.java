@@ -5,8 +5,6 @@ import cn.hutool.core.exceptions.UtilException;
 import cn.hutool.core.util.*;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -203,42 +201,6 @@ public class HuToolUtil {
 		else {
 			int lastIndex = fileName.lastIndexOf(".");
 			return (lastIndex == -1) ? "" : fileName.substring(lastIndex + 1).toLowerCase();
-		}
-	}
-
-	/**
-	 * 执行命令
-	 * @param command window:{"cmd.exe /c dir"}
-	 * @return
-	 * @throws Exception
-	 */
-	public static String callSystem(String[] command) {
-		InputStream is = null;
-		try {
-			Process process = Runtime.getRuntime().exec(command);
-			process.waitFor();
-			StringBuffer sb = new StringBuffer();
-			byte[] buffer = new byte[256];
-			int cnt = 0;
-			is = process.getInputStream();
-			while ((cnt = is.read(buffer)) >= 0) {
-				sb.append(new String(buffer, 0, cnt));
-			}
-			return sb.toString();
-		}
-		catch (Throwable e) {
-			e.printStackTrace();
-			return e.getMessage();
-		}
-		finally {
-			if (is != null) {
-				try {
-					is.close();
-				}
-				catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
 		}
 	}
 

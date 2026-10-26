@@ -112,6 +112,11 @@ public interface CommonConstants {
 	String REQUEST_START_TIME = "REQUEST-START-TIME";
 
 	/**
+	 * 敏感字段（密码/密钥）回显掩码，接口返回该值时表示沿用库中原值
+	 */
+	String SECRET_MASK = "******";
+
+	/**
 	 * 当前页
 	 */
 	String CURRENT = "current";

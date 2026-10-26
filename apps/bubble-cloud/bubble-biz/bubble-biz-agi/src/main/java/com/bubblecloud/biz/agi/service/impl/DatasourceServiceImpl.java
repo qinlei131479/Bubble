@@ -5,6 +5,7 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.bubblecloud.common.core.exception.CheckedException;
+import com.bubblecloud.common.core.constant.CommonConstants;
 import com.bubblecloud.common.core.util.R;
 import com.bubblecloud.common.mybatis.service.impl.UpServiceImpl;
 import com.bubblecloud.agi.api.entity.Datasource;
@@ -51,6 +52,7 @@ public class DatasourceServiceImpl extends UpServiceImpl<DatasourceMapper, Datas
 
 	@Override
 	public DatasourceTestResultVO testConnection(DatasourceTestDTO dto) {
+		dto.setPassword(resolveRealPassword(dto.getId(), dto.getPassword()));
 		DatasourceTestResultVO result = JdbcUtils.testConnection(dto,
 				datasourceSecurityProperties.isAllowPrivateNetwork());
 
@@ -68,6 +70,7 @@ public class DatasourceServiceImpl extends UpServiceImpl<DatasourceMapper, Datas
 
 	@Override
 	public List<TableInfoVO> getTableInfo(DatasourceTestDTO dto) {
+		dto.setPassword(resolveRealPassword(dto.getId(), dto.getPassword()));
 		return JdbcUtils.getTableInfo(dto, datasourceSecurityProperties.isAllowPrivateNetwork());
 	}
 
@@ -79,14 +82,32 @@ public class DatasourceServiceImpl extends UpServiceImpl<DatasourceMapper, Datas
 
 	@Override
 	public R update(Datasource req) {
+		req.setPassword(resolveRealPassword(req.getId(), req.getPassword()));
 		validateConnection(req, false);
 		return super.update(req);
 	}
 
 	@Override
 	public R update(Datasource req, boolean isCustom) {
+		req.setPassword(resolveRealPassword(req.getId(), req.getPassword()));
 		validateConnection(req, false);
 		return super.update(req, isCustom);
+	}
+
+	/**
+	 * 列表/详情接口返回的密码是脱敏掩码，前端编辑后原样回传；
+	 * 此处识别掩码或空值并回填库中真实密码，避免掩码覆盖真实值。
+	 * 用户输入了新密码时原样返回。
+	 * @param id 数据源ID
+	 * @param password 前端回传的密码（可能是掩码）
+	 * @return 真实密码
+	 */
+	private String resolveRealPassword(Long id, String password) {
+		if (id == null || (StrUtil.isNotBlank(password) && !CommonConstants.SECRET_MASK.equals(password))) {
+			return password;
+		}
+		Datasource datasource = this.getById(id);
+		return datasource != null ? datasource.getPassword() : password;
 	}
 
 	/**

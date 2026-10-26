@@ -50,7 +50,10 @@ public class SysMobileServiceImpl implements SysMobileService {
 		String clientIp = WebUtils.getIP();
 		String ipLimitKey = CacheConstants.DEFAULT_CODE_KEY + "MOBILE_IP_LIMIT:" + clientIp;
 		Long ipSendTimes = RedisUtils.increment(ipLimitKey, 1L);
-		RedisUtils.expire(ipLimitKey, SecurityConstants.CODE_TIME);
+		// 仅在首次计数或键缺少过期时间时设置 TTL：每次请求都刷新会使限流窗口无限顺延
+		if (ipSendTimes != null && (ipSendTimes == 1L || RedisUtils.getExpire(ipLimitKey) < 0)) {
+			RedisUtils.expire(ipLimitKey, SecurityConstants.CODE_TIME);
+		}
 		Long maxTimes = ParamResolver.getLong("SMS_IP_LIMIT_TIMES", 5L);
 		if (ipSendTimes != null && ipSendTimes > maxTimes) {
 			return R.ok(Boolean.FALSE, MsgUtils.getMessage(UpmsErrorCodes.SYS_APP_SMS_OFTEN));

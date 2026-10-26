@@ -52,6 +52,12 @@ public class PermitAllUrlProperties implements InitializingBean, ApplicationList
 	 */
 	private volatile int scannedHandlerCount = -1;
 
+	/**
+	 * 应用是否已就绪。就绪后所有 Handler 均已注册、白名单不再变化，
+	 * 请求路径上无需再进入 synchronized 扫描（避免高并发热锁）。
+	 */
+	private volatile boolean applicationReady = false;
+
 	@Override
 	public void afterPropertiesSet() {
 		urls.addAllAbsent(Arrays.asList(DEFAULT_IGNORE_URLS));
@@ -60,6 +66,7 @@ public class PermitAllUrlProperties implements InitializingBean, ApplicationList
 
 	@Override
 	public void onApplicationEvent(ApplicationReadyEvent event) {
+		applicationReady = true;
 		scanInnerUrls();
 	}
 
@@ -74,7 +81,10 @@ public class PermitAllUrlProperties implements InitializingBean, ApplicationList
 	}
 
 	public boolean isPermitAll(String path) {
-		scanInnerUrls();
+		// 就绪前处理器可能尚未注册完成，逐请求补扫；就绪后白名单固定，直接匹配
+		if (!applicationReady) {
+			scanInnerUrls();
+		}
 		return urls.stream().anyMatch(url -> pathMatcher.match(url, path));
 	}
 

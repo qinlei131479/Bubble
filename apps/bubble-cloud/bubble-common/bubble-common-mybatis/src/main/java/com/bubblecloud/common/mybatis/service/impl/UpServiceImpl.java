@@ -170,9 +170,15 @@ public class UpServiceImpl<M extends UpMapper<T>, T extends Req> extends Service
 		mapper.insert(req);
 	}
 
+	/**
+	 * Req 基类不含主键，无法按实体删除；此前静默 deleteById(null) 属误导性实现。
+	 * @param req 实体
+	 * @deprecated 请使用 {@link #deleteById(Long)} 按主键删除
+	 */
+	@Deprecated
 	@Override
 	public R delete(T req) {
-		return this.deleteById(null);
+		throw new UnsupportedOperationException("delete(req) 已废弃，请使用 deleteById 按主键删除");
 	}
 
 	@Override

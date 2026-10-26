@@ -55,6 +55,10 @@ public class JavaClassTaskInvok implements ITaskInvok {
 				method = clazz.getDeclaredMethod(sysJob.getMethodName());
 				returnValue = method.invoke(obj);
 			}
+			if (returnValue == null) {
+				// void 或返回 null 的任务方法视为执行成功
+				return;
+			}
 			if (StrUtil.isEmpty(returnValue.toString())
 					|| QuartzEnum.JOB_LOG_STATUS_FAIL.getType().equals(returnValue.toString())) {
 				log.error("定时任务javaClassTaskInvok异常,执行任务：{}", sysJob.getClassName());

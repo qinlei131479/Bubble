@@ -297,8 +297,10 @@ public class SysMessageServiceImpl extends ServiceImpl<SysMessageMapper, SysMess
 		if (StrUtil.isNotBlank(clientIp)) {
 			Long maxTimes = ParamResolver.getLong("SMS_IP_LIMIT_TIMES", 5L);
 			Long ipSendTimes = RedisUtils.increment(ipLimitKey, 1L);
-			// 设置过期时间
-			RedisUtils.expire(ipLimitKey, SecurityConstants.CODE_TIME);
+			// 仅在首次计数或键缺少过期时间时设置 TTL：每次请求都刷新会使限流窗口无限顺延
+			if (ipSendTimes != null && (ipSendTimes == 1L || RedisUtils.getExpire(ipLimitKey) < 0)) {
+				RedisUtils.expire(ipLimitKey, SecurityConstants.CODE_TIME);
+			}
 
 			if (ipSendTimes > maxTimes) {
 				log.info("IP发送验证码过于频繁:{}, 已发送{}次", clientIp, ipSendTimes);

@@ -157,8 +157,12 @@ public class WebUtils extends org.springframework.web.util.WebUtils {
 	public String getIP(HttpServletRequest request) {
 		Assert.notNull(request, "HttpServletRequest is null");
 		String ip = request.getHeader("X-Requested-For");
-		if (StrUtil.isBlank(ip) || UNKNOWN.equalsIgnoreCase(ip)) {
-			ip = request.getHeader("X-Forwarded-For");
+		if (StrUtil.isNotBlank(ip) && !UNKNOWN.equalsIgnoreCase(ip)) {
+			return resolveForwardedIp(ip);
+		}
+		ip = request.getHeader("X-Forwarded-For");
+		if (StrUtil.isNotBlank(ip) && !UNKNOWN.equalsIgnoreCase(ip)) {
+			return resolveForwardedIp(ip);
 		}
 		if (StrUtil.isBlank(ip) || UNKNOWN.equalsIgnoreCase(ip)) {
 			ip = request.getHeader("Proxy-Client-IP");
@@ -176,6 +180,58 @@ public class WebUtils extends org.springframework.web.util.WebUtils {
 			ip = request.getRemoteAddr();
 		}
 		return StrUtil.isBlank(ip) ? null : ip.split(",")[0];
+	}
+
+	/**
+	 * 解析转发头中的真实客户端IP。最左侧值可被客户端伪造，因此从右向左跳过内网与环回地址，
+	 * 取第一个公网地址（由最外层可信代理追加的真实来源）；全部为内网地址时退回首段，保持旧行为。
+	 * @param forwarded 转发头原始值，如 "spoofed, realIp, innerProxyIp"
+	 * @return 真实客户端IP
+	 */
+	private String resolveForwardedIp(String forwarded) {
+		String[] segments = forwarded.split(",");
+		if (segments.length <= 1) {
+			return segments[0].trim();
+		}
+		for (int i = segments.length - 1; i >= 0; i--) {
+			String candidate = segments[i].trim();
+			if (StrUtil.isNotBlank(candidate) && !UNKNOWN.equalsIgnoreCase(candidate) && !isInternalIp(candidate)) {
+				return candidate;
+			}
+		}
+		return segments[0].trim();
+	}
+
+	/**
+	 * 判断是否内网/环回地址（IPv4 私有段与 IPv6 本地地址）
+	 */
+	private boolean isInternalIp(String ip) {
+		if (StrUtil.isBlank(ip)) {
+			return true;
+		}
+		if (ip.contains(":")) {
+			String lower = ip.toLowerCase();
+			return lower.startsWith("::1") || lower.startsWith("fc") || lower.startsWith("fd")
+					|| lower.startsWith("fe80");
+		}
+		String[] parts = ip.split("\\.");
+		if (parts.length != 4) {
+			return false;
+		}
+		try {
+			int first = Integer.parseInt(parts[0]);
+			int second = Integer.parseInt(parts[1]);
+			if (first == 0 || first == 10 || first == 127) {
+				return true;
+			}
+			if (first == 172 && second >= 16 && second <= 31) {
+				return true;
+			}
+			return (first == 192 && second == 168) || (first == 169 && second == 254);
+		}
+		catch (NumberFormatException e) {
+			return false;
+		}
 	}
 
 	/**

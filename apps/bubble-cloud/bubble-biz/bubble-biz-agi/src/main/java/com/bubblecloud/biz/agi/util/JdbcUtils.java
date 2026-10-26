@@ -36,6 +36,11 @@ public class JdbcUtils {
 
 	private static final Pattern EXTRA_VALUE_PATTERN = Pattern.compile("^[A-Za-z0-9_.,:+/-]{1,128}$");
 
+	/**
+	 * 登录超时默认秒数，避免对不可达地址无限等待挂死线程
+	 */
+	private static final int DEFAULT_LOGIN_TIMEOUT_SECONDS = 10;
+
 	private static final Map<DsType, List<String>> SAFE_EXTRA_PARAMETERS = Map.of(
 			DsType.MYSQL, List.of("characterEncoding", "useSSL", "allowPublicKeyRetrieval", "serverTimezone",
 					"connectTimeout", "socketTimeout", "zeroDateTimeBehavior"),
@@ -273,6 +278,7 @@ public class JdbcUtils {
 		}
 
 		String driverClass = dsType.getDriverClass();
+		int previousTimeout = applyLoginTimeout(dto);
 		Connection connection = null;
 		try {
 			// 加载驱动
@@ -296,6 +302,7 @@ public class JdbcUtils {
 			result.setErrorMessage("数据库连接失败: " + e.getMessage());
 			log.error("数据库连接失败: 数据源类型={}, 数据源ID={}", dto.getDsType(), dto.getId(), e);
 		} finally {
+			DriverManager.setLoginTimeout(previousTimeout);
 			closeQuietly(connection);
 		}
 		return result;
@@ -315,6 +322,7 @@ public class JdbcUtils {
 		}
 
 		String driverClass = dsType.getDriverClass();
+		int previousTimeout = applyLoginTimeout(dto);
 		Connection connection = null;
 		ResultSet rs = null;
 
@@ -350,6 +358,7 @@ public class JdbcUtils {
 		} catch (Exception e) {
 			log.error("获取数据库表详细信息失败: 数据源类型={}, 数据源ID={}", dto.getDsType(), dto.getId(), e);
 		} finally {
+			DriverManager.setLoginTimeout(previousTimeout);
 			closeQuietly(rs);
 			closeQuietly(connection);
 		}
@@ -375,6 +384,7 @@ public class JdbcUtils {
 		}
 
 		String driverClass = dsType.getDriverClass();
+		int previousTimeout = applyLoginTimeout(dto);
 		Connection connection = null;
 		ResultSet rs = null;
 
@@ -409,11 +419,23 @@ public class JdbcUtils {
 		} catch (Exception e) {
 			log.error("获取表字段信息失败: {}.{}", dto.getDsName(), tableName, e);
 		} finally {
+			DriverManager.setLoginTimeout(previousTimeout);
 			closeQuietly(rs);
 			closeQuietly(connection);
 		}
 
 		return fields;
+	}
+
+	/**
+	 * 设置 JDBC 登录超时（DriverManager 为 JVM 全局设置），返回原值供 finally 恢复。
+	 * 未配置 timeout 时默认 10 秒，避免对不可达地址无限等待。
+	 */
+	private static int applyLoginTimeout(DatasourceTestDTO dto) {
+		int previous = DriverManager.getLoginTimeout();
+		int timeout = dto != null && dto.getTimeout() != null ? dto.getTimeout() : DEFAULT_LOGIN_TIMEOUT_SECONDS;
+		DriverManager.setLoginTimeout(timeout);
+		return previous;
 	}
 
 	private static String normalizeAndValidateHost(String rawHost) {

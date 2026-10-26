@@ -70,9 +70,13 @@ public class JobSecurityValidator {
 	/**
 	 * Dangerous package prefixes that should be blocked
 	 */
-	private static final Set<String> DANGEROUS_PACKAGE_PREFIXES = new HashSet<>(Arrays.asList("sun.misc.",
-			"com.sun.jndi.", "javax.naming.", "org.apache.commons.collections.functors.",
-			"org.apache.xalan.xsltc.trax.", "javassist.", "org.codehaus.groovy.", "ognl.", "freemarker.template."));
+	private static final Set<String> DANGEROUS_PACKAGE_PREFIXES = new HashSet<>(Arrays.asList("sun.misc.", "sun.",
+			"com.sun.", "jdk.internal.", "com.mchange.", "com.mysql.cj.jdbc.admin.", "org.apache.naming.",
+			"javax.naming.", "org.apache.commons.collections.functors.", "org.apache.commons.collections4.functors.",
+			"org.apache.xalan.xsltc.trax.", "org.springframework.context.support.",
+			"org.springframework.expression.", "org.springframework.beans.factory.support.", "javassist.",
+			"org.codehaus.groovy.", "groovy.", "org.mozilla.javascript.", "org.python.", "bsh.", "mvel2.", "ognl.",
+			"org.apache.velocity.", "freemarker.core.", "freemarker.template.", "com.thoughtworks.xstream."));
 
 	/**
 	 * Dangerous method names that should never be invoked
@@ -94,6 +98,13 @@ public class JobSecurityValidator {
 
 	@Value("${spring.quartz.security.enabled:true}")
 	private boolean securityEnabled;
+
+	/**
+	 * 严格模式：仅允许白名单包内的任务类（见 {@link #isInAllowedPackage}）。
+	 * 默认关闭以保持存量任务兼容；生产环境建议开启。
+	 */
+	@Value("${spring.quartz.security.strict-mode:false}")
+	private boolean strictMode;
 
 	/**
 	 * Validates if a class name is safe to use in reflection-based job execution
@@ -213,6 +224,12 @@ public class JobSecurityValidator {
 		// Validate class name
 		if (!isClassSafe(className)) {
 			return "安全检查失败";
+		}
+
+		// 严格模式下仅允许白名单包内的任务类
+		if (strictMode && !isInAllowedPackage(className)) {
+			return "安全检查失败";
+
 		}
 
 		// Validate method name
